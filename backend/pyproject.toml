@@ -1,0 +1,18 @@
+# pyproject.toml
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle 기본 규칙
+    "F",   # pyflakes (미사용 변수 등)
+    "I",   # isort (import 정렬)
+    "N",   # 네이밍 규칙
+]
+ignore = []
+
+# 절대 import만 허용 (상대 import 금지)
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
