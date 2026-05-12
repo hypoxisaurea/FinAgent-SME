@@ -5,8 +5,8 @@ from api.router import api_router
 from config import settings
 
 app = FastAPI(
-    title="K-Credit Agent API",
-    description="B2B 거래 리스크 심사 Multi-Agent System 백엔드",
+    title="FinAgent-SME API",
+    description="FinAgent-SME B2B 거래 리스크 심사 Multi-Agent System 백엔드",
     version="0.1.0",
 )
 
@@ -23,4 +23,4 @@ app.include_router(api_router, prefix="/api")
 
 @app.get("/")
 def root() -> dict[str, str]:
-    return {"service": "k-credit-agent", "docs": "/docs", "health": "/api/health"}
+    return {"service": "finagent-sme", "docs": "/docs", "health": "/api/health"}
