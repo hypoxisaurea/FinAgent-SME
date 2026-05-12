@@ -2,7 +2,7 @@
 
 ## 목적
 
-본 문서는 K-Credit Agent의 신용 심사 워크플로우를 정의한다.  
+본 문서는 FinAgent-SME의 신용 심사 워크플로우를 정의한다.  
 기준 흐름: `User -> Orchestrator -> (병렬 분석 Agent들) -> XAI/Decision Agent -> Report Agent`
 
 ## 참여 Agent

@@ -2,12 +2,12 @@
 
 ## 프로젝트 개요
 
-- Product Name: K-Credit Agent
+- Product Name: FinAgent-SME
 - Product Description: B2B 거래 리스크 심사 Multi-Agent System
 - Target User: 은행/금융기관 심사 담당자
 - Main Goal: 더 빠르고 정확한 대출 심사, 리스크 관리 강화, 효율적인 의사 결정
 - 언어: Python, JavaScript(React)
-- 프레임워크: FastAPI, SQLAlchemy
+- 프레임워크: FastAPI, Pydantic
 - 런타임: Python 3.11, Node.js 20+
 
 ## 코드 규칙
