@@ -1,29 +1,59 @@
 import os
+import pandas as pd
 from langchain_core.tools import tool
+import OpenDartReader
+
+
+def _get_dart():
+    """OpenDartReader 인스턴스 반환. DART_API_KEY 환경변수 필요."""
+    api_key = os.environ.get("DART_API_KEY")
+    if not api_key:
+        raise ValueError("환경변수 DART_API_KEY가 설정되지 않았습니다.")
+    return OpenDartReader(api_key)
+
+
+def _normalize_accounts(fs: pd.DataFrame) -> dict:
+    """DART finstate_all 결과(DataFrame)에서 필요한 계정과목만 추출."""
+    for sj in ["OFS", "CFS"]:
+        df = fs[fs["sj_div"] == sj] if "sj_div" in fs.columns else fs
+        if df.empty:
+            continue
+
+        def _get(account_nm: str) -> float:
+            row = df[df["account_nm"].str.contains(account_nm, na=False)]
+            if row.empty:
+                return 0.0
+            val = row.iloc[0]["thstrm_amount"]
+            if pd.isna(val) or val == "":
+                return 0.0
+            return float(str(val).replace(",", ""))
+
+        return {
+            "유동자산":     _get("유동자산"),
+            "유동부채":     _get("유동부채"),
+            "총자산":       _get("자산총계"),
+            "자본총계":     _get("자본총계"),
+            "부채총계":     _get("부채총계"),
+            "이익잉여금":   _get("이익잉여금"),
+            "매출액":       _get("매출액"),
+            "영업이익":     _get("영업이익"),
+            "당기순이익":   _get("당기순이익"),
+            "이자비용":     _get("이자비용"),
+            "영업현금흐름": _get("영업활동으로인한현금흐름"),
+        }
+
+    raise ValueError("재무제표 데이터를 파싱할 수 없습니다.")
 
 
 @tool
 def get_financial_statements(corp_code: str, year: int) -> dict:
     """DART에서 corp_code 기업의 year 연도 재무제표를 가져와
     표준 계정과목 dict로 반환한다."""
-    # TODO: OpenDartReader 연동
-    # import OpenDartReader
-    # dart = OpenDartReader(os.environ["DART_API_KEY"])
-    # fs = dart.finstate_all(corp_code, year)
-    # return _normalize_accounts(fs)
-    return {
-        "유동자산":      1_000_000,
-        "유동부채":        600_000,
-        "총자산":        3_000_000,
-        "자본총계":      1_200_000,
-        "부채총계":      1_800_000,
-        "이익잉여금":      500_000,
-        "매출액":        2_500_000,
-        "영업이익":        180_000,
-        "당기순이익":      120_000,
-        "이자비용":         40_000,
-        "영업현금흐름":    150_000,
-    }
+    dart = _get_dart()
+    fs = dart.finstate_all(corp_code, year)
+    if fs is None or fs.empty:
+        raise ValueError(f"corp_code={corp_code}, year={year} 재무제표 없음")
+    return _normalize_accounts(fs)
 
 
 @tool
@@ -47,10 +77,10 @@ def calc_altman_z_prime(fs: dict) -> dict:
       X1 = 운전자본 / 총자산
       X2 = 이익잉여금 / 총자산
       X3 = 영업이익 / 총자산
-      X4 = 자본총계(장부가) / 부채총계   ← 비상장용
+      X4 = 자본총계(장부가) / 부채총계
       X5 = 매출액 / 총자산
 
-    판정: Z' > 2.9 Safe / 1.23 ≤ Z' ≤ 2.9 Grey / Z' < 1.23 Distress
+    판정: Z' > 2.9 Safe / 1.23 <= Z' <= 2.9 Grey / Z' < 1.23 Distress
     """
     ta = max(fs["총자산"], 1)
     x1 = (fs["유동자산"] - fs["유동부채"]) / ta
@@ -71,7 +101,8 @@ def calc_altman_z_prime(fs: dict) -> dict:
     return {
         "z_prime": round(z, 3),
         "zone": zone,
-        "components": {"X1": x1, "X2": x2, "X3": x3, "X4": x4, "X5": x5},
+        "components": {"X1": round(x1,4), "X2": round(x2,4),
+                       "X3": round(x3,4), "X4": round(x4,4), "X5": round(x5,4)},
     }
 
 
@@ -79,10 +110,39 @@ def calc_altman_z_prime(fs: dict) -> dict:
 def trend_analysis(corp_code: str, years: list[int]) -> dict:
     """최근 3개년 재무비율의 급변 항목을 플래그로 반환.
 
-    부채비율 급증, 영업이익률 급락 등 이상 패턴을 감지한다.
+    부채비율 YoY +20%p 이상 급증, 영업이익률 YoY -5%p 이상 급락을 위험 신호로 감지.
     """
-    # TODO: years 만큼 get_financial_statements 호출 후 YoY 비교
-    return {
-        "flags": ["debt_ratio_spike_YoY+35%"],
-        "yoy": {"debt_ratio": [0.95, 1.10, 1.50]},
-    }
+    dart = _get_dart()
+    history = []
+
+    for year in sorted(years):
+        fs_raw = dart.finstate_all(corp_code, year)
+        if fs_raw is None or fs_raw.empty:
+            continue
+        fs = _normalize_accounts(fs_raw)
+        history.append({
+            "year":       year,
+            "debt_ratio": fs["부채총계"] / max(fs["자본총계"], 1),
+            "op_margin":  fs["영업이익"] / max(fs["매출액"], 1),
+            "ocf":        fs["영업현금흐름"],
+        })
+
+    flags = []
+    yoy = {"debt_ratio": [], "op_margin": []}
+
+    for i in range(1, len(history)):
+        prev, curr = history[i - 1], history[i]
+        debt_chg   = curr["debt_ratio"] - prev["debt_ratio"]
+        margin_chg = curr["op_margin"]  - prev["op_margin"]
+
+        yoy["debt_ratio"].append(round(debt_chg, 4))
+        yoy["op_margin"].append(round(margin_chg, 4))
+
+        if debt_chg >= 0.2:
+            flags.append(f"{curr['year']}_debt_ratio_spike_+{debt_chg:.0%}")
+        if margin_chg <= -0.05:
+            flags.append(f"{curr['year']}_op_margin_drop_{margin_chg:.0%}")
+        if curr["ocf"] < 0:
+            flags.append(f"{curr['year']}_negative_operating_cashflow")
+
+    return {"flags": flags, "yoy": yoy, "history": history}
