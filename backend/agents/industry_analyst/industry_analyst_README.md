@@ -211,7 +211,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ksic = map_corp_to_ksic.invoke({'corp_code': '01074862'})
-avg = get_industry_avg_ratios.invoke({'ksic_code': ksic, 'year': 2023})
+avg = get_industry_avg_ratios.invoke({'ksic_code': ksic, 'year': 2023}) # 2025년도 가능
 comp = compare_to_industry.invoke({'company_ratios': ratios, 'industry_avg': avg})
 outlook = get_industry_outlook.invoke({'ksic_code': 'C'})
 macro = get_macro_indicators.invoke({})
@@ -224,7 +224,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 result = industry_agent.invoke({
-    'messages': [{'role': 'user', 'content': 'corp_code 01074862, 2023년 산업 분석해줘'}]
+    'messages': [{'role': 'user', 'content': 'corp_code 01074862, 2023년 산업 분석해줘'}] # 2025년도 가능
 })
 print(result['messages'][-1].content)
 ```
