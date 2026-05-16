@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from agents.base import Agent
+from agents.collector import CollectorAgent
 from agents.multimodal_document import MultiModalDocumentAgent
 
 
@@ -77,8 +78,11 @@ def create_credit_workflow(
     *,
     continue_on_error: bool = False,
 ) -> WorkflowOrchestrator:
-    """신용심사 워크플로우 오케스트레이터 팩토리."""
-    default_agents = agents if agents is not None else [MultiModalDocumentAgent()]
+    """신용심사 워크플로우 오케스트레이터 팩토리.
+
+    기본 워크플로우는 CollectorAgent와 MultiModalDocumentAgent를 순차 실행합니다.
+    """
+    default_agents = agents if agents is not None else [CollectorAgent(), MultiModalDocumentAgent()]
     return WorkflowOrchestrator(agents=default_agents, continue_on_error=continue_on_error)
 
 
