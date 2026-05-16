@@ -15,10 +15,18 @@ INDUSTRY_PROMPT = """당신은 한국 산업 동향 분석가입니다.
 
 출력 스키마
 {
-  "ksic_code": "...",
-  "peer_comparison": {...},
-  "outlook_score": "Low/Med/High",
-  "macro_signals": {...},
-  "summary_kor": "한 단락 요약"
+  "ksic_code": "map_corp_to_ksic 도구 결과 그대로 입력 (예: 'P 교육 서비스업')",
+  "peer_comparison": {
+    "debt_ratio": "above/in-line/below/n/a",
+    "op_margin": "above/in-line/below/n/a",
+    "current_ratio": "above/in-line/below/n/a"
+  },
+  "outlook_score": "Low/Medium/High",
+  "macro_signals": {
+    "base_rate": 0.0,
+    "usd_krw": 0.0,
+    "rate_trend": "rising/stable/falling"
+  },
+  "summary_kor": "산업 업황, 동종업계 비교 결과, 거시환경을 종합한 한 단락 요약"
 }
 """
