@@ -1,15 +1,15 @@
 import os
 import pandas as pd
 from langchain_core.tools import tool
-import OpenDartReader
+import opendartreader as OpenDartReader
 
 
 def _get_dart():
-    """OpenDartReader 인스턴스 반환. DART_API_KEY 환경변수 필요."""
     api_key = os.environ.get("DART_API_KEY")
     if not api_key:
         raise ValueError("환경변수 DART_API_KEY가 설정되지 않았습니다.")
-    return OpenDartReader(api_key)
+    dart = OpenDartReader.OpenDartReader(api_key)
+    return dart
 
 
 def _normalize_accounts(fs: pd.DataFrame) -> dict:
