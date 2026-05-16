@@ -1,7 +1,7 @@
 import os
 import requests
 from langchain_core.tools import tool
-import OpenDartReader
+import opendartreader as OpenDartReader
 
 ECOS_BASE = "https://ecos.bok.or.kr/api"
 KOSIS_BASE = "https://kosis.kr/openapi/statisticsData.do"
@@ -11,7 +11,8 @@ def _get_dart():
     api_key = os.environ.get("DART_API_KEY")
     if not api_key:
         raise ValueError("환경변수 DART_API_KEY가 설정되지 않았습니다.")
-    return OpenDartReader(api_key)
+    dart = OpenDartReader.OpenDartReader(api_key)
+    return dart
 
 
 def _ecos_get(stat_code: str, item_code: str, period: str) -> list[dict]:
@@ -202,4 +203,3 @@ def get_macro_indicators() -> dict:
         "usd_krw":    usd_krw,
         "rate_trend": trend,
     }
-    
