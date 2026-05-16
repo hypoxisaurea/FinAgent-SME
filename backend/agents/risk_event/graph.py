@@ -1,15 +1,14 @@
 """Risk Event Agent LangGraph 워크플로우
 
-노드 순서:
-  1. parallel_handlers  — 5개 핸들러 병렬 실행
-  2. classify_severity  — R-004 심각도 분류
-  3. build_timeline     — R-005 타임라인 생성
-  4. aggregate          — 최종 결과 조립
+수정 사항:
+- 동기 핸들러를 asyncio.to_thread()로 스레드풀에서 실행 → 진짜 병렬 처리
+- 에러별 로깅 추가
 """
 
 from __future__ import annotations
 
 import asyncio
+import logging
 from collections import Counter
 from datetime import date
 from typing import Any
@@ -29,96 +28,68 @@ from .models import (
     SeverityLevel, TimelineEntry,
 )
 
-
-# ─── 상태 타입 ────────────────────────────────────────────────────────────────
-
+logger = logging.getLogger(__name__)
 RiskEventState = dict[str, Any]
 
 
 # ─── 노드 1: 병렬 핸들러 ─────────────────────────────────────────────────────
 
 async def _parallel_handlers(state: RiskEventState) -> RiskEventState:
-    """5개 핸들러를 asyncio.gather로 병렬 실행한다."""
+    """5개 핸들러를 병렬 실행한다.
+
+    동기 함수(keyword, disclosure, legal, financial)는 asyncio.to_thread()로
+    스레드풀에서 실행해 진짜 병렬 처리를 보장한다.
+    비동기 함수(sentiment)는 그대로 await한다.
+    """
     company_name    = state["company_name"]
     corp_code       = state["corp_code"]
     news_data       = state.get("news_data", [])
     disclosure_data = state.get("disclosure_data", [])
     court_data      = state.get("court_data", [])
-
-    # financial_features.csv에서 해당 기업 재무 데이터 로드
-    financial_rows = get_financial_rows(corp_code)
-
-    async def _run_keyword():
-        try:
-            return detect_keywords(company_name, news_data, disclosure_data)
-        except Exception as e:
-            return None, str(e)
-
-    async def _run_sentiment():
-        try:
-            return await analyze_sentiment(company_name, news_data)
-        except Exception as e:
-            return None, str(e)
-
-    async def _run_disclosure():
-        try:
-            return detect_disclosure_anomalies(company_name, corp_code, disclosure_data)
-        except Exception as e:
-            return None, str(e)
-
-    async def _run_legal():
-        try:
-            return detect_legal_risks(company_name, court_data)
-        except Exception as e:
-            return None, str(e)
-
-    async def _run_financial():
-        try:
-            return detect_financial_anomalies(company_name, corp_code, financial_rows)
-        except Exception as e:
-            return None, str(e)
+    financial_rows  = get_financial_rows(corp_code)
 
     results = await asyncio.gather(
-        _run_keyword(),
-        _run_sentiment(),
-        _run_disclosure(),
-        _run_legal(),
-        _run_financial(),
+        # 동기 함수 → 스레드풀
+        asyncio.to_thread(detect_keywords, company_name, news_data, disclosure_data),
+        # 비동기 함수 → 그대로
+        analyze_sentiment(company_name, news_data),
+        # 동기 함수 → 스레드풀
+        asyncio.to_thread(detect_disclosure_anomalies, company_name, corp_code, disclosure_data),
+        asyncio.to_thread(detect_legal_risks, company_name, court_data),
+        asyncio.to_thread(detect_financial_anomalies, company_name, corp_code, financial_rows),
         return_exceptions=True,
     )
 
-    keyword_result, sentiment_result, disclosure_result, legal_result, financial_result = results
-
-    # 전체 이벤트 수집
+    labels = ["keyword", "sentiment", "disclosure", "legal", "financial"]
+    handler_results = {}
     all_events: list[RiskEvent] = []
     errors: list[str] = []
 
-    for label, result in [
-        ("keyword",    keyword_result),
-        ("sentiment",  sentiment_result),
-        ("disclosure", disclosure_result),
-        ("legal",      legal_result),
-        ("financial",  financial_result),
-    ]:
+    for label, result in zip(labels, results):
         if isinstance(result, Exception):
-            errors.append(f"{label}: {result}")
+            logger.error("[%s] %s 핸들러 실패: %s", company_name, label, result)
+            errors.append(f"{label}: {type(result).__name__}: {result}")
+            handler_results[label] = None
             continue
-        if result is None:
-            continue
-        # 각 핸들러 결과에서 이벤트 추출
-        events = getattr(result, "detected_events", None) \
-              or getattr(result, "anomalies", None) \
-              or getattr(result, "legal_risks", None) \
-              or []
+
+        handler_results[label] = result
+
+        # 핸들러별 이벤트 수집
+        events = (
+            getattr(result, "detected_events", None)
+            or getattr(result, "anomalies", None)
+            or getattr(result, "legal_risks", None)
+            or []
+        )
         all_events.extend(events)
 
     return {
         **state,
-        "keyword_result":    keyword_result,
-        "sentiment_result":  sentiment_result,
-        "disclosure_result": disclosure_result,
-        "legal_result":      legal_result,
-        "financial_result":  financial_result,
+        "keyword_result":    handler_results["keyword"],
+        "sentiment_result":  handler_results["sentiment"],
+        "disclosure_result": handler_results["disclosure"],
+        "legal_result":      handler_results["legal"],
+        "financial_result":  handler_results["financial"],
         "all_events":        all_events,
         "errors":            errors,
     }
@@ -127,16 +98,14 @@ async def _parallel_handlers(state: RiskEventState) -> RiskEventState:
 # ─── 노드 2: 심각도 분류 (R-004) ──────────────────────────────────────────────
 
 async def _classify_severity(state: RiskEventState) -> RiskEventState:
-    all_events: list[RiskEvent] = state.get("all_events", [])
-    classified = [classify_severity(ev) for ev in all_events]
+    classified = [classify_severity(ev) for ev in state.get("all_events", [])]
     return {**state, "classified_events": classified}
 
 
 # ─── 노드 3: 타임라인 생성 (R-005) ────────────────────────────────────────────
 
 async def _build_timeline(state: RiskEventState) -> RiskEventState:
-    classified: list[SeverityClassifiedEvent] = state.get("classified_events", [])
-    timeline = build_timeline(classified)
+    timeline = build_timeline(state.get("classified_events", []))
     return {**state, "timeline": timeline}
 
 
@@ -144,9 +113,8 @@ async def _build_timeline(state: RiskEventState) -> RiskEventState:
 
 async def _aggregate(state: RiskEventState) -> RiskEventState:
     classified: list[SeverityClassifiedEvent] = state.get("classified_events", [])
-    timeline:   list[TimelineEntry]           = state.get("timeline", [])
-
     count = Counter(e.severity for e in classified)
+
     if count[SeverityLevel.CRITICAL] > 0:
         overall = SeverityLevel.CRITICAL
     elif count[SeverityLevel.HIGH] > 0:
@@ -156,11 +124,7 @@ async def _aggregate(state: RiskEventState) -> RiskEventState:
     else:
         overall = SeverityLevel.LOW
 
-    # 재무 이상 결과에서 Decision Agent 연동용 지표 추출
     financial_result = state.get("financial_result")
-    latest_debt_ratio      = getattr(financial_result, "latest_debt_ratio", None)
-    latest_op_margin       = getattr(financial_result, "latest_op_margin", None)
-    is_net_income_negative = getattr(financial_result, "is_net_income_negative", False)
 
     result = RiskEventResult(
         company_name=state["company_name"],
@@ -172,16 +136,16 @@ async def _aggregate(state: RiskEventState) -> RiskEventState:
         financial_result=financial_result,
         all_events=state.get("all_events", []),
         classified_events=classified,
-        timeline=timeline,
+        timeline=state.get("timeline", []),
         critical_count=count[SeverityLevel.CRITICAL],
         high_count=count[SeverityLevel.HIGH],
         medium_count=count[SeverityLevel.MEDIUM],
         low_count=count[SeverityLevel.LOW],
         total_event_count=len(classified),
         overall_risk_level=overall,
-        latest_debt_ratio=latest_debt_ratio,
-        latest_op_margin=latest_op_margin,
-        is_net_income_negative=is_net_income_negative,
+        latest_debt_ratio=getattr(financial_result, "latest_debt_ratio", None),
+        latest_op_margin=getattr(financial_result, "latest_op_margin", None),
+        is_net_income_negative=getattr(financial_result, "is_net_income_negative", False),
         processed_at=date.today(),
         processing_errors=state.get("errors", []),
     )
@@ -192,24 +156,21 @@ async def _aggregate(state: RiskEventState) -> RiskEventState:
 
 def _build_graph() -> StateGraph:
     g = StateGraph(RiskEventState)
-    g.add_node("parallel_handlers",  _parallel_handlers)
-    g.add_node("classify_severity",  _classify_severity)
-    g.add_node("build_timeline",     _build_timeline)
-    g.add_node("aggregate",          _aggregate)
+    g.add_node("parallel_handlers", _parallel_handlers)
+    g.add_node("classify_severity", _classify_severity)
+    g.add_node("build_timeline",    _build_timeline)
+    g.add_node("aggregate",         _aggregate)
 
     g.set_entry_point("parallel_handlers")
     g.add_edge("parallel_handlers", "classify_severity")
     g.add_edge("classify_severity", "build_timeline")
     g.add_edge("build_timeline",    "aggregate")
     g.add_edge("aggregate",         END)
-
     return g.compile()
 
 
 risk_event_graph = _build_graph()
 
-
-# ─── 공개 진입점 ──────────────────────────────────────────────────────────────
 
 async def run_risk_event_agent(
     company_name:    str,
@@ -218,16 +179,11 @@ async def run_risk_event_agent(
     disclosure_data: list[dict],
     court_data:      list[dict],
 ) -> RiskEventResult:
-    """Risk Event Agent 실행 진입점.
-
-    financial_features.csv 로드는 graph 내부(sme_loader)에서 자동 처리한다.
-    """
-    initial_state: RiskEventState = {
+    final_state = await risk_event_graph.ainvoke({
         "company_name":    company_name,
         "corp_code":       corp_code,
         "news_data":       news_data,
         "disclosure_data": disclosure_data,
         "court_data":      court_data,
-    }
-    final_state = await risk_event_graph.ainvoke(initial_state)
+    })
     return final_state["final_result"]

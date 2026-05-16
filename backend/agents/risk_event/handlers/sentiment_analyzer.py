@@ -1,42 +1,40 @@
 """R-002 | 뉴스 감성 분석 핸들러
 
-LLM(Claude API)을 사용해 뉴스 기사를 긍정·부정·중립으로 분류하고
-부정 뉴스에서 RiskEvent를 생성한다.
+기사마다 API를 호출하던 방식을 개선해
+모든 뉴스를 한 번의 API 호출로 배치 처리한다.
 """
 
 from __future__ import annotations
 
-import json
-import os
+import logging
 from datetime import date
 
-import httpx
-
+from utils.api_client import call_claude, get_client, parse_json_response
 from ..models import (
     EventSource, EventType, RiskEvent,
     SentimentAnalysisResult, SentimentLabel,
 )
 
-ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-MODEL = "claude-sonnet-4-20250514"
+logger = logging.getLogger(__name__)
+
+MAX_CONTENT_CHARS = 200   # 기사당 본문 최대 길이 (비용 절감)
 
 _SYSTEM_PROMPT = """
 당신은 금융 뉴스 감성 분석 전문가입니다.
-뉴스 제목과 본문을 읽고 아래 JSON 형식으로만 응답하세요.
-{
-  "sentiment": "positive" | "neutral" | "negative",
-  "reason": "판단 근거 한 문장"
-}
+뉴스 목록을 읽고 각 기사에 대해 아래 JSON 배열 형식으로만 응답하세요.
+[
+  {"index": 0, "sentiment": "positive" | "neutral" | "negative", "reason": "판단 근거 한 문장"},
+  {"index": 1, ...}
+]
+JSON 외 다른 텍스트는 출력하지 마세요.
 """
 
-
-# ─── 핸들러 ──────────────────────────────────────────────────────────────────
 
 async def analyze_sentiment(
     company_name: str,
     news_data: list[dict],
 ) -> SentimentAnalysisResult:
-    """뉴스 목록의 감성을 LLM으로 분류한다.
+    """뉴스 목록을 한 번의 API 호출로 배치 감성 분석한다.
 
     Args:
         company_name: 기업명
@@ -48,21 +46,63 @@ async def analyze_sentiment(
     counts = {SentimentLabel.POSITIVE: 0, SentimentLabel.NEUTRAL: 0, SentimentLabel.NEGATIVE: 0}
     events: list[RiskEvent] = []
 
-    async with httpx.AsyncClient(timeout=30) as client:
-        for item in news_data:
-            label, reason = await _classify_single(client, item)
-            counts[label] += 1
+    if not news_data:
+        return SentimentAnalysisResult(
+            company_name=company_name,
+            news_items=news_data,
+            negative_count=0,
+            neutral_count=0,
+            positive_count=0,
+            overall_sentiment=SentimentLabel.NEUTRAL,
+            detected_events=[],
+        )
 
-            if label == SentimentLabel.NEGATIVE:
-                events.append(RiskEvent(
-                    event_type=EventType.NEGATIVE_SENTIMENT,
-                    source=EventSource.NEWS,
-                    title=f"부정 뉴스: {item.get('title', '')[:40]}",
-                    description=reason,
-                    detected_at=_parse_date(item.get("published_at")),
-                    url=item.get("url"),
-                ))
+    # 모든 기사를 하나의 프롬프트로 묶기
+    prompt = _build_batch_prompt(company_name, news_data)
 
+    results: list[dict] = []
+    try:
+        async with get_client() as client:
+            raw = await call_claude(
+                client=client,
+                messages=[{"role": "user", "content": prompt}],
+                system=_SYSTEM_PROMPT,
+                max_tokens=1500,
+            )
+        results = parse_json_response(raw)
+        if not isinstance(results, list):
+            raise ValueError("응답이 배열 형식이 아닙니다.")
+
+    except Exception as e:
+        logger.error("[%s] 감성 분석 실패: %s", company_name, e)
+        # 실패 시 전체 중립 처리
+        results = [{"index": i, "sentiment": "neutral", "reason": "분석 실패"} for i in range(len(news_data))]
+
+    # 결과 처리
+    for item_result in results:
+        idx = item_result.get("index", 0)
+        if idx >= len(news_data):
+            continue
+
+        news_item = news_data[idx]
+        try:
+            label = SentimentLabel(item_result.get("sentiment", "neutral"))
+        except ValueError:
+            label = SentimentLabel.NEUTRAL
+
+        counts[label] += 1
+
+        if label == SentimentLabel.NEGATIVE:
+            events.append(RiskEvent(
+                event_type=EventType.NEGATIVE_SENTIMENT,
+                source=EventSource.NEWS,
+                title=f"부정 뉴스: {news_item.get('title', '')[:40]}",
+                description=item_result.get("reason", ""),
+                detected_at=_parse_date(news_item.get("published_at")),
+                url=news_item.get("url"),
+            ))
+
+    # 전체 감성 판단
     total = sum(counts.values()) or 1
     if counts[SentimentLabel.NEGATIVE] / total > 0.5:
         overall = SentimentLabel.NEGATIVE
@@ -82,39 +122,14 @@ async def analyze_sentiment(
     )
 
 
-# ─── 내부 헬퍼 ───────────────────────────────────────────────────────────────
-
-async def _classify_single(
-    client: httpx.AsyncClient,
-    item: dict,
-) -> tuple[SentimentLabel, str]:
-    """단일 뉴스 기사의 감성을 분류한다."""
-    text = f"제목: {item.get('title', '')}\n본문: {item.get('content', '')[:500]}"
-
-    try:
-        resp = await client.post(
-            ANTHROPIC_API_URL,
-            headers={
-                "x-api-key": os.environ.get("ANTHROPIC_API_KEY", ""),
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": MODEL,
-                "max_tokens": 200,
-                "system": _SYSTEM_PROMPT,
-                "messages": [{"role": "user", "content": text}],
-            },
-        )
-        resp.raise_for_status()
-        raw = resp.json()["content"][0]["text"]
-        parsed = json.loads(raw)
-        label = SentimentLabel(parsed.get("sentiment", "neutral"))
-        reason = parsed.get("reason", "")
-        return label, reason
-
-    except Exception:
-        return SentimentLabel.NEUTRAL, "분석 실패"
+def _build_batch_prompt(company_name: str, news_data: list[dict]) -> str:
+    """모든 뉴스를 하나의 프롬프트로 묶는다."""
+    lines = [f"기업명: {company_name}\n분석 대상 뉴스 {len(news_data)}건:\n"]
+    for i, item in enumerate(news_data):
+        title   = item.get("title", "")
+        content = item.get("content", "")[:MAX_CONTENT_CHARS]
+        lines.append(f"[{i}] 제목: {title}\n    본문: {content}")
+    return "\n".join(lines)
 
 
 def _parse_date(value: str | None) -> date:
