@@ -4,7 +4,7 @@ load_dotenv()
 from langchain_anthropic import ChatAnthropic
 from langgraph.prebuilt import create_react_agent
 
-from .prompts import INDUSTRY_PROMPT
+from langchain_openai import ChatOpenAI
 from .tools import (
     map_corp_to_ksic,
     get_industry_avg_ratios,
@@ -13,7 +13,7 @@ from .tools import (
     get_macro_indicators,
 )
 
-llm = ChatAnthropic(model="claude-sonnet-4-6")
+llm = ChatOpenAI(model="gpt-4.1-nano")
 
 industry_agent = create_react_agent(
     model=llm,
