@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from agents.base import Agent
+from agents.multimodal_document import MultiModalDocumentAgent
 
 
 @dataclass(slots=True)
@@ -77,7 +78,8 @@ def create_credit_workflow(
     continue_on_error: bool = False,
 ) -> WorkflowOrchestrator:
     """신용심사 워크플로우 오케스트레이터 팩토리."""
-    return WorkflowOrchestrator(agents=agents or [], continue_on_error=continue_on_error)
+    default_agents = agents if agents is not None else [MultiModalDocumentAgent()]
+    return WorkflowOrchestrator(agents=default_agents, continue_on_error=continue_on_error)
 
 
 async def run_credit_workflow(
@@ -92,6 +94,8 @@ async def run_credit_workflow(
     - 기본 입력 컨텍스트를 만들고
     - 등록된 에이전트를 순차 실행해
     - 통합 결과를 반환한다.
+
+    extra_payload에는 멀티모달 문서 에이전트를 위한 "pdf_path"를 포함할 수 있습니다.
     """
     normalized_name = company_name.strip()
     if not normalized_name:
@@ -105,15 +109,6 @@ async def run_credit_workflow(
         agents=agents,
         continue_on_error=continue_on_error,
     )
-
-    if not orchestrator._agents:
-        return {
-            "company_name": normalized_name,
-            "status": "not_configured",
-            "message": "등록된 에이전트가 없습니다. create_credit_workflow에 Agent 구현체를 전달하세요.",
-            "context": payload,
-            "steps": [],
-        }
 
     result = await orchestrator.run(payload)
     result["company_name"] = normalized_name
