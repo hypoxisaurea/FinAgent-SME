@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
 from .prompts import FINANCIAL_PROMPT
@@ -12,7 +12,7 @@ from .tools import (
     trend_analysis,
 )
 
-llm = ChatAnthropic(model="claude-sonnet-4-6")
+llm = ChatOpenAI(model="gpt-4.1-nano")
 
 financial_agent = create_react_agent(
     model=llm,
