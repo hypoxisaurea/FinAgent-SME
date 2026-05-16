@@ -59,7 +59,7 @@ def get_financial_statements(corp_code: str, year: int) -> dict:
 
 @tool
 def calc_financial_ratios(fs: dict) -> dict:
-    """재무제표 dict에서 5종 재무비율과 현금흐름 비율을 계산한다."""
+    """재무제표 dict에서 6종 재무비율과 현금흐름 비율을 계산한다."""
     return {
         "debt_ratio":        fs["부채총계"] / max(fs["자본총계"], 1),
         "current_ratio":     fs["유동자산"] / max(fs["유동부채"], 1),
