@@ -1,0 +1,381 @@
+<html>
+ <head> 
+  <meta content="gdi" http-equiv="X-UA-TextLayoutMetrics"> 
+  <meta content="text/html; charset=euc-kr" http-equiv="Content-Type"> 
+  <STYLE>
+.xforms * { font-family: 돋움체;}
+.xforms_title * { font-size: 13pt; padding : 0 0 10 0;}
+
+.xforms table {
+    font-size: 10px;
+    padding:0px;
+    border-collapse:collapse;
+    color: #3D3D3D;
+}
+.xforms td {
+    padding-left:0px;
+    padding-top:0px;
+    border-collapse:collapse;
+    line-height:22px;
+    color: #3D3D3D;
+    /*text-align:right;*/
+    vertical-align:middle;
+    border: 1px solid #7f7f7f;
+}
+
+.xforms span {
+    /*display: inline-block;*/
+    padding-left:3px;
+    padding-right: 1px;
+    line-height:22px;
+    padding-top:0px;
+    padding-bottom:0px;
+    text-align:left;
+    vertical-align:middle;
+    border: 0px solid #DBDBDB;
+}
+
+.xforms.img{
+    border : 0px;
+}
+
+.xforms a:link {
+
+    color: #194866;
+    text-decoration: none;
+}
+.xforms a:active {
+
+    color: #194866;
+    text-decoration: none;
+}
+.xforms a:visited {
+    color: #194866;
+    text-decoration: none;
+}
+
+.xforms A:hover {
+    color:008BE3;
+    text-decoration: none;
+}
+
+.xforms_input{
+    border: 0px solid #DBDBDB;
+    padding-left:3px;
+    padding-right: 1px;
+    height:22px;
+    padding-top:0px;
+    padding-bottom:0px;
+    text-align:left;
+}
+</STYLE> 
+  <title>로스웰/감사보고서 제출/(2024.04.22)감사보고서 제출</title> 
+ </head> 
+ <body> 
+  <div class="xforms"> 
+   <div> 
+    <span class="noprint" style="display:none;width:600px;font-size:10pt;"> </span> 
+    <div class="xforms_title"> 
+     <div> 
+      <span style="width:588px;font-weight:bold;text-align:center;">감사보고서 제출</span> 
+     </div> 
+    </div> 
+    <span class="noprint" style="display:none;width:600px;font-size:10pt;"> </span> 
+    <div id="LIB_L7038" style="width:600px;font-size:10pt;;padding:0 0 20 0"> 
+     <div> 
+      <div> 
+       <span style="width:594px;font-size:11pt;font-weight:bold;text-align:center;">[지배회사 또는 지주회사의 연결재무제표 기준 감사의견 및 재무요건]</span> 
+       <table border="1" bordercolordark="white" bordercolorlight="#666666" cellpadding="1" cellspacing="0" id="XFormG1_Form0_Table0" style="margin:0px 0px 20px 0px;width:588px;border:1px solid #7f7f7f;"> 
+        <tbody> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;text-align:center;">구분</span> </td> 
+          <td width="171"> <span style="width:171px;font-size:10pt;text-align:center;">당해사업연도</span> </td> 
+          <td width="166"> <span style="width:166px;font-size:10pt;text-align:center;">직전 사업연도</span> </td> 
+         </tr> 
+         <tr> 
+          <td colspan="3" width="588"> <span style="width:588px;font-size:10pt;">1. 연결 감사의견 등</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">- 감사의견</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;">적정</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;">적정</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">- 계속기업 존속불확실성 사유 해당여부</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;">미해당</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;">미해당</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">- 내부회계관리제도 감사(검토)의견 비적정 등 여부</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;">미해당</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;">미해당</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">2. 감사의견과 관련 없는 계속기업 존속 불확실성 기재여부</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;">미기재</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;">미기재</span> </td> 
+         </tr> 
+         <tr> 
+          <td colspan="3" width="588"> <span style="width:588px;font-size:10pt;">3. 연결 재무내용(원)</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">- 자산총계</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;text-align:right;">416,260,108,862</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;text-align:right;">278,969,546,258</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">- 부채총계</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;text-align:right;">204,655,687,451</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;text-align:right;">82,564,694,029</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">- 자본총계</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;text-align:right;">211,604,421,411</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;text-align:right;">196,404,852,228</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">- 자본금</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;text-align:right;">181,510,526,690</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;text-align:right;">182,112,751,397</span> </td> 
+         </tr> 
+         <tr> 
+          <td colspan="3" width="588"> <span style="width:588px;font-size:10pt;">4. 연결 손익내용(원)</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">- 매출액</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;text-align:right;">362,909,442,586</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;text-align:right;">85,090,991,530</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">- 영업이익</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;text-align:right;">14,544,350,641</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;text-align:right;">-6,607,440,870</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">- 법인세비용차감전계속사업이익</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;text-align:right;">16,106,503,818</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;text-align:right;">-16,152,391,024</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">- 당기순이익</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;text-align:right;">14,986,029,697</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;text-align:right;">-16,152,391,024</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">- 지배기업 소유주지분 순이익</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;text-align:right;">14,986,029,697</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;text-align:right;">-16,152,391,024</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">5. 연결대상 종속회사 수(단위 : 사)</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;text-align:right;">2</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;text-align:right;">2</span> </td> 
+         </tr> 
+         <tr> 
+          <td width="251"> <span style="width:251px;font-size:10pt;">6. 주요종속회사 수(단위 : 사)</span> </td> 
+          <td width="171"> <span class="xforms_input" style="width:171px;font-size:10pt;text-align:right;">2</span> </td> 
+          <td width="166"> <span class="xforms_input" style="width:166px;font-size:10pt;text-align:right;">2</span> </td> 
+         </tr> 
+        </tbody> 
+       </table> 
+      </div> 
+     </div> 
+    </div> 
+    <span style="width:600px;font-size:11pt;font-weight:bold;text-align:center;">[개별/별도재무제표 관련 감사의견 및 재무내용]</span> 
+    <table border="1" bordercolordark="white" bordercolorlight="#666666" cellpadding="1" cellspacing="0" id="XFormD1_Form0_Table0" style="margin:0px 0px 20px 0px;width:594px;font-size:10pt;text-align:right;border:1px solid #7f7f7f;"> 
+     <tbody> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">1. 감사의견 및 재무내용</span> </td> 
+       <td width="198"> <span style="width:198px;font-size:10pt;text-align:center;">당해사업연도</span> </td> 
+       <td width="198"> <span style="width:198px;font-size:10pt;text-align:center;">직전사업연도</span> </td> 
+      </tr> 
+      <tr> 
+       <td colspan="3" width="594"> <span style="width:594px;font-size:10pt;">가. 감사의견 등</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">- 감사의견</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;">-</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;">-</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">- 계속기업 존속불확실성 사유 해당여부</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;">미해당</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;">미해당</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">- 내부회계관리제도 감사(검토)의견 비적정 등 여부</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;">미해당</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;">미해당</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">나. 감사의견과 관련 없는 계속기업 존속 불확실성 기재여부</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;">미기재</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;">미기재</span> </td> 
+      </tr> 
+      <tr> 
+       <td colspan="3" width="594"> <span style="width:594px;font-size:10pt;">다. 주요 재무내용(단위 : 원)</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">- 자산총계</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">- 부채총계</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">- 자본총계</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">- 자본금</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">- 매출액</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">- 영업이익</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">- 법인세비용차감전계속사업이익</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">- 당기순이익</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">2. 회계감사인명</span> </td> 
+       <td colspan="2" width="396"> <span class="xforms_input" style="width:396px;font-size:10pt;">우리회계법인</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">3. 감사보고서 수령일자</span> </td> 
+       <td colspan="2" width="396"> <span class="xforms_input" style="width:396px;font-size:10pt;">2024-04-22</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">4. 연결재무제표 제출대상 해당 여부</span> </td> 
+       <td colspan="2" width="396"> <span class="xforms_input" style="width:396px;font-size:10pt;">예</span> </td> 
+      </tr> 
+      <tr> 
+       <td rowspan="2" width="198"> <span style="width:198px;font-size:10pt;">5. 기타 투자판단에 참고할 사항</span> </td> 
+       <td colspan="2" width="396"> <span class="xforms_input" style="width:396px;font-size:10pt;">1. 당사는 외국지주회사이며 상기 감사보고서는 국제회계기준(IFRS)에 따라 연결재무제표에 대한 감사보고서로서 별도재무제표는 작성하지 않습니다. <br xmlns:java="http://xml.apache.org/xalan/java"> <br xmlns:java="http://xml.apache.org/xalan/java">당해 사업연도: 2023.01.01~2023.12.31 <br xmlns:java="http://xml.apache.org/xalan/java">직전 사업연도: 2022.01.01~2022.12.31 <br xmlns:java="http://xml.apache.org/xalan/java">전전 사업연도: 2021.01.01~2021.12.31 <br xmlns:java="http://xml.apache.org/xalan/java"> <br xmlns:java="http://xml.apache.org/xalan/java">2. 당사 재무제표 작성 기준 통화는 중국 위안화(RMB)입니다. 상기 원화 기준 실적은 투자자의 편의를 위해 아래와 같이 서울외국환중개(주)가 고시한 매매기준율을 적용하여 산정한 것입니다. <br xmlns:java="http://xml.apache.org/xalan/java"> <br xmlns:java="http://xml.apache.org/xalan/java">(1) '손익계산서' 관련 <br xmlns:java="http://xml.apache.org/xalan/java"> <br xmlns:java="http://xml.apache.org/xalan/java">당해 사업연도 평균환율:184.22원/RMB(2023년도 평균환율)적용 <br xmlns:java="http://xml.apache.org/xalan/java">직전 사업연도 평균환율:191.57원/RMB(2022년도 평균환율)적용 <br xmlns:java="http://xml.apache.org/xalan/java"> <br xmlns:java="http://xml.apache.org/xalan/java">(2) '재무상태표' 관련 <br xmlns:java="http://xml.apache.org/xalan/java">당해상업연도 기말환율 : 180.84원/RMB(2023년 12월 31일)적용 <br xmlns:java="http://xml.apache.org/xalan/java">직전사업연도 기말환율 : 181.44원/RMB(2022년 12월 31일)적용 <br xmlns:java="http://xml.apache.org/xalan/java">전전사업연도 기말환율 : 186.26원/RMB(2021년 12월 31일) 적용 <br xmlns:java="http://xml.apache.org/xalan/java"> <br xmlns:java="http://xml.apache.org/xalan/java"> <br xmlns:java="http://xml.apache.org/xalan/java">3. 본 공시는 2024년 3월 22일 결산 이사회 당일 제출한 [매출액 또는 손익구조 30%이상 변경]내용의 변동사항은 본 공시로 갈음합니다.</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">※ 관련공시</span> </td> 
+       <td width="198"> <span style="width:198px;font-size:10pt;"> <a href="http://kind.krx.co.kr/common/disclsviewer.do?method=search&amp;acptno=20240408000288&amp;rcpno=20240408002319&amp;orgid=F&amp;tran=Y&amp;langTpCd=0" target="_blank" xmlns="http://www.w3.org/1999/xhtml" xmlns:xf="http://www.w3.org/2002/xforms" xmlns:xh="http://www.w3.org/1999/xhtml" xmlns:xsd="http://www.w3.org/2001/XMLSchema">2024-04-08 주주총회소집공고</a> <br xmlns:java="http://xml.apache.org/xalan/java"> <a href="http://kind.krx.co.kr/common/disclsviewer.do?method=search&amp;acptno=20240408000269&amp;rcpno=20240408000269&amp;orgid=K&amp;tran=Y&amp;langTpCd=0" target="_blank" xmlns="http://www.w3.org/1999/xhtml" xmlns:xf="http://www.w3.org/2002/xforms" xmlns:xh="http://www.w3.org/1999/xhtml" xmlns:xsd="http://www.w3.org/2001/XMLSchema">2024-04-08 주주총회소집결의</a> <br xmlns:java="http://xml.apache.org/xalan/java"> <a href="http://kind.krx.co.kr/common/disclsviewer.do?method=search&amp;acptno=20240322000219&amp;rcpno=20240322000219&amp;orgid=K&amp;tran=Y&amp;langTpCd=0" target="_blank" xmlns="http://www.w3.org/1999/xhtml" xmlns:xf="http://www.w3.org/2002/xforms" xmlns:xh="http://www.w3.org/1999/xhtml" xmlns:xsd="http://www.w3.org/2001/XMLSchema">2024-03-22 매출액 또는 손익구조 30%(대규모법인은 15%)이상 변동</a> <br xmlns:java="http://xml.apache.org/xalan/java"> </span> </td> 
+      </tr> 
+     </tbody> 
+    </table> 
+    <span style="width:600px;font-size:11pt;font-weight:bold;text-align:center;">[자본잠식률]</span> 
+    <span style="width:600px;font-size:10pt;text-align:right;">(단위 : %, 원)</span> 
+    <table border="1" bordercolordark="white" bordercolorlight="#666666" cellpadding="1" cellspacing="0" id="XFormD1_Form0_Table1" style="margin:0px 0px 20px 0px;width:594px;font-size:11pt;border:1px solid #7f7f7f;"> 
+     <tbody> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;text-align:center;">구분</span> </td> 
+       <td width="198"> <span style="width:198px;font-size:10pt;text-align:center;">당해사업연도</span> </td> 
+       <td width="198"> <span style="width:198px;font-size:10pt;text-align:center;">직전사업연도</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">자본잠식률(%) =〔(자본금-자기자본)/자본금〕×100</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">-</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">자기자본[지배회사 또는 지주회사인 경우에는 비지배지분 제외]</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">211,604,421,411</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">196,404,852,228</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="198"> <span style="width:198px;font-size:10pt;">자본금</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">181,510,526,690</span> </td> 
+       <td width="198"> <span class="xforms_input" style="width:198px;font-size:10pt;text-align:right;">182,112,751,397</span> </td> 
+      </tr> 
+     </tbody> 
+    </table> 
+    <span style="width:600px;font-size:11pt;font-weight:bold;text-align:center;">[최근 3사업연도의 법인세비용차감전계속사업손실률]</span> 
+    <span style="width:600px;font-size:10pt;text-align:right;">(단위 : %, 원)</span> 
+    <table border="1" bordercolordark="white" bordercolorlight="#666666" cellpadding="1" cellspacing="0" id="XFormD1_Form0_Table2" style="margin:0px 0px 20px 0px;width:597px;font-size:10pt;text-align:right;border:1px solid #7f7f7f;"> 
+     <tbody> 
+      <tr> 
+       <td width="157"> <span style="width:157px;font-size:10pt;text-align:center;">구분</span> </td> 
+       <td width="148"> <span style="width:148px;font-size:10pt;text-align:center;">당해사업연도 (T)</span> </td> 
+       <td width="145"> <span style="width:145px;font-size:10pt;text-align:center;">직전사업연도 (T-1)</span> </td> 
+       <td width="147"> <span style="width:147px;font-size:10pt;text-align:center;">전전사업연도 (T-2)</span> </td> 
+      </tr> 
+      <tr> 
+       <td rowspan="2" width="157"> <span style="width:157px;font-size:10pt;">(법인세비용차감전계속사업손실/자기자본)×100(%)</span> </td> 
+       <td width="148"> <span class="xforms_input" style="width:148px;font-size:10pt;text-align:right;">-</span> </td> 
+       <td width="145"> <span class="xforms_input" style="width:145px;font-size:10pt;text-align:right;">8.2</span> </td> 
+       <td width="147"> <span class="xforms_input" style="width:147px;font-size:10pt;text-align:right;">2.5</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="148"> <span class="xforms_input" style="width:148px;font-size:10pt;">-</span> </td> 
+       <td width="145"> <span class="xforms_input" style="width:145px;font-size:10pt;">-</span> </td> 
+       <td width="147"> <span class="xforms_input" style="width:147px;font-size:10pt;">-</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="157"> <span style="width:157px;font-size:10pt;">법인세비용차감전계속사업손실</span> </td> 
+       <td width="148"> <span class="xforms_input" style="width:148px;font-size:10pt;text-align:right;">-</span> </td> 
+       <td width="145"> <span class="xforms_input" style="width:145px;font-size:10pt;text-align:right;">16,152,391,024</span> </td> 
+       <td width="147"> <span class="xforms_input" style="width:147px;font-size:10pt;text-align:right;">5,238,428,771</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="157"> <span style="width:157px;font-size:10pt;">리픽싱조건부 금융부채 평가손실 제외 여부</span> </td> 
+       <td width="148"> <span class="xforms_input" style="width:148px;font-size:10pt;">미해당</span> </td> 
+       <td width="145"> <span class="xforms_input" style="width:145px;font-size:10pt;">미해당</span> </td> 
+       <td width="147"> <span class="xforms_input" style="width:147px;font-size:10pt;">미해당</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="157"> <span style="width:157px;font-size:10pt;">자기자본[지배회사 또는 지주회사인 경우에는 비지배지분 포함]</span> </td> 
+       <td width="148"> <span class="xforms_input" style="width:148px;font-size:10pt;text-align:right;">211,604,421,411</span> </td> 
+       <td width="145"> <span class="xforms_input" style="width:145px;font-size:10pt;text-align:right;">196,404,852,228</span> </td> 
+       <td width="147"> <span class="xforms_input" style="width:147px;font-size:10pt;text-align:right;">210,209,510,717</span> </td> 
+      </tr> 
+     </tbody> 
+    </table> 
+    <span style="width:604px;font-size:11pt;font-weight:bold;text-align:center;">[최근 5사업연도의 영업손실]</span> 
+    <span style="width:604px;font-size:10pt;text-align:right;">(단위 : 원)</span> 
+    <table border="1" bordercolordark="white" bordercolorlight="#666666" cellpadding="1" cellspacing="0" id="XFormD1_Form0_Table3" style="margin:0px 0px 20px 0px;width:600px;font-size:10pt;text-align:right;border:1px solid #7f7f7f;"> 
+     <tbody> 
+      <tr> 
+       <td width="100"> <span style="width:100px;font-size:10pt;text-align:center;">구분</span> </td> 
+       <td width="100"> <span style="width:100px;font-size:10pt;text-align:center;">당해사업연도 (T)</span> </td> 
+       <td width="100"> <span style="width:100px;font-size:10pt;text-align:center;">직전사업연도 (T-1)</span> </td> 
+       <td width="100"> <span style="width:100px;font-size:10pt;text-align:center;">전전사업연도 (T-2)</span> </td> 
+       <td width="100"> <span style="width:100px;font-size:10pt;text-align:center;">전전전사업연도 (T-3)</span> </td> 
+       <td width="100"> <span style="width:100px;font-size:10pt;text-align:center;">전전전전사업연도 (T-4)</span> </td> 
+      </tr> 
+      <tr> 
+       <td width="100"> <span style="width:100px;font-size:10pt;">영업손실(지배회사인 경우에는 별도재무제표, 지주회사인 경우에는 연결재무제표)</span> </td> 
+       <td width="100"> <span class="xforms_input" style="width:100px;font-size:10pt;text-align:right;">-</span> </td> 
+       <td width="100"> <span class="xforms_input" style="width:100px;font-size:10pt;text-align:right;">6,607,440,870</span> </td> 
+       <td width="100"> <span class="xforms_input" style="width:100px;font-size:10pt;text-align:right;">2,466,468,092</span> </td> 
+       <td width="100"> <span class="xforms_input" style="width:100px;font-size:10pt;text-align:right;">3,538,863,454</span> </td> 
+       <td width="100"> <span class="xforms_input" style="width:100px;font-size:10pt;text-align:right;">-</span> </td> 
+      </tr> 
+     </tbody> 
+    </table> 
+    <span style="width:608px;font-size:11pt;font-weight:bold;text-align:center;">[손상차손비율 50%이상 해당여부]</span> 
+    <table border="1" bordercolordark="white" bordercolorlight="#666666" cellpadding="1" cellspacing="0" id="XFormD1_Form0_Table4" style="margin:0px 0px 20px 0px;width:601px;font-size:10pt;text-align:right;border:1px solid #7f7f7f;"> 
+     <tbody> 
+      <tr> 
+       <td width="302"> <span style="width:302px;font-size:10pt;">손상차손비율 50%이상 여부 ※손상차손비율(%) = [해당사업연도 매출채권이외의 채권에서 발생한 손상차손 누계액/자기자본]x100</span> </td> 
+       <td width="299"> <span class="xforms_input" style="width:299px;font-size:10pt;">아니오</span> </td> 
+      </tr> 
+     </tbody> 
+    </table> 
+   </div> 
+  </div>  
+ </body>
+</html>
