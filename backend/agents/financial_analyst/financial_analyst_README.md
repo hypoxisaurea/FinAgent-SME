@@ -186,10 +186,10 @@ from agents.financial_analyst.tools import (
 from dotenv import load_dotenv
 load_dotenv()
 
-fs = get_financial_statements.invoke({'corp_code': '01074862', 'year': 2023})
+fs = get_financial_statements.invoke({'corp_code': '01074862', 'year': 2023}) # 2025년도 가능
 ratios = calc_financial_ratios.invoke({'fs': fs})
 z = calc_altman_z_prime.invoke({'fs': fs})
-trend = trend_analysis.invoke({'corp_code': '01074862', 'years': [2021, 2022, 2023]})
+trend = trend_analysis.invoke({'corp_code': '01074862', 'years': [2021, 2022, 2023]}) # 2023~2025년도 가능
 ```
 
 ### 에이전트 테스트 (OpenAI API 비용 발생)
@@ -199,7 +199,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 result = financial_agent.invoke({
-    'messages': [{'role': 'user', 'content': 'corp_code 01074862, 2023년 재무 분석해줘'}]
+    'messages': [{'role': 'user', 'content': 'corp_code 01074862, 2023년 재무 분석해줘'}] # 2025년도 가능
 })
 print(result['messages'][-1].content)
 ```
