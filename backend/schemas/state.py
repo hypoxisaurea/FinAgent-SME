@@ -14,5 +14,6 @@ class CreditState(TypedDict):
     ksic_code: Optional[str]
     industry_comparison: Optional[dict]
     industry_outlook: Optional[dict]
+    macro_signals: Optional[dict]
     # 메시지 히스토리
     messages: Annotated[list, add_messages]
