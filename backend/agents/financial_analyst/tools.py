@@ -13,35 +13,36 @@ def _get_dart():
 
 
 def _normalize_accounts(fs: pd.DataFrame) -> dict:
-    """DART finstate_all 결과(DataFrame)에서 필요한 계정과목만 추출."""
-    for sj in ["OFS", "CFS"]:
-        df = fs[fs["sj_div"] == sj] if "sj_div" in fs.columns else fs
-        if df.empty:
-            continue
+    """DART finstate_all 결과에서 필요한 계정과목만 추출."""
 
-        def _get(account_nm: str) -> float:
-            row = df[df["account_nm"].str.contains(account_nm, na=False)]
-            if row.empty:
-                return 0.0
-            val = row.iloc[0]["thstrm_amount"]
-            if pd.isna(val) or val == "":
-                return 0.0
-            return float(str(val).replace(",", ""))
+    def _get(account_nm: str, sj_div: str = None) -> float:
+        df = fs
+        if sj_div:
+            df = fs[fs["sj_div"] == sj_div]
+        row = df[df["account_nm"].str.strip() == account_nm]
+        if row.empty:
+            return None
+        val = row.iloc[0]["thstrm_amount"]
+        if pd.isna(val) or val == "":
+            return None
+        return float(str(val).replace(",", ""))
 
-        return {
-            "유동자산":     _get("유동자산"),
-            "유동부채":     _get("유동부채"),
-            "총자산":       _get("자산총계"),
-            "자본총계":     _get("자본총계"),
-            "부채총계":     _get("부채총계"),
-            "이익잉여금":   _get("이익잉여금"),
-            "매출액":       _get("매출액"),
-            "영업이익":     _get("영업이익"),
-            "당기순이익":   _get("당기순이익"),
-            "이자비용":     _get("이자비용"),
-            "영업현금흐름": _get("영업활동으로인한현금흐름"),
-        }
+    is_div = "IS" if not fs[fs["sj_div"] == "IS"].empty else "CIS"
 
+    return {
+        "유동자산": _get("유동자산",   "BS"),
+        "유동부채": _get("유동부채",   "BS"),
+        "총자산": _get("자산총계",   "BS"),
+        "자본총계": _get("자본총계",   "BS"),
+        "부채총계": _get("부채총계",   "BS"),
+        "이익잉여금": _get("이익잉여금", "BS") or _get("이익잉여금(결손금)", "BS"),
+        "매출액": _get("영업수익", is_div) or _get("수익(매출액)", is_div) or _get("매출액", is_div),
+        "영업이익": _get("영업이익",   is_div) or _get("영업이익(손실)", is_div),
+        "당기순이익": _get("당기순이익(손실)", is_div) or _get("당기순이익", is_div),
+        "이자비용": _get("금융비용",   is_div),
+        "영업현금흐름": _get("영업활동현금흐름", "CF") or _get("영업활동 현금흐름", "CF"),
+    }
+    return {k: v if v is not None else 0.0 for k, v in result.items()}
     raise ValueError("재무제표 데이터를 파싱할 수 없습니다.")
 
 
@@ -66,6 +67,7 @@ def calc_financial_ratios(fs: dict) -> dict:
         "op_margin":         fs["영업이익"] / max(fs["매출액"], 1),
         "interest_coverage": fs["영업이익"] / max(fs["이자비용"], 1),
         "ocf_to_sales":      fs["영업현금흐름"] / max(fs["매출액"], 1),
+        "ocf_to_net_income": fs["영업현금흐름"] / fs["당기순이익"] if fs["당기순이익"] != 0 else None,
     }
 
 
@@ -120,10 +122,12 @@ def trend_analysis(corp_code: str, years: list[int]) -> dict:
         if fs_raw is None or fs_raw.empty:
             continue
         fs = _normalize_accounts(fs_raw)
+        debt_ratio = fs["부채총계"] / max(fs["자본총계"], 1)
+        op_margin  = fs["영업이익"] / max(fs["매출액"], 1) if fs["매출액"] > 0 else 0
         history.append({
             "year":       year,
-            "debt_ratio": fs["부채총계"] / max(fs["자본총계"], 1),
-            "op_margin":  fs["영업이익"] / max(fs["매출액"], 1),
+            "debt_ratio": debt_ratio,
+            "op_margin":  round(op_margin, 4),
             "ocf":        fs["영업현금흐름"],
         })
 
