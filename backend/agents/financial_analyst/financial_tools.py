@@ -122,10 +122,17 @@ def get_financial_statements(corp_code: str, year: int) -> dict:
     """DART에서 corp_code 기업의 year 연도 재무제표를 가져와
     표준 계정과목 dict로 반환한다."""
     dart = _get_dart()
+    # 회사명 조회
+    corp_info = dart.company(corp_code)
+    corp_name = corp_info["corp_name"] if corp_info is not None else corp_code
+
     fs = dart.finstate_all(corp_code, year)
     if fs is None or fs.empty:
         raise ValueError(f"corp_code={corp_code}, year={year} 재무제표 없음")
-    return _normalize_accounts(fs)
+
+    result = _normalize_accounts(fs)
+    result["회사명"] = corp_name
+    return result
 
 
 @tool
