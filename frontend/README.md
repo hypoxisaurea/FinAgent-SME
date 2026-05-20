@@ -2,6 +2,21 @@
 
 이 디렉터리는 Streamlit 기반 간단 UI를 담고 있습니다. 로컬에서 빠르게 실행하려면 아래 지침을 따르세요.
 
+## 가장 쉬운 실행 방법
+
+프로젝트 루트에서 아래 명령을 실행하면 백엔드와 프론트가 함께 시작됩니다.
+
+```bash
+./setup.sh
+```
+
+중지나 상태 확인은 아래 명령을 사용합니다.
+
+```bash
+./setup.sh down
+./setup.sh status
+```
+
 ## 요구사항
 
 - Python 3.11 이상
@@ -35,7 +50,8 @@ streamlit run streamlit_app.py
 
 ```bash
 # 프로젝트 루트에서
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+cd backend
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 ## 추가 개선 제안
