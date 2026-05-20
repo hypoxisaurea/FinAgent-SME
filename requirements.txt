@@ -55,3 +55,7 @@ watchfiles==1.1.1
 websockets==16.0
 xxhash==3.7.0
 zstandard==0.25.0
+
+# Frontend (Streamlit)
+streamlit
+pandas
