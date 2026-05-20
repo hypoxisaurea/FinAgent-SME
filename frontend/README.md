@@ -1,82 +1,84 @@
-# Frontend (Streamlit)
+# Frontend
 
-이 디렉터리는 FinAgent-SME의 Streamlit 기반 심사 UI를 담고 있습니다. 현재 프론트엔드는 단일 엔트리 포인트에서 검색 화면과 리포트 화면을 전환하는 방식으로 동작합니다.
+`frontend/`는 FinAgent-SME의 Streamlit 기반 UI입니다. 현재는 검색 화면과 결과 화면 두 페이지를 세션 상태로 전환하는 단순한 구조이며, 검색 버튼을 누르면 백엔드 오케스트레이터 API를 호출합니다.
 
-## 현재 구조
+## 현재 화면 구성
 
-- `main.py`: Streamlit 앱 엔트리 포인트
-- `streamlit_ui.py`: 페이지 공통 설정과 sidebar 숨김 처리
-- `views/search.py`: 회사명 입력, 헬스 체크, 심사 요청 화면
-- `views/report.py`: 심사 결과 JSON/요약 표시 및 다운로드 화면
+- 검색 화면: 회사명 입력, 헬스 체크, 오케스트레이터 실행
+- 결과 화면: 응답 JSON, 단순 요약, 리스트/딕셔너리 결과 표시, JSON 다운로드
 
-## 가장 쉬운 실행 방법
+## 파일 구조
 
-프로젝트 루트에서 아래 명령을 실행하면 백엔드와 프론트가 함께 시작됩니다.
+```text
+frontend/
+├── main.py
+├── streamlit_ui.py
+└── views/
+    ├── search.py
+    └── report.py
+```
+
+## 동작 흐름
+
+1. `main.py`가 Streamlit 앱을 초기화합니다.
+2. `st.session_state.base_url` 기본값은 `http://localhost:8000`입니다.
+3. 검색 화면에서 `검색` 버튼을 누르면 `views/search.py`가 `/api/v1/workflows/orchestrator`로 POST 요청을 보냅니다.
+4. 응답은 `st.session_state.last_result`에 저장됩니다.
+5. 앱은 Report 화면으로 이동해 결과를 렌더링합니다.
+
+## 실행 방법
+
+전체 스택 실행:
 
 ```bash
 ./setup.sh
 ```
 
-중지나 상태 확인은 아래 명령을 사용합니다.
+프론트만 실행:
+
+```bash
+./setup.sh install
+cd frontend
+../.venv/bin/python -m streamlit run main.py --server.address 0.0.0.0 --server.port 8501
+```
+
+종료:
 
 ```bash
 ./setup.sh down
-./setup.sh status
 ```
 
-## 요구사항
+## 백엔드 의존성
 
-- Python 3.11 이상
-- 프로젝트 루트의 `requirements.txt`에 Streamlit과 관련 라이브러리가 추가되어 있어야 합니다.
+기본적으로 아래 백엔드가 떠 있어야 검색 기능이 정상 동작합니다.
 
-## 가상환경 생성 (권장)
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-```
-
-## 의존성 설치
-
-```bash
-pip install -r ../requirements.txt
-```
-
-> 참고: `requirements.txt`를 루트에서 사용합니다. 프론트엔드 전용 의존성 파일을 원하면 알려주세요.
-
-## Streamlit 앱 실행
-
-```bash
-cd frontend
-streamlit run main.py
-```
-
-기본 백엔드 주소는 `http://localhost:8000`입니다. 현재 UI에는 별도 입력 필드가 없으며, `main.py`에서 `st.session_state.base_url` 기본값으로 설정합니다.
-
-## 화면 동작
-
-1. 첫 화면에서 회사명을 입력합니다.
-2. `Health 체크` 버튼으로 백엔드 연결 상태를 확인할 수 있습니다.
-3. `검색` 버튼으로 `/api/v1/workflows/orchestrator`를 호출합니다.
-4. 응답 결과는 세션에 저장되고, 같은 앱 안에서 리포트 화면으로 전환됩니다.
-5. 리포트 화면에서는 원본 JSON, 단순 요약 테이블, 리스트형 데이터 표를 확인하고 JSON 다운로드를 할 수 있습니다.
+- API base URL: `http://localhost:8000`
+- Health check: `GET /api/health`
+- Workflow endpoint: `POST /api/v1/workflows/orchestrator`
 
 ## UI 메모
 
-- Streamlit 기본 sidebar/navigation은 `streamlit_ui.py`에서 숨김 처리합니다.
-- `views/` 디렉터리를 사용해 Streamlit의 자동 멀티페이지 sidebar 생성과 충돌하지 않도록 구성했습니다.
+- Streamlit 기본 사이드바는 `streamlit_ui.py`에서 숨깁니다.
+- 별도 멀티페이지 라우터 대신 `st.session_state.page`를 사용합니다.
+- 결과 페이지는 오케스트레이터 원본 응답을 우선 보여주는 디버그 친화적인 형태입니다.
 
-## 백엔드(개발) 실행 예시
+## 향후 개선 포인트
+
+- 백엔드 주소를 UI에서 수정할 수 있는 입력 필드
+- 단계별 진행 상태 표시
+- 결과 요약 카드와 차트 시각화
+- 문서 업로드와 `pdf_path` 연동
+- 에러 응답 포맷을 사용자 친화적으로 가공
+
+## 개발 확인
 
 ```bash
-# 프로젝트 루트에서
-cd backend
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+.venv/bin/ruff check frontend
 ```
 
-## 추가 개선 제안
+프론트는 별도 JS 빌드가 없는 Python Streamlit 앱이므로, 현재 저장소 기준 `npm run lint` 대상은 아닙니다.
 
-- 백엔드 주소를 UI에서 변경할 수 있는 설정 입력 추가
-- 결과 시각화(차트) 추가
-- 파일 업로드(재무제표) 연동
-- 인증 또는 사용자 세션 분리
+## 참고 문서
+
+- [README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/README.md)
+- [backend/README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/backend/README.md)

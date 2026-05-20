@@ -1,150 +1,129 @@
 # FinAgent-SME
 
-B2B 거래 리스크 심사를 위한 **Multi-Agent System**입니다. 은행·금융기관 심사 담당자가 더 빠르고 정확하게 대출 심사를 수행하고, 리스크 관리와 의사 결정 효율을 높이는 것을 목표로 합니다.
+FinAgent-SME는 중소기업 대상 B2B 거래 리스크 심사를 지원하는 멀티 에이전트 시스템입니다. 은행·금융기관 심사 담당자가 기업 정보를 빠르게 수집하고, 오케스트레이터 기반 워크플로우를 실행해 심사 판단에 필요한 결과를 확인하는 것을 목표로 합니다.
 
----
+## 현재 상태
 
-## 1. 소개
+- 백엔드: FastAPI API와 에이전트 모듈 제공
+- 프론트엔드: Streamlit 검색/리포트 UI 제공
+- 기본 실행 흐름: 프론트 `검색` 버튼 -> `/api/v1/workflows/orchestrator` -> `run_credit_workflow()`
+- 기본 오케스트레이터 단계: `CollectorAgent`
+- 선택 단계: `pdf_path`가 있을 때 `MultiModalDocumentAgent`
 
-| 항목            | 내용                                                    |
-| --------------- | ------------------------------------------------------- |
-| **제품명**      | FinAgent-SME                                            |
-| **설명**        | B2B 거래 리스크 심사 Multi-Agent System                 |
-| **주요 사용자** | 은행·금융기관 심사 담당자                               |
-| **핵심 목표**   | 심사 속도·정확도 향상, 리스크 관리 강화, 의사 결정 지원 |
+재무 분석, 산업 분석, 리스크 이벤트 모듈은 저장소에 포함되어 있지만 현재 기본 프론트 검색 흐름에 자동 연결되지는 않습니다.
 
----
+## 저장소 구조
 
-## 2. 목표
+```text
+FinAgent-SME/
+├── backend/     # FastAPI, 에이전트, 오케스트레이터, DB compose
+├── frontend/    # Streamlit UI
+├── tests/       # pytest 및 수동 검증용 테스트 자료
+├── docs/        # 규칙, 워크플로우, 설계 문서
+├── setup.sh     # 로컬 실행/종료 스크립트
+└── requirements.txt
+```
 
-### 비즈니스 목표
+각 디렉터리의 상세 설명은 아래 문서를 참고하면 됩니다.
 
-- 은행·금융기관의 대출 심사 효율성 향상
-- 부실 대출 감소 및 리스크 관리 강화
-- FinAgent-SME의 시장 점유율 확대
+- [backend/README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/backend/README.md)
+- [frontend/README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/frontend/README.md)
+- [tests/README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/tests/README.md)
 
-### 사용자 목표
+## 요구사항
 
-- 기업 신용도를 더 빠르고 정확하게 평가
-- 객관적 데이터와 AI 기반 분석으로 리스크 관리
-- 효율적인 의사 결정 지원
+- Python 3.11+
+- Docker Desktop 또는 `docker compose`
+- OpenDART, OpenAI, ECOS, KOSIS 사용 시 해당 API 키
 
----
+## 빠른 시작
 
-## 3. 타깃 사용자
-
-**은행·금융기관 심사 담당자**
-
-- **주요 업무:** 기업 대출 심사, 신용 평가
-- **Pain Points:** 수기 작업으로 인한 심사 지연, 재무 외 요인 반영 필요, 주관적 판단, 복잡한 재무 데이터 분석 부담
-- **Needs:** 빠르고 정확한 신용 평가, 데이터 기반 객관 분석, 다양한 정보 소스 활용, 사용하기 쉬운 UI
-
----
-
-## 4. 기능
-
-### 핵심 기능
-
-- **기업 정보 검색:** 기업명 검색
-- **재무 데이터 분석:** DART API로 재무 데이터 수집·분석
-- **리스크 평가:** 재무·비재무·뉴스·공시 등을 종합한 리스크 평가
-- **XAI 기반 설명:** AI가 도출한 위험 요인 설명
-- **보고서 생성:** 거래 승인 여부·리스크 리포트 자동 생성
-- **산업 동향 분석:** 해당 기업 산업의 전반적 동향 제공
-
-### 부가 기능
-
-- **데이터 시각화:** 재무·리스크 결과 시각화
-- **알림:** 관심 기업·조건의 리스크 변동 시 알림
-
----
-
-## 5. 사용 시나리오
-
-- **대출 심사:** 심사 담당자가 기업 신용도를 평가하고 승인 여부를 결정할 때 활용
-- **거래처 선정:** 신규 거래처의 위험도를 평가하고 안전한 거래를 지원할 때 활용
-
----
-
-## 6. 경쟁·차별화
-
-- 기존 신용평가기관 서비스 대비 분석
-- **차별점:** 비재무 데이터 분석, XAI 기반 리스크 요인 설명
-
----
-
-## 7. UI·UX 방향
-
-- **UI:** 사용자 친화적 인터페이스, 직관적 정보 제공, 데이터 시각화
-- **UX:** 쉬운 탐색·검색, 빠른 정보 접근, 맞춤형 보고서 설정
-
----
-
-## 8. 개발 계획
-
-- **방법론:** MVP (Minimum Viable Product)
-- **단계**
-  1. 데이터 수집·분석 시스템 구축
-  2. 리스크 평가 모델 개발
-  3. UI·UX 디자인 및 개발
-  4. 보고서 생성 기능
-  5. 테스트·QA
-  6. 배포
-- **일정:** 3개월(계획)
-
----
-
-## 9. 리스크 관리
-
-| 리스크          | 대응 방향                        |
-| --------------- | -------------------------------- |
-| **데이터 품질** | 정확·신뢰 가능한 데이터 확보     |
-| **AI 정확성**   | 지속적 학습·검증으로 정확도 개선 |
-| **규제**        | 개인정보보호법 등 관련 규정 준수 |
-
----
-
-## 10. 성공 지표
-
-- 대출 심사 시간 단축률
-- 부실 대출 감소율
-- 사용자 만족도
-- FinAgent-SME 시장 점유율
-
----
-
-## 저장소 구조(개요)
-
-- `backend/` — 백엔드·에이전트·API
-- `frontend/` — Streamlit 웹 UI
-- Python 가상환경: 프로젝트 루트 `.venv`
-- 의존성: 루트 `requirements.txt`
-
-## 빠른 실행
-
-프로젝트 루트에서 아래 명령 하나로 PostgreSQL, 백엔드, 프론트를 함께 준비하고 실행할 수 있습니다.
+가장 쉬운 실행 방법은 루트에서 `setup.sh`를 사용하는 방식입니다.
 
 ```bash
 ./setup.sh
 ```
 
-자주 쓰는 명령:
+위 명령은 필요 시 `.venv`를 만들고 의존성을 설치한 뒤, 다음 서비스를 함께 시작합니다.
 
-- `./setup.sh install`
-- `./setup.sh up`
-- `./setup.sh down`
-- `./setup.sh status`
-- `./setup.sh db-up`
-- `./setup.sh db-down`
-- `./setup.sh db-status`
+- PostgreSQL 컨테이너
+- FastAPI 백엔드
+- Streamlit 프론트엔드
 
-## Collector DB 빠른 설정
+기본 주소:
 
-collector는 PostgreSQL 연결 정보가 있으면 SQLAlchemy로 바로 저장합니다. 기본 `./setup.sh`는 이제 PostgreSQL도 함께 시작합니다.
+- Backend: `http://localhost:8000`
+- Frontend: `http://localhost:8501`
+- Swagger: `http://localhost:8000/docs`
+
+## 자주 쓰는 명령
+
+```bash
+./setup.sh install
+./setup.sh up
+./setup.sh down
+./setup.sh restart
+./setup.sh status
+./setup.sh logs
+./setup.sh db-up
+./setup.sh db-down
+./setup.sh db-status
+./setup.sh db-logs
+```
+
+`./setup.sh down`은 프론트, 백엔드, PostgreSQL을 순서대로 함께 중지합니다.
+
+## 환경 변수
+
+백엔드 설정은 주로 `backend/.env`를 사용합니다.
+
+```env
+OPENAI_API_KEY=...
+OPEN_DART_API_KEY=...
+ECOS_API_KEY=...
+KOSIS_API_KEY=...
+DATABASE_URL=...
+```
+
+또는 PostgreSQL 접속 정보를 아래 값들로 나눠서 줄 수 있습니다.
+
+```env
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=finagent
+POSTGRES_PASSWORD=finagent
+POSTGRES_DB=finagent
+```
+
+시작 전 예시 파일이 필요하면 다음처럼 준비합니다.
 
 ```bash
 cp backend/.env.example backend/.env
-./setup.sh db-up
 ```
 
-`backend/.env`에는 `OPEN_DART_API_KEY`, 그리고 `DATABASE_URL` 또는 `POSTGRES_*` 값을 채워주세요. 기본 예시는 Docker로 띄운 로컬 PostgreSQL(`localhost:5432`)에 맞춰져 있습니다. Docker Compose 파일은 `backend/docker-compose.yml`에 있고, `setup.sh`가 그 파일을 기준으로 DB를 관리합니다.
+## 개발 실행
+
+전체 스택 대신 각각 실행하려면 아래처럼 사용할 수 있습니다.
+
+```bash
+./setup.sh install
+./setup.sh db-up
+cd backend && ../.venv/bin/python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+cd frontend && ../.venv/bin/python -m streamlit run main.py --server.address 0.0.0.0 --server.port 8501
+```
+
+## 테스트와 품질 확인
+
+```bash
+.venv/bin/pytest tests/
+.venv/bin/ruff check backend frontend tests
+```
+
+일부 테스트는 외부 API 키 없이도 동작하지만, 일부 수동 검증 스크립트는 실제 API 자격 증명이 필요합니다. 자세한 내용은 [tests/README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/tests/README.md)에 정리되어 있습니다.
+
+## 문서 기준
+
+- [docs/conventions/naming.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/docs/conventions/naming.md)
+- [docs/conventions/error-handling.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/docs/conventions/error-handling.md)
+- [docs/conventions/testing.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/docs/conventions/testing.md)
+- [docs/domain/workflows.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/docs/domain/workflows.md)
