@@ -2,3 +2,9 @@
 __pycache__/
 *.py[cod]
 .finagent/
+
+# Environment files
+.env
+.env.*
+**/.env
+**/.env.*
