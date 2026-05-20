@@ -1,10 +1,10 @@
 import json
-import streamlit as st
+
 import pandas as pd
+import streamlit as st
 
 
 def render() -> None:
-    st.header("2) 심사 결과 리포트")
     if not st.session_state.last_result:
         st.info("표시할 결과가 없습니다. 먼저 검색 페이지에서 심사를 실행하세요.")
         return
@@ -40,7 +40,12 @@ def render() -> None:
     st.markdown("---")
     col1, col2 = st.columns(2)
     with col1:
-        st.download_button("JSON 다운로드", data=json.dumps(result, ensure_ascii=False, indent=2), file_name="credit_assessment_result.json", mime="application/json")
+        st.download_button(
+            "JSON 다운로드",
+            data=json.dumps(result, ensure_ascii=False, indent=2),
+            file_name="credit_assessment_result.json",
+            mime="application/json",
+        )
     with col2:
         if st.button("다시 검색 페이지로 이동"):
             st.session_state.page = "Search"

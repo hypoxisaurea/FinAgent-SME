@@ -1,5 +1,5 @@
-import streamlit as st
 import requests
+import streamlit as st
 
 
 def run_health_check() -> dict | None:
@@ -27,7 +27,6 @@ def run_credit_assessment(company_name: str) -> dict | None:
 
 
 def render() -> None:
-    st.header("1) 기업 검색 및 워크플로우 호출")
 
     col1, col2 = st.columns([3, 1])
     with col1:
@@ -49,6 +48,3 @@ def render() -> None:
                     st.session_state.last_result = result
                     st.success("워크플로우 완료 — 리포트 페이지로 이동합니다.")
                     st.session_state.page = "Report"
-
-    st.markdown("---")
-    st.write("검색한 회사로 워크플로우를 호출하면 결과가 세션에 저장되고 리포트 페이지에서 확인할 수 있습니다.")
