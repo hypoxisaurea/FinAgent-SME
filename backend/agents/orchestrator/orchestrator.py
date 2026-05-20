@@ -5,7 +5,9 @@ from typing import Any
 
 from agents.base import Agent
 from agents.collector import CollectorAgent
+from agents.decision import DecisionAgent
 from agents.multimodal_document import MultiModalDocumentAgent
+from agents.risk_event import RiskEventAgent
 
 
 @dataclass(slots=True)
@@ -54,7 +56,7 @@ class WorkflowOrchestrator:
                         output=output,
                     )
                 )
-            except Exception as exc:  # noqa: BLE001 - 오케스트레이터에서 단계 예외 집계
+            except Exception as exc:  # noqa: BLE001
                 steps.append(
                     StepResult(
                         agent_name=getattr(agent, "name", agent.__class__.__name__),
@@ -79,11 +81,7 @@ def create_credit_workflow(
     payload: dict[str, Any] | None = None,
     continue_on_error: bool = False,
 ) -> WorkflowOrchestrator:
-    """신용심사 워크플로우 오케스트레이터 팩토리.
-
-    기본 워크플로우는 CollectorAgent를 실행하고, pdf_path가 있으면
-    MultiModalDocumentAgent를 이어서 실행합니다.
-    """
+    """신용심사 워크플로우 오케스트레이터 팩토리."""
     default_agents = agents if agents is not None else _build_default_agents(payload or {})
     return WorkflowOrchestrator(agents=default_agents, continue_on_error=continue_on_error)
 
@@ -95,13 +93,13 @@ async def run_credit_workflow(
     extra_payload: dict[str, Any] | None = None,
     continue_on_error: bool = False,
 ) -> dict[str, Any]:
-    """
-    멀티 에이전트 심사 파이프라인 진입점.
-    - 기본 입력 컨텍스트를 만들고
-    - 등록된 에이전트를 순차 실행해
-    - 통합 결과를 반환한다.
+    """멀티 에이전트 심사 파이프라인 진입점.
 
-    extra_payload에는 멀티모달 문서 에이전트를 위한 "pdf_path"를 포함할 수 있습니다.
+    기본 실행 순서:
+      1. CollectorAgent       — DART·뉴스 데이터 수집
+      2. RiskEventAgent       — 리스크 이벤트 탐지 (corp_code 필요)
+      3. DecisionAgent        — 신용등급·승인 판단
+      4. MultiModalDocumentAgent — pdf_path 있을 때만 추가
     """
     normalized_name = company_name.strip()
     if not normalized_name:
@@ -134,7 +132,17 @@ def _derive_status(steps: list[StepResult]) -> str:
 
 
 def _build_default_agents(payload: dict[str, Any]) -> list[Agent]:
-    default_agents: list[Agent] = [CollectorAgent()]
+    """기본 에이전트 목록을 빌드한다.
+
+    주의:
+      RiskEventAgent는 payload에 corp_code가 있어야 정상 동작한다.
+      corp_code가 없으면 RiskEventAgent 내부에서 빈 결과를 반환한다.
+    """
+    default_agents: list[Agent] = [
+        CollectorAgent(),
+        RiskEventAgent(),
+        DecisionAgent(),
+    ]
     if payload.get("pdf_path"):
         default_agents.append(MultiModalDocumentAgent())
     return default_agents

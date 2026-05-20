@@ -29,7 +29,7 @@ result = detect_keywords(
     ],
 )
 
-print("=== 키워드 탐지 결과 ===")
+print("== 키워드 탐지 결과 ==")
 print(f"기업명: {result.company_name}")
 print(f"탐지된 이벤트 수: {len(result.detected_events)}")
 for event in result.detected_events:
