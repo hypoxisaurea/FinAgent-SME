@@ -1,10 +1,13 @@
-import argparse
+from datetime import datetime
+import logging
+import os
+from pathlib import Path
 import time
 import traceback
-from datetime import datetime
-from pathlib import Path
+from urllib.parse import quote_plus
 
 import pandas as pd
+from sqlalchemy import create_engine, inspect, text
 from tqdm.auto import tqdm
 
 try:
@@ -12,6 +15,7 @@ try:
 except ModuleNotFoundError:
     dart = None
 
+logger = logging.getLogger(__name__)
 
 # DEFAULT 값
 DEFAULT_BUSINESS_YEAR = 2024
@@ -47,58 +51,169 @@ SME_LIST_FILENAME = "sme_list.csv"
 FEATURES_FILENAME = "financial_features.csv"
 ERROR_LOG_FILENAME = "financial_error_logs.csv"
 TEMP_FILENAME = "temp_processed_records.csv"
-
-
-# 커맨드 라인 인수 함수 
-def parse_args():
-    parser = argparse.ArgumentParser(
-        description="DART에서 중소기업 후보 목록과 재무 데이터를 추출합니다."
-    )
-    parser.add_argument(
-        "--api-key",
-        dest="api_key",
-        default=None,
-        help="DART Open API 키. 생략하면 실행 중 입력받습니다.",
-    )
-    parser.add_argument(
-        "--year",
-        type=int,
-        default=DEFAULT_BUSINESS_YEAR,
-        help=f"사업연도. 기본값: {DEFAULT_BUSINESS_YEAR}",
-    )
-    parser.add_argument(
-        "--report-code",
-        default=DEFAULT_REPORT_CODE,
-        help=f"보고서 코드. 기본값: {DEFAULT_REPORT_CODE}",
-    )
-    parser.add_argument(
-        "--output-dir",
-        default=".",
-        help="결과 CSV 저장 디렉터리. 기본값: 현재 폴더",
-    )
-    parser.add_argument(
-        "--sample-size",
-        type=int,
-        default=None,
-        help="테스트용 샘플 기업 수. 지정하면 앞에서부터 일부만 실행합니다.",
-    )
-    parser.add_argument(
-        "--run-self-test",
-        action="store_true",
-        help="API 호출 없이 helper 함수 self test만 실행합니다.",
-    )
-    return parser.parse_args()
+ENV_FILENAME = ".env"
+ENV_API_KEY_NAME = "DART_API_KEY"
+DB_URL_ENV_NAME = "DATABASE_URL"
+DB_HOST_ENV_NAME = "POSTGRES_HOST"
+DB_PORT_ENV_NAME = "POSTGRES_PORT"
+DB_USER_ENV_NAME = "POSTGRES_USER"
+DB_PASSWORD_ENV_NAME = "POSTGRES_PASSWORD"
+DB_NAME_ENV_NAME = "POSTGRES_DB"
+SME_LIST_TABLE_NAME = "sme_list"
+FEATURES_TABLE_NAME = "financial_features"
+ERROR_LOG_TABLE_NAME = "financial_error_logs"
+CREATED_AT_COLUMN = "created_at"
 
 
 # API key 호출 함수
 def resolve_api_key(args):
+    env_path = get_env_path(args.env_file)
+    load_env_file(env_path)
+
     if args.api_key and args.api_key.strip():
         return args.api_key.strip()
 
-    api_key = input("DART API KEY를 입력하세요: ").strip()
+    api_key = os.getenv(ENV_API_KEY_NAME, "").strip()
     if not api_key:
-        raise ValueError("API 키가 비어 있습니다. --api-key 또는 입력값을 제공해주세요.")
+        raise ValueError(
+            f"API 키를 찾지 못했습니다. {env_path} 파일에 "
+            f"{ENV_API_KEY_NAME}=YOUR_DART_API_KEY 형식으로 저장하거나 "
+            "--api-key 옵션을 사용해주세요."
+        )
     return api_key
+
+
+# SQLAlchemy DB URL 함수
+def resolve_database_url():
+    database_url = os.getenv(DB_URL_ENV_NAME, "").strip()
+    if database_url:
+        return database_url
+
+    host = os.getenv(DB_HOST_ENV_NAME, "localhost").strip()
+    port = os.getenv(DB_PORT_ENV_NAME, "5432").strip()
+    user = os.getenv(DB_USER_ENV_NAME, "").strip()
+    password = os.getenv(DB_PASSWORD_ENV_NAME, "").strip()
+    database = os.getenv(DB_NAME_ENV_NAME, "").strip()
+
+    if not user or not password or not database:
+        raise ValueError(
+            "PostgreSQL 연결 정보를 찾지 못했습니다. .env 파일에 "
+            "DATABASE_URL 또는 POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB "
+            "값을 설정해주세요."
+        )
+
+    quoted_password = quote_plus(password)
+    return f"postgresql+psycopg2://{user}:{quoted_password}@{host}:{port}/{database}"
+
+
+def create_db_engine():
+    database_url = resolve_database_url()
+    return create_engine(database_url)
+
+
+def get_env_path(env_file):
+    if env_file:
+        return Path(env_file).expanduser().resolve()
+    return Path(__file__).resolve().parent / ENV_FILENAME
+
+
+def load_env_file(env_path):
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        os.environ[key] = value
+
+def normalize_key_columns(df, key_columns):
+    normalized_df = df.copy()
+    for col in key_columns:
+        if col in normalized_df.columns:
+            normalized_df[col] = normalized_df[col].fillna("__NULL__").astype(str)
+    return normalized_df
+
+
+def filter_new_rows(df, existing_df, key_columns):
+    if df.empty or existing_df.empty:
+        return df
+
+    candidate_df = normalize_key_columns(df[key_columns], key_columns)
+    existing_key_df = normalize_key_columns(existing_df[key_columns], key_columns).drop_duplicates()
+
+    merged_df = candidate_df.merge(
+        existing_key_df,
+        on=key_columns,
+        how="left",
+        indicator=True,
+    )
+    new_row_mask = merged_df["_merge"] == "left_only"
+    return df.loc[new_row_mask].copy()
+
+
+def add_created_at_column(df, created_at):
+    updated_df = df.copy()
+    updated_df[CREATED_AT_COLUMN] = created_at
+    return updated_df
+
+
+def save_dataframe_to_postgres(df, engine, table_name, key_columns):
+    if df.empty:
+        logger.info("db_save_skipped table=%s reason=empty_dataframe", table_name)
+        return 0
+
+    inspector = inspect(engine)
+    if not inspector.has_table(table_name):
+        df.to_sql(table_name, engine, index=False, if_exists="append")
+        logger.info("db_table_created table=%s row_count=%s", table_name, len(df))
+        return len(df)
+
+    existing_query = text(
+        f"SELECT {', '.join(key_columns)} FROM {table_name}"
+    )
+    with engine.connect() as connection:
+        existing_df = pd.read_sql(existing_query, connection)
+
+    new_df = filter_new_rows(df, existing_df, key_columns)
+    if new_df.empty:
+        logger.info("db_save_skipped table=%s reason=no_new_rows", table_name)
+        return 0
+
+    new_df.to_sql(table_name, engine, index=False, if_exists="append")
+    logger.info("db_rows_appended table=%s row_count=%s", table_name, len(new_df))
+    return len(new_df)
+
+
+def save_outputs_to_database(sme_list_df, final_df, error_df):
+    engine = create_db_engine()
+
+    saved_counts = {
+        SME_LIST_TABLE_NAME: save_dataframe_to_postgres(
+            sme_list_df,
+            engine,
+            SME_LIST_TABLE_NAME,
+            ["corp_code"],
+        ),
+        FEATURES_TABLE_NAME: save_dataframe_to_postgres(
+            final_df,
+            engine,
+            FEATURES_TABLE_NAME,
+            ["corp_code", "stock_code", "year"],
+        ),
+        ERROR_LOG_TABLE_NAME: save_dataframe_to_postgres(
+            error_df,
+            engine,
+            ERROR_LOG_TABLE_NAME,
+            ["corp_code", "error_type", "message"],
+        ),
+    }
+    engine.dispose()
+    return saved_counts
 
 
 # 에러 로그 함수
@@ -374,13 +489,16 @@ def run_collection(sme_df, business_year, report_code, temp_save_path):
     for idx, (_, row) in enumerate(tqdm(sme_df.iterrows(), total=len(sme_df))):
         if idx % 50 == 0:
             elapsed = round(time.time() - start_time, 1)
-            print(
-                f"\n[{idx}/{len(sme_df)}] 진행중 | "
-                f"성공: {success_count} | "
-                f"자산필터제외: {asset_filtered_count} | "
-                f"매출필터제외: {revenue_filtered_count} | "
-                f"에러: {error_count} | "
-                f"경과시간: {elapsed}초"
+            logger.info(
+                "collection_progress processed=%s total=%s success=%s asset_filtered=%s "
+                "revenue_filtered=%s error=%s elapsed_seconds=%s",
+                idx,
+                len(sme_df),
+                success_count,
+                asset_filtered_count,
+                revenue_filtered_count,
+                error_count,
+                elapsed,
             )
 
         result = process_company(row, business_year, report_code, error_logs)
@@ -396,7 +514,7 @@ def run_collection(sme_df, business_year, report_code, temp_save_path):
                     index=False,
                     encoding="utf-8-sig",
                 )
-                print(f"\n중간 저장 완료 | 성공 기업 수: {success_count}")
+                logger.info("collection_checkpoint_saved success_count=%s", success_count)
         elif status == "asset_filtered":
             asset_filtered_count += 1
         elif status == "revenue_filtered":
@@ -429,6 +547,7 @@ def build_final_dataframe(processed_records):
         "total_assets_statement",
         "total_liabilities",
         "total_equity",
+        CREATED_AT_COLUMN,
     ]
 
     if not processed_records:
@@ -475,6 +594,7 @@ def build_sme_list_dataframe(final_df):
         "stock_code",
         "avg_revenue_last_3y",
         "total_assets",
+        CREATED_AT_COLUMN,
     ]
     if final_df.empty:
         return pd.DataFrame(columns=columns)
@@ -496,9 +616,9 @@ def save_outputs(sme_list_df, final_df, error_df, output_dir):
     final_df.to_csv(features_path, index=False, encoding="utf-8-sig")
     error_df.to_csv(error_log_path, index=False, encoding="utf-8-sig")
 
-    print(f"저장 완료: {sme_list_path}")
-    print(f"저장 완료: {features_path}")
-    print(f"저장 완료: {error_log_path}")
+    logger.info("output_saved path=%s", sme_list_path)
+    logger.info("output_saved path=%s", features_path)
+    logger.info("output_saved path=%s", error_log_path)
 
 
 # api 호출 없이 self test 함수
@@ -570,64 +690,107 @@ def run_self_tests():
     empty_df = build_final_dataframe([])
     assert empty_df.empty
 
-    print("Self tests passed.")
+    created_df = add_created_at_column(final_df, "2026-05-20")
+    assert CREATED_AT_COLUMN in created_df.columns
+    assert created_df.iloc[0][CREATED_AT_COLUMN] == "2026-05-20"
+
+    current_df = pd.DataFrame(
+        [
+            {"corp_code": "001", "stock_code": "111111", "year": 2024, "value": 1},
+            {"corp_code": "002", "stock_code": "222222", "year": 2024, "value": 2},
+        ]
+    )
+    existing_df = pd.DataFrame(
+        [
+            {"corp_code": "001", "stock_code": "111111", "year": 2024},
+        ]
+    )
+    filtered_df = filter_new_rows(
+        current_df,
+        existing_df,
+        ["corp_code", "stock_code", "year"],
+    )
+    assert len(filtered_df) == 1
+    assert filtered_df.iloc[0]["corp_code"] == "002"
+
+    news_result = execute_news_pipeline(company_name="테스트기업", year=2024, output_dir=".")
+    assert news_result["status"] == "not_configured"
+    assert news_result["article_count"] == 0
+
+    logger.info("collector_self_tests_passed")
 
 
-def main():
-    args = parse_args()
-
-    if args.run_self_test:
-        run_self_tests()
-        return
-
+def execute_dart_pipeline(
+    year: int,
+    sample_size: int = None,
+    skip_db_save: bool = False,
+    output_dir: str = ".",
+):
     if dart is None:
-        raise ModuleNotFoundError(
-            "dart_fss가 설치되어 있지 않습니다. `pip install dart-fss` 후 다시 실행해주세요."
-        )
-
-    start_time = time.time()
-    api_key = resolve_api_key(args)
+        raise ModuleNotFoundError("dart_fss가 설치되어 있지 않습니다.")
+        
+    class DummyArgs:
+        api_key = None
+        env_file = None
+    
+    api_key = resolve_api_key(DummyArgs())
     dart.set_api_key(api_key=api_key)
-
-    output_dir = Path(args.output_dir)
+    
+    output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     temp_save_path = output_dir / TEMP_FILENAME
-
-    print("DART 기업 목록 조회 시작...")
-    all_corp_df, sme_df = load_sme_candidates(sample_size=args.sample_size)
-    print(f"전체 기업 수: {len(all_corp_df)}")
-    print(f"중소기업 후보 수(K, N): {len(sme_df)}")
-
+    
+    all_corp_df, sme_df = load_sme_candidates(sample_size=sample_size)
+    
     processed_records, error_logs, stats = run_collection(
         sme_df=sme_df,
-        business_year=args.year,
-        report_code=args.report_code,
+        business_year=year,
+        report_code=DEFAULT_REPORT_CODE,
         temp_save_path=temp_save_path,
     )
-
+    
+    created_at = datetime.now().strftime("%Y-%m-%d")
     final_df = build_final_dataframe(processed_records)
+    final_df = add_created_at_column(final_df, created_at)
     sme_list_df = build_sme_list_dataframe(final_df)
     error_df = pd.DataFrame(error_logs)
+    
+    save_outputs(sme_list_df, final_df, error_df, output_dir)
+    
+    db_save_counts = {}
+    if not skip_db_save:
+        db_save_counts = save_outputs_to_database(sme_list_df, final_df, error_df)
+        
+    return {
+        "status": "success",
+        "stats": stats,
+        "sme_count": len(sme_list_df),
+        "financial_data_count": len(final_df),
+        "db_save_counts": db_save_counts,
+        "source": "dart",
+    }
 
-    save_outputs(
-        sme_list_df=sme_list_df,
-        final_df=final_df,
-        error_df=error_df,
-        output_dir=output_dir,
+
+def execute_news_pipeline(
+    *,
+    company_name: str | None,
+    year: int,
+    output_dir: str,
+) -> dict:
+    """뉴스 수집 파이프라인 placeholder.
+
+    실제 뉴스 수집 로직이 추가되기 전까지는 구조만 고정해 반환한다.
+    """
+    logger.info(
+        "news_pipeline_requested company_name=%s year=%s output_dir=%s",
+        company_name,
+        year,
+        output_dir,
     )
-
-    elapsed_total = round(time.time() - start_time, 1)
-    print("\n==========================")
-    print("처리 완료")
-    print("==========================")
-    print(f"성공 기업 수: {stats['success_count']}")
-    print(f"자산 필터 제외: {stats['asset_filtered_count']}")
-    print(f"매출 필터 제외: {stats['revenue_filtered_count']}")
-    print(f"에러 수: {stats['error_count']}")
-    print(f"최종 SME 목록 수: {len(sme_list_df)}")
-    print(f"최종 재무 데이터 수: {len(final_df)}")
-    print(f"총 소요시간: {elapsed_total}초")
-
-
-if __name__ == "__main__":
-    main()
+    return {
+        "status": "not_configured",
+        "source": "news",
+        "article_count": 0,
+        "items": [],
+        "message": "뉴스 수집 파이프라인은 아직 구현되지 않았습니다.",
+    }
