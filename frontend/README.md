@@ -57,7 +57,7 @@ streamlit run main.py
 
 1. 첫 화면에서 회사명을 입력합니다.
 2. `Health 체크` 버튼으로 백엔드 연결 상태를 확인할 수 있습니다.
-3. `심사 시작` 버튼으로 `/api/v1/workflows/credit-assessment`를 호출합니다.
+3. `검색` 버튼으로 `/api/v1/workflows/orchestrator`를 호출합니다.
 4. 응답 결과는 세션에 저장되고, 같은 앱 안에서 리포트 화면으로 전환됩니다.
 5. 리포트 화면에서는 원본 JSON, 단순 요약 테이블, 리스트형 데이터 표를 확인하고 JSON 다운로드를 할 수 있습니다.
 

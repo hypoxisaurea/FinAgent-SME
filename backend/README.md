@@ -43,6 +43,7 @@ PostgreSQL이 필요한 에이전트를 실행할 때 자주 쓰는 명령:
 - `GET /` -> 서비스 메타 정보
 - `GET /api/health` -> 헬스체크
 - `POST /api/v1/workflows/credit-assessment` -> 심사 워크플로우 진입점
+- `POST /api/v1/workflows/orchestrator` -> 프론트 검색 버튼이 호출하는 오케스트레이터 진입점
 - `GET /docs` -> Swagger UI
 
 ## 환경 변수
