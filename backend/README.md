@@ -19,14 +19,23 @@ python3.11 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+./setup.sh db-up
 cd backend
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-백엔드와 프론트를 함께 올리려면 프로젝트 루트에서 아래 명령을 사용할 수 있습니다.
+백엔드와 프론트, PostgreSQL을 함께 올리려면 프로젝트 루트에서 아래 명령을 사용할 수 있습니다.
 
 ```bash
 ./setup.sh
+```
+
+PostgreSQL이 필요한 에이전트를 실행할 때 자주 쓰는 명령:
+
+```bash
+./setup.sh db-up
+./setup.sh db-status
+./setup.sh db-down
 ```
 
 주요 확인 경로:
@@ -42,17 +51,17 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ```env
 OPENAI_API_KEY=...
-DART_API_KEY=...
+OPEN_DART_API_KEY=...
 ECOS_API_KEY=...
 KOSIS_API_KEY=...
 ```
 
 - `OPENAI_API_KEY`: `financial_analyst`, `industry_analyst` LLM 호출에 사용
-- `DART_API_KEY`: DART 재무/기업 정보 조회에 사용
+- `OPEN_DART_API_KEY`: DART 재무/기업 정보 조회에 사용
 - `ECOS_API_KEY`: 한국은행 ECOS 거시지표 조회에 사용
 - `KOSIS_API_KEY`: 통계청 KOSIS 업황 데이터 조회에 사용
 
-루트 `.env` 파일은 `backend/config.py`와 각 에이전트 모듈에서 함께 참조합니다.
+`backend/.env` 파일은 `backend/config.py`와 각 에이전트 모듈에서 함께 참조합니다. 기존에 `backend/agents/.env`를 사용 중이었다면 같은 값을 `backend/.env`로 옮겨두면 됩니다. PostgreSQL용 Docker Compose는 `backend/docker-compose.yml`에 있고, 루트 `setup.sh`가 이 파일을 기준으로 DB를 실행합니다.
 
 ## 디렉터리 구조
 
@@ -89,7 +98,7 @@ backend/
 
 DART(OpenDART)에서 중소기업 후보군과 기초 재무 데이터를 수집하는 1차 추출 스크립트입니다. 전체 파이프라인에 연결된 패키지형 에이전트라기보다, 후속 분석용 입력 데이터를 만드는 독립 도구에 가깝습니다.
 
-- 위치: `backend/agents/collector/dart_extract_sme_list.py`
+- 위치: `backend/agents/collector/tools.py`
 - 주요 산출물:
   - `sme_list.csv`
   - `financial_features.csv`
@@ -104,19 +113,27 @@ DART(OpenDART)에서 중소기업 후보군과 기초 재무 데이터를 수집
 실행 예시:
 
 ```bash
-cd /Users/princess1004/Desktop/MY/Projects/FinAgent-SME/backend/agents/collector
-python dart_extract_sme_list.py --run-self-test
-python dart_extract_sme_list.py --api-key YOUR_DART_API_KEY --year 2024 --sample-size 100 --output-dir temp_result
+cd /Users/princess1004/Desktop/MY/Projects/FinAgent-SME
+PYTHONPATH=backend python - <<'PY'
+from agents.collector.tools import execute_dart_pipeline, run_self_tests
+
+run_self_tests()
+result = execute_dart_pipeline(
+    year=2024,
+    sample_size=100,
+    skip_db_save=False,
+    output_dir="temp_result",
+)
+print(result)
+PY
 ```
 
 주요 옵션:
 
-- `--api-key`
-- `--year`
-- `--report-code`
-- `--output-dir`
-- `--sample-size`
-- `--run-self-test`
+- `year`
+- `sample_size`
+- `skip_db_save`
+- `output_dir`
 
 ### 2. MultiModal Document Agent
 
@@ -179,15 +196,15 @@ DART 재무제표를 기반으로 기업의 정량 재무 리스크를 분석하
 도구 사용 예시:
 
 ```python
-from dotenv import load_dotenv
-from agents.financial_analyst.tools import (
+from backend_env import load_backend_env
+from agents.financial_analyst.financial_tools import (
     calc_altman_z_prime,
     calc_financial_ratios,
     get_financial_statements,
     trend_analysis,
 )
 
-load_dotenv()
+load_backend_env()
 
 fs = get_financial_statements.invoke({"corp_code": "01074862", "year": 2023})
 ratios = calc_financial_ratios.invoke({"fs": fs})
@@ -198,10 +215,10 @@ trend = trend_analysis.invoke({"corp_code": "01074862", "years": [2021, 2022, 20
 에이전트 호출 예시:
 
 ```python
-from dotenv import load_dotenv
+from backend_env import load_backend_env
 from agents.financial_analyst import financial_agent
 
-load_dotenv()
+load_backend_env()
 
 result = financial_agent.invoke(
     {
@@ -243,8 +260,8 @@ result = financial_agent.invoke(
 도구 사용 예시:
 
 ```python
-from dotenv import load_dotenv
-from agents.industry_analyst.tools import (
+from backend_env import load_backend_env
+from agents.industry_analyst.industry_tools import (
     compare_to_industry,
     get_industry_avg_ratios,
     get_industry_outlook,
@@ -252,7 +269,7 @@ from agents.industry_analyst.tools import (
     map_corp_to_ksic,
 )
 
-load_dotenv()
+load_backend_env()
 
 ksic = map_corp_to_ksic.invoke({"corp_code": "01074862"})
 avg = get_industry_avg_ratios.invoke({"ksic_code": ksic, "year": 2023})
@@ -273,10 +290,10 @@ comparison = compare_to_industry.invoke(
 에이전트 호출 예시:
 
 ```python
-from dotenv import load_dotenv
+from backend_env import load_backend_env
 from agents.industry_analyst import industry_agent
 
-load_dotenv()
+load_backend_env()
 
 result = industry_agent.invoke(
     {

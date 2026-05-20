@@ -16,7 +16,7 @@ DART 공시 재무제표를 기반으로 기업의 정량적 재무 리스크를
 ### 환경변수
 
 ```
-DART_API_KEY=...   # opendart.fss.or.kr 에서 무료 발급
+OPEN_DART_API_KEY=...   # opendart.fss.or.kr 에서 무료 발급
 ```
 
 ---

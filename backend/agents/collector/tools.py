@@ -10,6 +10,8 @@ import pandas as pd
 from sqlalchemy import create_engine, inspect, text
 from tqdm.auto import tqdm
 
+from backend_env import get_backend_env_path, load_backend_env
+
 try:
     import dart_fss as dart
 except ModuleNotFoundError:
@@ -51,8 +53,7 @@ SME_LIST_FILENAME = "sme_list.csv"
 FEATURES_FILENAME = "financial_features.csv"
 ERROR_LOG_FILENAME = "financial_error_logs.csv"
 TEMP_FILENAME = "temp_processed_records.csv"
-ENV_FILENAME = ".env"
-ENV_API_KEY_NAME = "DART_API_KEY"
+ENV_API_KEY_NAME = "OPEN_DART_API_KEY"
 DB_URL_ENV_NAME = "DATABASE_URL"
 DB_HOST_ENV_NAME = "POSTGRES_HOST"
 DB_PORT_ENV_NAME = "POSTGRES_PORT"
@@ -68,7 +69,7 @@ CREATED_AT_COLUMN = "created_at"
 # API key 호출 함수
 def resolve_api_key(args):
     env_path = get_env_path(args.env_file)
-    load_env_file(env_path)
+    load_backend_env(override=True, env_path=env_path)
 
     if args.api_key and args.api_key.strip():
         return args.api_key.strip()
@@ -112,24 +113,7 @@ def create_db_engine():
 
 
 def get_env_path(env_file):
-    if env_file:
-        return Path(env_file).expanduser().resolve()
-    return Path(__file__).resolve().parent / ENV_FILENAME
-
-
-def load_env_file(env_path):
-    if not env_path.exists():
-        return
-
-    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        os.environ[key] = value
+    return get_backend_env_path(env_file)
 
 def normalize_key_columns(df, key_columns):
     normalized_df = df.copy()

@@ -1,5 +1,6 @@
-from dotenv import load_dotenv
-load_dotenv()
+from backend_env import load_backend_env
+
+load_backend_env()
 
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent

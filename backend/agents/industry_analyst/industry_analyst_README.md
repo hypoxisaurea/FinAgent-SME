@@ -20,7 +20,7 @@
 ### 환경변수
 
 ```
-DART_API_KEY=...    # opendart.fss.or.kr 에서 무료 발급
+OPEN_DART_API_KEY=...    # opendart.fss.or.kr 에서 무료 발급
 ECOS_API_KEY=...    # ecos.bok.or.kr 에서 무료 발급
 KOSIS_API_KEY=...   # kosis.kr 에서 무료 발급
 ```

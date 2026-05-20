@@ -76,13 +76,15 @@ class WorkflowOrchestrator:
 def create_credit_workflow(
     agents: list[Agent] | None = None,
     *,
+    payload: dict[str, Any] | None = None,
     continue_on_error: bool = False,
 ) -> WorkflowOrchestrator:
     """신용심사 워크플로우 오케스트레이터 팩토리.
 
-    기본 워크플로우는 CollectorAgent와 MultiModalDocumentAgent를 순차 실행합니다.
+    기본 워크플로우는 CollectorAgent를 실행하고, pdf_path가 있으면
+    MultiModalDocumentAgent를 이어서 실행합니다.
     """
-    default_agents = agents if agents is not None else [CollectorAgent(), MultiModalDocumentAgent()]
+    default_agents = agents if agents is not None else _build_default_agents(payload or {})
     return WorkflowOrchestrator(agents=default_agents, continue_on_error=continue_on_error)
 
 
@@ -111,6 +113,7 @@ async def run_credit_workflow(
 
     orchestrator = create_credit_workflow(
         agents=agents,
+        payload=payload,
         continue_on_error=continue_on_error,
     )
 
@@ -128,3 +131,10 @@ def _derive_status(steps: list[StepResult]) -> str:
     if ok_count == 0:
         return "failed"
     return "partial"
+
+
+def _build_default_agents(payload: dict[str, Any]) -> list[Agent]:
+    default_agents: list[Agent] = [CollectorAgent()]
+    if payload.get("pdf_path"):
+        default_agents.append(MultiModalDocumentAgent())
+    return default_agents

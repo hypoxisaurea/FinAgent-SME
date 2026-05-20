@@ -2,8 +2,16 @@
 K-Credit Agent 도구별 테스트 스크립트
 실행: python test_agents.py
 """
+import sys
+from pathlib import Path
+
 from dotenv import load_dotenv
-load_dotenv()
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT / "backend") not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT / "backend"))
+
+load_dotenv(PROJECT_ROOT / "backend" / ".env")
 
 CORP_CODE = "01074862"
 YEAR      = 2024

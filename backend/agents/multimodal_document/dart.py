@@ -9,7 +9,8 @@ from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
-from dotenv import dotenv_values
+
+from backend_env import get_backend_env_path, load_backend_env
 
 
 logger = logging.getLogger(__name__)
@@ -25,50 +26,20 @@ def safe_filename(name):
     return re.sub(r'[\\/:*?"<>|]', "_", str(name))
 
 
-def parse_env_file(env_path):
-    env_path = Path(env_path)
-
-    if not env_path.exists():
-        raise FileNotFoundError(f"Env 파일을 찾을 수 없습니다: {env_path}")
-
-    env_values = dotenv_values(env_path)
-
-    return {
-        key: value
-        for key, value in env_values.items()
-        if value is not None
-    }
-
-
 def resolve_api_key(args=None, env_path=None):
     if args is not None and getattr(args, "api_key", None):
         return args.api_key.strip()
 
-    api_key = os.getenv("OPEN_DART_API_KEY")
+    load_backend_env(override=True, env_path=env_path)
+    api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
     if api_key:
-        return api_key.strip()
+        return api_key
 
-    candidates = []
-
-    if env_path is not None:
-        candidates.append(Path(env_path))
-
-    candidates.extend([
-        Path.cwd() / ".env",
-        Path(__file__).resolve().parents[2] / "collector" / ".env",
-    ])
-
-    for candidate in candidates:
-        if candidate.exists():
-            env = parse_env_file(candidate)
-            api_key = env.get("OPEN_DART_API_KEY")
-
-            if api_key:
-                return api_key.strip()
+    candidate_path = get_backend_env_path(env_path)
 
     raise ValueError(
         "OPEN_DART_API_KEY가 없습니다. "
-        ".env 또는 환경 변수에 OPEN_DART_API_KEY를 설정해주세요."
+        f"{candidate_path} 또는 환경 변수에 값을 설정해주세요."
     )
 
 
