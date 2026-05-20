@@ -3,6 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="$ROOT_DIR/backend"
 VENV_DIR="$ROOT_DIR/.venv"
 RUN_DIR="$ROOT_DIR/.finagent"
 LOG_DIR="$RUN_DIR/logs"
@@ -19,6 +20,13 @@ BACKEND_PID_FILE="$PID_DIR/backend.pid"
 FRONTEND_PID_FILE="$PID_DIR/frontend.pid"
 BACKEND_LOG_FILE="$LOG_DIR/backend.log"
 FRONTEND_LOG_FILE="$LOG_DIR/frontend.log"
+BACKEND_ENV_FILE="$BACKEND_DIR/.env"
+BACKEND_ENV_EXAMPLE_FILE="$BACKEND_DIR/.env.example"
+BACKEND_COMPOSE_FILE="$BACKEND_DIR/docker-compose.yml"
+POSTGRES_CONTAINER_NAME="finagent-postgres"
+DATABASE_READY_TIMEOUT_SECONDS="${DATABASE_READY_TIMEOUT_SECONDS:-60}"
+POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
+POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 
 BACKEND_HOST="${BACKEND_HOST:-0.0.0.0}"
 BACKEND_PORT="${BACKEND_PORT:-8000}"
@@ -35,6 +43,10 @@ Commands:
   up        Install if needed, then start backend and frontend
   down      Stop backend and frontend
   restart   Restart backend and frontend
+  db-up     Start backend PostgreSQL with Docker Compose
+  db-down   Stop backend PostgreSQL container
+  db-status Show backend PostgreSQL container status
+  db-logs   Show backend PostgreSQL container logs
   status    Show service status
   logs      Show log file locations
 
@@ -119,11 +131,68 @@ compute_requirements_hash() {
     local file_hashes=""
 
     for requirement_file in "${REQUIREMENT_FILES[@]}"; do
+        if [[ ! -f "$requirement_file" ]]; then
+            continue
+        fi
         file_hashes+=$(shasum -a 256 "$requirement_file")
         file_hashes+=$'\n'
     done
 
     printf '%s' "$file_hashes" | shasum -a 256 | awk '{print $1}'
+}
+
+
+ensure_compose_file() {
+    if [[ -f "$BACKEND_COMPOSE_FILE" ]]; then
+        return
+    fi
+
+    echo "Docker Compose file not found: $BACKEND_COMPOSE_FILE" >&2
+    exit 1
+}
+
+
+ensure_docker_compose() {
+    if command_exists docker && docker compose version >/dev/null 2>&1; then
+        return
+    fi
+
+    if command_exists docker-compose; then
+        return
+    fi
+
+    echo "Docker Compose is required. Install Docker Desktop or docker compose first." >&2
+    exit 1
+}
+
+
+docker_daemon_available() {
+    command_exists docker && docker info >/dev/null 2>&1
+}
+
+
+run_backend_compose() {
+    ensure_compose_file
+    ensure_docker_compose
+
+    if [[ ! -f "$BACKEND_ENV_FILE" && -f "$BACKEND_ENV_EXAMPLE_FILE" ]]; then
+        log "backend/.env not found. Copy $BACKEND_ENV_EXAMPLE_FILE to $BACKEND_ENV_FILE and fill required values if needed"
+    fi
+
+    if command_exists docker && docker compose version >/dev/null 2>&1; then
+        if [[ -f "$BACKEND_ENV_FILE" ]]; then
+            docker compose -f "$BACKEND_COMPOSE_FILE" --env-file "$BACKEND_ENV_FILE" "$@"
+            return
+        fi
+        docker compose -f "$BACKEND_COMPOSE_FILE" "$@"
+        return
+    fi
+
+    if [[ -f "$BACKEND_ENV_FILE" ]]; then
+        docker-compose -f "$BACKEND_COMPOSE_FILE" --env-file "$BACKEND_ENV_FILE" "$@"
+        return
+    fi
+    docker-compose -f "$BACKEND_COMPOSE_FILE" "$@"
 }
 
 
@@ -223,9 +292,119 @@ show_logs() {
 }
 
 
+get_database_health_status() {
+    docker inspect \
+        -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
+        "$POSTGRES_CONTAINER_NAME" 2>/dev/null || true
+}
+
+
+get_database_runtime_status() {
+    docker inspect -f '{{.State.Status}}' "$POSTGRES_CONTAINER_NAME" 2>/dev/null || true
+}
+
+
+wait_for_database() {
+    local elapsed_seconds=0
+    local health_status=""
+
+    while (( elapsed_seconds < DATABASE_READY_TIMEOUT_SECONDS )); do
+        health_status="$(get_database_health_status)"
+        if [[ "$health_status" == "healthy" || "$health_status" == "running" ]]; then
+            log "Backend PostgreSQL is ready (status=$health_status)"
+            return
+        fi
+
+        sleep 2
+        elapsed_seconds=$((elapsed_seconds + 2))
+    done
+
+    echo "Backend PostgreSQL did not become ready within ${DATABASE_READY_TIMEOUT_SECONDS}s." >&2
+    if [[ -n "$health_status" ]]; then
+        echo "Last known database status: $health_status" >&2
+    fi
+    exit 1
+}
+
+
+start_database() {
+    log "Starting backend PostgreSQL with $BACKEND_COMPOSE_FILE"
+    run_backend_compose up -d postgres
+    wait_for_database
+}
+
+
+stop_database() {
+    log "Stopping backend PostgreSQL"
+    run_backend_compose stop postgres
+}
+
+
+show_database_status() {
+    local health_status=""
+    local runtime_status=""
+
+    if ! command_exists docker; then
+        log "Database: Docker CLI not installed"
+        return
+    fi
+
+    if ! docker compose version >/dev/null 2>&1 && ! command_exists docker-compose; then
+        log "Database: Docker Compose not installed"
+        return
+    fi
+
+    if ! docker_daemon_available; then
+        log "Database: Docker daemon unavailable"
+        return
+    fi
+
+    health_status="$(get_database_health_status)"
+    runtime_status="$(get_database_runtime_status)"
+
+    if [[ -z "$runtime_status" ]]; then
+        log "Database: stopped (expected at $POSTGRES_HOST:$POSTGRES_PORT)"
+        return
+    fi
+
+    if [[ -n "$health_status" ]]; then
+        log "Database: $health_status (container=$POSTGRES_CONTAINER_NAME, host=$POSTGRES_HOST, port=$POSTGRES_PORT)"
+    else
+        log "Database: $runtime_status (container=$POSTGRES_CONTAINER_NAME, host=$POSTGRES_HOST, port=$POSTGRES_PORT)"
+    fi
+}
+
+
+show_database_status_details() {
+    if ! command_exists docker; then
+        log "Database: Docker CLI not installed"
+        return
+    fi
+
+    if ! docker compose version >/dev/null 2>&1 && ! command_exists docker-compose; then
+        log "Database: Docker Compose not installed"
+        return
+    fi
+
+    if ! docker_daemon_available; then
+        log "Database: Docker daemon unavailable"
+        return
+    fi
+
+    show_database_status
+    run_backend_compose ps postgres
+}
+
+
+show_database_logs() {
+    run_backend_compose logs postgres
+}
+
+
 start_all() {
     ensure_runtime_dirs
     ensure_dependencies
+    start_database
     start_backend
     start_frontend
     show_status
@@ -247,15 +426,30 @@ main() {
         down)
             stop_service "frontend" "$FRONTEND_PID_FILE"
             stop_service "backend" "$BACKEND_PID_FILE"
+            stop_database
             ;;
         restart)
             stop_service "frontend" "$FRONTEND_PID_FILE"
             stop_service "backend" "$BACKEND_PID_FILE"
+            stop_database
             start_all
+            ;;
+        db-up)
+            start_database
+            ;;
+        db-down)
+            stop_database
+            ;;
+        db-status)
+            show_database_status_details
+            ;;
+        db-logs)
+            show_database_logs
             ;;
         status)
             ensure_runtime_dirs
             show_status
+            show_database_status
             ;;
         logs)
             ensure_runtime_dirs

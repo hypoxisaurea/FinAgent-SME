@@ -1,13 +1,11 @@
-from pathlib import Path
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+from backend_env import get_backend_env_path
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=_PROJECT_ROOT / ".env",
+        env_file=get_backend_env_path(),
         env_file_encoding="utf-8",
         extra="ignore",
     )
