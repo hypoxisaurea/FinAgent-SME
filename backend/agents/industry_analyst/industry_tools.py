@@ -537,17 +537,24 @@ def _read_agri_yoy() -> float | None:
 # ===========================================================================
 
 @tool
-def map_corp_to_ksic(corp_code: str) -> str:
-    """DART 회사개황의 업종코드를 KSIC 코드로 변환."""
+def map_corp_to_ksic(corp_code: str) -> dict:
+    """DART 회사개황의 업종코드를 KSIC 코드로 변환하고 회사명을 함께 반환."""
     dart = _get_dart()
     info = dart.company(corp_code)
     if info is None:
         raise ValueError(f"corp_code={corp_code} 회사 정보 없음")
+    corp_name = str(info.get("corp_name", ""))
     induty = str(info.get("induty_code", ""))
     ksic = _INDUTY_TO_KSIC.get(induty[:2])
     if ksic is None:
-        return f"N/A (업종코드 {induty} - 산업평균 데이터 없음)"
-    return ksic
+        return {
+            "corp_name": corp_name,
+            "ksic_code": f"N/A (업종코드 {induty} - 산업평균 데이터 없음)",
+        }
+    return {
+        "corp_name": corp_name,
+        "ksic_code": ksic,
+    }
 
 
 @tool
