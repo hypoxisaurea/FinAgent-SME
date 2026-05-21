@@ -1,6 +1,6 @@
 """D-004 | 판단 근거 자연어 설명 핸들러
 
-Claude API를 호출해 신용등급·승인 결정의 근거를
+OpenAI API를 호출해 신용등급·승인 결정의 근거를
 심사 담당자가 이해할 수 있는 자연어로 설명한다.
 """
 
@@ -8,10 +8,13 @@ from __future__ import annotations
 
 import logging
 
-from utils.api_client import call_claude, get_client, parse_json_response
+from utils.api_client import call_openai, get_client, parse_json_response
+
 from ..models import (
-    CreditGrade, DecisionExplanation, DecisionResult,
-    GradeCalculationResult, LimitRecommendationResult,
+    DecisionExplanation,
+    DecisionResult,
+    GradeCalculationResult,
+    LimitRecommendationResult,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,7 +40,7 @@ async def generate_explanation(
     reasons: list[str],
     context: dict,
 ) -> DecisionExplanation:
-    """Claude API로 판단 근거 자연어 설명을 생성한다.
+    """OpenAI API로 판단 근거 자연어 설명을 생성한다.
 
     Args:
         company_name:  기업명
@@ -50,15 +53,23 @@ async def generate_explanation(
     Returns:
         DecisionExplanation (API 실패 시 fallback 반환)
     """
-    prompt = _build_prompt(company_name, grade_result, decision, limit_result, reasons, context)
+    prompt = _build_prompt(
+        company_name,
+        grade_result,
+        decision,
+        limit_result,
+        reasons,
+        context,
+    )
 
     try:
         async with get_client() as client:
-            raw = await call_claude(
+            raw = await call_openai(
                 client=client,
                 messages=[{"role": "user", "content": prompt}],
                 system=_SYSTEM_PROMPT,
                 max_tokens=1000,
+                response_format={"type": "json_object"},
             )
         parsed = parse_json_response(raw)
         if not isinstance(parsed, dict):
@@ -135,10 +146,15 @@ def _fallback_explanation(
 
     return DecisionExplanation(
         summary=(
-            f"{company_name}의 신용등급은 {grade_result.grade.value}({grade_result.score}점)으로 "
+            f"{company_name}의 신용등급은 "
+            f"{grade_result.grade.value}({grade_result.score}점)으로 "
             f"최종 {decision_label} 결정이 내려졌습니다."
         ),
-        key_risk_factors=[r for r in reasons if any(w in r for w in ["리스크", "적자", "부채", "거절", "손실"])],
+        key_risk_factors=[
+            r
+            for r in reasons
+            if any(w in r for w in ["리스크", "적자", "부채", "거절", "손실"])
+        ],
         key_positive_factors=[r for r in reasons if "없음" in r or "양호" in r],
         recommendation=grade_result.rationale,
     )

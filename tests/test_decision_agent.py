@@ -3,7 +3,7 @@
 실행 방법:
     pytest tests/test_decision_agent.py -v
 
-외부 API(Claude) 의존 테스트는 mock으로 고립 실행한다.
+외부 API(OpenAI) 의존 테스트는 mock으로 고립 실행한다.
 """
 
 from __future__ import annotations
@@ -185,7 +185,7 @@ class TestLimitRecommender:
 
 class TestDecisionAgentWorkflow:
     def test_full_workflow_clean_company(self, clean_context):
-        """정상 기업 전체 흐름 — Claude API mock 처리."""
+        """정상 기업 전체 흐름 — OpenAI API mock 처리."""
         mock_explanation = {
             "summary":              "리스크 낮은 우량 기업입니다.",
             "key_risk_factors":     [],
@@ -193,7 +193,7 @@ class TestDecisionAgentWorkflow:
             "recommendation":       "승인을 권고합니다.",
         }
         with patch(
-            "agents.decision.handlers.explanation_generator.call_claude",
+            "agents.decision.handlers.explanation_generator.call_openai",
             new_callable=AsyncMock,
             return_value=str(mock_explanation),
         ), patch(
@@ -222,7 +222,7 @@ class TestDecisionAgentWorkflow:
             "recommendation":       "거절을 권고합니다.",
         }
         with patch(
-            "agents.decision.handlers.explanation_generator.call_claude",
+            "agents.decision.handlers.explanation_generator.call_openai",
             new_callable=AsyncMock,
             return_value=str(mock_explanation),
         ), patch(
@@ -243,7 +243,7 @@ class TestDecisionAgentWorkflow:
     def test_agent_returns_dict(self, clean_context):
         """run()이 반드시 dict를 반환해야 한다 (Agent 프로토콜)."""
         with patch(
-            "agents.decision.handlers.explanation_generator.call_claude",
+            "agents.decision.handlers.explanation_generator.call_openai",
             new_callable=AsyncMock,
             return_value="{}",
         ), patch(

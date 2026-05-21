@@ -55,6 +55,7 @@ MarkupSafe==3.0.3
 narwhals==2.21.2
 numpy==2.4.5
 openai==2.37.0
+opendartreader==0.2.3
 openpyxl==3.1.5
 orjson==3.11.9
 ormsgpack==1.12.2
