@@ -90,7 +90,6 @@ backend/
 ├── utils/
 └── agents/
     ├── base.py
-    ├── collector/
     ├── company_registry/
     ├── company_resolver/
     ├── news_collector/

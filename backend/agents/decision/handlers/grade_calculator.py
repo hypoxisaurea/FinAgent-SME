@@ -52,7 +52,7 @@ def calculate_grade(context: dict) -> GradeCalculationResult:
 
     Args:
         context: Orchestrator가 누적한 전체 컨텍스트
-                 (RiskEventAgent 출력 + CollectorAgent 출력 포함)
+                 (RiskEventAgent 출력 + 뉴스/재무 분석 결과 포함)
 
     Returns:
         GradeCalculationResult

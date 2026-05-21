@@ -1,15 +1,21 @@
 import os
 
 from langchain_core.tools import tool
-import opendartreader as OpenDartReader
 import pandas as pd
 
 from backend_env import load_backend_env
 
 load_backend_env()
 
+try:
+    import opendartreader as OpenDartReader
+except ModuleNotFoundError:
+    OpenDartReader = None
+
 
 def _get_dart():
+    if OpenDartReader is None:
+        raise ModuleNotFoundError("opendartreader가 설치되어 있지 않습니다.")
     api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
     if not api_key:
         raise ValueError("환경변수 OPEN_DART_API_KEY가 설정되지 않았습니다.")

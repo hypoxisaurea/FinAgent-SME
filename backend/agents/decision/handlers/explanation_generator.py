@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 
-from backend.utils.api_client import call_claude, get_client, parse_json_response
+from utils.api_client import call_claude, get_client, parse_json_response
 from ..models import (
     CreditGrade, DecisionExplanation, DecisionResult,
     GradeCalculationResult, LimitRecommendationResult,

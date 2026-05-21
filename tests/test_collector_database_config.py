@@ -1,3 +1,5 @@
+# ruff: noqa: E402
+
 import sys
 from pathlib import Path
 
@@ -8,7 +10,7 @@ if str(PROJECT_ROOT / "backend") not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT / "backend"))
 
 import backend_env
-from agents.collector.tools import get_env_path, resolve_database_url
+from agents.company_registry.tools import get_env_path, resolve_database_url
 
 
 @pytest.fixture(autouse=True)

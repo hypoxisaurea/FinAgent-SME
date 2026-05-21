@@ -20,7 +20,7 @@
 
 ### `test_collector_database_config.py`
 
-- collector DB 설정 관련 단위 테스트
+- company registry DB 설정 관련 단위 테스트
 - `backend/.env` 경로 해석
 - `DATABASE_URL` 우선순위
 - `POSTGRES_*` 값으로 URL 생성

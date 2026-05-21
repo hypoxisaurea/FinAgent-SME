@@ -1,3 +1,3 @@
-from .industry_agent import industry_agent
+from agents.industry_analyst.agent import IndustryAnalystAgent
 
-__all__ = ["industry_agent"]
+__all__ = ["IndustryAnalystAgent"]

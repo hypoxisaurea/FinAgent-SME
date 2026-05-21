@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 from datetime import date
 
-from backend.utils.api_client import call_claude, get_client, parse_json_response
+from utils.api_client import call_claude, get_client, parse_json_response
 from ..models import (
     EventSource, EventType, RiskEvent,
     SentimentAnalysisResult, SentimentLabel,

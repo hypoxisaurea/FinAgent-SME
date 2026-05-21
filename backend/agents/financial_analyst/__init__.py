@@ -1,3 +1,3 @@
-from .financial_agent import financial_agent
+from agents.financial_analyst.agent import FinancialAnalystAgent
 
-__all__ = ["financial_agent"]
+__all__ = ["FinancialAnalystAgent"]
