@@ -17,7 +17,7 @@ class CompanyRegistryBuilderAgent(Agent):
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """DART 기반 기업 마스터와 재무 피처 데이터를 구축한다."""
         year = int(payload.get("target_year", 2024))
-        sample_size = payload.get("run_sample_size")
+        sample_size = _parse_sample_size(payload.get("run_sample_size"))
         skip_db_save = bool(payload.get("skip_db_save", False))
         output_dir = str(payload.get("output_dir", "."))
 
@@ -53,7 +53,7 @@ class CompanyRegistryBuilderAgent(Agent):
 def dart_collection_node(state: dict[str, Any]) -> dict[str, Any]:
     """기존 DART 배치 수집 노드 호출을 유지하기 위한 래퍼."""
     year = int(state.get("target_year", 2024))
-    sample_size = state.get("run_sample_size")
+    sample_size = _parse_sample_size(state.get("run_sample_size"))
     skip_db_save = bool(state.get("skip_db_save", False))
     output_dir = str(state.get("output_dir", "."))
     pipeline_result = execute_dart_pipeline(
@@ -71,3 +71,9 @@ def dart_collection_node(state: dict[str, Any]) -> dict[str, Any]:
             "db_save_counts": pipeline_result.get("db_save_counts", {}),
         }
     }
+
+
+def _parse_sample_size(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    return int(value)

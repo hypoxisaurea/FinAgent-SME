@@ -2,6 +2,17 @@ import requests
 import streamlit as st
 
 
+def _render_http_error(response: requests.Response) -> None:
+    status_code = response.status_code
+    try:
+        payload = response.json()
+    except ValueError:
+        payload = {"raw": response.text}
+
+    st.error(f"오케스트레이터 호출 실패 ({status_code})")
+    st.json(payload)
+
+
 def run_health_check() -> dict | None:
     try:
         resp = requests.get(f"{st.session_state.base_url}/api/health", timeout=10)
@@ -20,6 +31,13 @@ def run_orchestrator_search(company_name: str) -> dict | None:
         resp = requests.post(url, json=payload, timeout=60)
         resp.raise_for_status()
         return resp.json()
+    except requests.HTTPError as e:
+        if e.response is not None:
+            _render_http_error(e.response)
+        else:
+            st.error("오케스트레이터 호출 실패")
+            st.exception(e)
+        return None
     except Exception as e:
         st.error("오케스트레이터 호출 실패")
         st.exception(e)
@@ -46,5 +64,5 @@ def render() -> None:
                 result = run_orchestrator_search(company_name)
                 if result is not None:
                     st.session_state.last_result = result
-                    st.success("오케스트레이터 실행 완료 — 리포트 페이지로 이동합니다.")
                     st.session_state.page = "Report"
+                    st.rerun()

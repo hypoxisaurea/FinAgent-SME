@@ -27,12 +27,6 @@ FinAgent-SME/
 └── requirements.txt
 ```
 
-각 디렉터리의 상세 설명은 아래 문서를 참고하면 됩니다.
-
-- [backend/README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/backend/README.md)
-- [frontend/README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/frontend/README.md)
-- [tests/README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/tests/README.md)
-
 ## 요구사항
 
 - Python 3.11+
@@ -68,6 +62,7 @@ FinAgent-SME/
 ./setup.sh restart
 ./setup.sh status
 ./setup.sh logs
+./setup.sh build-db
 ./setup.sh db-up
 ./setup.sh db-down
 ./setup.sh db-status
@@ -81,7 +76,7 @@ FinAgent-SME/
 백엔드 설정은 주로 `backend/.env`를 사용합니다.
 
 ```env
-OPENAI_API_KEY=...
+OPEN_AI_API_KEY=...
 OPEN_DART_API_KEY=...
 ECOS_API_KEY=...
 KOSIS_API_KEY=...
@@ -101,6 +96,7 @@ cp backend/.env.example backend/.env
 ```bash
 ./setup.sh install
 ./setup.sh db-up
+./setup.sh build-db --year 2024 --sample-size 10
 cd backend && ../.venv/bin/python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 cd frontend && ../.venv/bin/python -m streamlit run main.py --server.address 0.0.0.0 --server.port 8501
 ```
@@ -111,12 +107,3 @@ cd frontend && ../.venv/bin/python -m streamlit run main.py --server.address 0.0
 .venv/bin/pytest tests/
 .venv/bin/ruff check backend frontend tests
 ```
-
-일부 테스트는 외부 API 키 없이도 동작하지만, 일부 수동 검증 스크립트는 실제 API 자격 증명이 필요합니다. 자세한 내용은 [tests/README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/tests/README.md)에 정리되어 있습니다.
-
-## 문서 기준
-
-- [docs/conventions/naming.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/docs/conventions/naming.md)
-- [docs/conventions/error-handling.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/docs/conventions/error-handling.md)
-- [docs/conventions/testing.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/docs/conventions/testing.md)
-- [docs/domain/workflows.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/docs/domain/workflows.md)

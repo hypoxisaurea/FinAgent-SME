@@ -43,6 +43,7 @@ Commands:
   up        Install if needed, then start backend and frontend
   down      Stop backend and frontend
   restart   Restart backend and frontend
+  build-db  Run DART-based company registry build and save results to DB
   db-up     Start backend PostgreSQL with Docker Compose
   db-down   Stop backend PostgreSQL container
   db-status Show backend PostgreSQL container status
@@ -412,8 +413,21 @@ start_all() {
 }
 
 
+build_database() {
+    ensure_runtime_dirs
+    ensure_dependencies
+    start_database
+    log "Running company registry build pipeline"
+    PYTHONPATH="$BACKEND_DIR" \
+        "$VENV_DIR/bin/python" "$BACKEND_DIR/scripts/build_db.py" "$@"
+}
+
+
 main() {
     local command="${1:-up}"
+    if [[ $# -gt 0 ]]; then
+        shift
+    fi
 
     case "$command" in
         install)
@@ -433,6 +447,9 @@ main() {
             stop_service "backend" "$BACKEND_PID_FILE"
             stop_database
             start_all
+            ;;
+        build-db)
+            build_database "$@"
             ;;
         db-up)
             start_database

@@ -1,11 +1,18 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 
-import httpx
+from openai import (
+    APIConnectionError,
+    APIStatusError,
+    APITimeoutError,
+    AsyncOpenAI,
+    RateLimitError,
+)
 from tenacity import (
     retry,
     retry_if_exception_type,
@@ -13,70 +20,89 @@ from tenacity import (
     wait_exponential,
 )
 
+from backend_env import load_backend_env
+
+load_backend_env()
+
 logger = logging.getLogger(__name__)
 
-ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
-MODEL              = "claude-sonnet-4-20250514"
+MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 
 
 def get_api_key() -> str:
-    key = os.environ.get("ANTHROPIC_API_KEY")
-    if not key:
-        raise EnvironmentError(
-            "ANTHROPIC_API_KEY 환경변수가 설정되지 않았습니다. "
-            ".env 파일을 확인해주세요."
+    key = os.environ.get("OPEN_AI_API_KEY", "").strip()
+    if key:
+        return key
+
+    legacy_key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if legacy_key:
+        logger.warning(
+            "legacy_openai_api_key_used "
+            "env_var=OPENAI_API_KEY preferred=OPEN_AI_API_KEY"
         )
-    return key
+        return legacy_key
 
+    older_legacy_key = os.environ.get("OPEN_API_KEY", "").strip()
+    if older_legacy_key:
+        logger.warning(
+            "legacy_openai_api_key_used env_var=OPEN_API_KEY preferred=OPEN_AI_API_KEY"
+        )
+        return older_legacy_key
 
-def get_headers() -> dict[str, str]:
-    return {
-        "x-api-key":         get_api_key(),
-        "anthropic-version": "2023-06-01",
-        "content-type":      "application/json",
-    }
+    raise EnvironmentError(
+        "OPEN_AI_API_KEY 환경변수가 설정되지 않았습니다. .env 파일을 확인해주세요."
+    )
 
 
 @asynccontextmanager
-async def get_client(timeout: int = 60) -> AsyncGenerator[httpx.AsyncClient, None]:
-    async with httpx.AsyncClient(
-        timeout=httpx.Timeout(timeout),
-        limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
-    ) as client:
+async def get_client(timeout: int = 60) -> AsyncGenerator[AsyncOpenAI, None]:
+    client = AsyncOpenAI(
+        api_key=get_api_key(),
+        timeout=timeout,
+        max_retries=0,
+    )
+    try:
         yield client
+    finally:
+        await client.close()
 
 
-claude_retry = retry(
+openai_retry = retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=2, max=10),
-    retry=retry_if_exception_type((httpx.TimeoutException, httpx.HTTPStatusError)),
+    retry=retry_if_exception_type(
+        (APITimeoutError, APIConnectionError, APIStatusError, RateLimitError)
+    ),
     reraise=True,
 )
 
 
-@claude_retry
-async def call_claude(
-    client: httpx.AsyncClient,
-    messages: list[dict],
+@openai_retry
+async def call_openai(
+    client: AsyncOpenAI,
+    messages: list[dict[str, Any]],
     system: str,
     max_tokens: int = 1000,
+    response_format: dict[str, str] | None = None,
 ) -> str:
-    resp = await client.post(
-        ANTHROPIC_API_URL,
-        headers=get_headers(),
-        json={
-            "model":      MODEL,
-            "max_tokens": max_tokens,
-            "system":     system,
-            "messages":   messages,
-        },
-    )
-    resp.raise_for_status()
-    return resp.json()["content"][0]["text"]
+    request_messages = [{"role": "system", "content": system}, *messages]
+    payload: dict[str, Any] = {
+        "model": MODEL,
+        "messages": request_messages,
+        "max_tokens": max_tokens,
+        "temperature": 0,
+    }
+    if response_format is not None:
+        payload["response_format"] = response_format
+
+    resp = await client.chat.completions.create(**payload)
+    content = resp.choices[0].message.content
+    if content is None:
+        raise ValueError("OpenAI 응답 content가 비어 있습니다.")
+    return content
 
 
 def parse_json_response(raw: str) -> dict | list:
-    import json
     clean = (
         raw.strip()
         .removeprefix("```json")

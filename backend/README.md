@@ -73,8 +73,6 @@ cd backend
 }
 ```
 
-상세 규칙은 [docs/conventions/error-handling.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/docs/conventions/error-handling.md)를 참고하면 됩니다.
-
 ## 디렉터리 구조
 
 ```text
@@ -169,16 +167,11 @@ backend/
 `backend/.env`에서 주로 다음 값을 사용합니다.
 
 ```env
-OPENAI_API_KEY=...
+OPEN_AI_API_KEY=...
 OPEN_DART_API_KEY=...
 ECOS_API_KEY=...
 KOSIS_API_KEY=...
 DATABASE_URL=...
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=finagent
-POSTGRES_PASSWORD=finagent
-POSTGRES_DB=finagent
 ```
 
 ## DB 실행
@@ -187,11 +180,18 @@ PostgreSQL 컨테이너는 `backend/docker-compose.yml`로 관리합니다.
 
 ```bash
 ./setup.sh db-up
+./setup.sh build-db
 ./setup.sh db-status
 ./setup.sh db-down
 ```
 
 기본 컨테이너 이름은 `finagent-postgres`입니다.
+
+빠른 점검용 샘플 실행:
+
+```bash
+./setup.sh build-db --sample-size 10
+```
 
 ## 테스트와 품질 확인
 
@@ -207,9 +207,3 @@ PostgreSQL 컨테이너는 `backend/docker-compose.yml`로 관리합니다.
 ```bash
 .venv/bin/pytest tests/test_workflows_api.py
 ```
-
-## 참고 문서
-
-- [README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/README.md)
-- [tests/README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/tests/README.md)
-- [docs/domain/workflows.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/docs/domain/workflows.md)

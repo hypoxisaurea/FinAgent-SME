@@ -9,10 +9,14 @@ from __future__ import annotations
 import logging
 from datetime import date
 
-from utils.api_client import call_claude, get_client, parse_json_response
+from utils.api_client import call_openai, get_client, parse_json_response
+
 from ..models import (
-    EventSource, EventType, RiskEvent,
-    SentimentAnalysisResult, SentimentLabel,
+    EventSource,
+    EventType,
+    RiskEvent,
+    SentimentAnalysisResult,
+    SentimentLabel,
 )
 
 logger = logging.getLogger(__name__)
@@ -23,7 +27,11 @@ _SYSTEM_PROMPT = """
 당신은 금융 뉴스 감성 분석 전문가입니다.
 뉴스 목록을 읽고 각 기사에 대해 아래 JSON 배열 형식으로만 응답하세요.
 [
-  {"index": 0, "sentiment": "positive" | "neutral" | "negative", "reason": "판단 근거 한 문장"},
+  {
+    "index": 0,
+    "sentiment": "positive" | "neutral" | "negative",
+    "reason": "판단 근거 한 문장"
+  },
   {"index": 1, ...}
 ]
 JSON 외 다른 텍스트는 출력하지 마세요.
@@ -43,7 +51,11 @@ async def analyze_sentiment(
     Returns:
         SentimentAnalysisResult
     """
-    counts = {SentimentLabel.POSITIVE: 0, SentimentLabel.NEUTRAL: 0, SentimentLabel.NEGATIVE: 0}
+    counts = {
+        SentimentLabel.POSITIVE: 0,
+        SentimentLabel.NEUTRAL: 0,
+        SentimentLabel.NEGATIVE: 0,
+    }
     events: list[RiskEvent] = []
 
     if not news_data:
@@ -63,7 +75,7 @@ async def analyze_sentiment(
     results: list[dict] = []
     try:
         async with get_client() as client:
-            raw = await call_claude(
+            raw = await call_openai(
                 client=client,
                 messages=[{"role": "user", "content": prompt}],
                 system=_SYSTEM_PROMPT,
@@ -76,7 +88,10 @@ async def analyze_sentiment(
     except Exception as e:
         logger.error("[%s] 감성 분석 실패: %s", company_name, e)
         # 실패 시 전체 중립 처리
-        results = [{"index": i, "sentiment": "neutral", "reason": "분석 실패"} for i in range(len(news_data))]
+        results = [
+            {"index": i, "sentiment": "neutral", "reason": "분석 실패"}
+            for i in range(len(news_data))
+        ]
 
     # 결과 처리
     for item_result in results:
