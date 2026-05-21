@@ -1,1 +1,11 @@
 .venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.finagent/
+.ruff_cache/
+# Environment files
+.env
+.env.*
+**/.env
+**/.env.*
