@@ -72,9 +72,3 @@
 ```
 
 저장소 전체 `ruff` 상태와 별개로, 변경한 테스트 파일 기준으로는 lint를 함께 확인하는 것을 권장합니다.
-
-## 참고 문서
-
-- [README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/README.md)
-- [backend/README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/backend/README.md)
-- [docs/conventions/testing.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/docs/conventions/testing.md)

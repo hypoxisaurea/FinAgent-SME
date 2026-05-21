@@ -77,8 +77,3 @@ cd frontend
 ```
 
 프론트는 별도 JS 빌드가 없는 Python Streamlit 앱이므로, 현재 저장소 기준 `npm run lint` 대상은 아닙니다.
-
-## 참고 문서
-
-- [README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/README.md)
-- [backend/README.md](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/backend/README.md)
