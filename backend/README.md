@@ -187,11 +187,18 @@ PostgreSQL 컨테이너는 `backend/docker-compose.yml`로 관리합니다.
 
 ```bash
 ./setup.sh db-up
+./setup.sh build-db
 ./setup.sh db-status
 ./setup.sh db-down
 ```
 
 기본 컨테이너 이름은 `finagent-postgres`입니다.
+
+빠른 점검용 샘플 실행:
+
+```bash
+./setup.sh build-db --sample-size 10
+```
 
 ## 테스트와 품질 확인
 

@@ -68,6 +68,7 @@ FinAgent-SME/
 ./setup.sh restart
 ./setup.sh status
 ./setup.sh logs
+./setup.sh build-db
 ./setup.sh db-up
 ./setup.sh db-down
 ./setup.sh db-status
@@ -101,6 +102,7 @@ cp backend/.env.example backend/.env
 ```bash
 ./setup.sh install
 ./setup.sh db-up
+./setup.sh build-db --year 2024 --sample-size 10
 cd backend && ../.venv/bin/python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 cd frontend && ../.venv/bin/python -m streamlit run main.py --server.address 0.0.0.0 --server.port 8501
 ```

@@ -217,7 +217,7 @@ def add_error_log(error_logs, corp_code, corp_name, error_type, message="", **kw
 
 
 # 기업 리스트 로드
-def load_sme_candidates(sample_size=None):
+def load_sme_candidates(sample_size: int | None = None):
     if dart is None:
         raise ModuleNotFoundError(
             (
@@ -227,6 +227,9 @@ def load_sme_candidates(sample_size=None):
         )
 
     corp_list = dart.get_corp_list()
+    if corp_list is None:
+        raise RuntimeError("DART 기업 목록을 불러오지 못했습니다.")
+
     corp_data = [corp.to_dict() for corp in corp_list.corps]
     df = pd.DataFrame(corp_data)
 
@@ -479,25 +482,8 @@ def run_collection(sme_df, business_year, report_code, temp_save_path):
     revenue_filtered_count = 0
     error_count = 0
     start_time = time.time()
-
-    for idx, (_, row) in enumerate(tqdm(sme_df.iterrows(), total=len(sme_df))):
-        if idx % 50 == 0:
-            elapsed = round(time.time() - start_time, 1)
-            logger.info(
-                (
-                    "collection_progress processed=%s total=%s "
-                    "success=%s asset_filtered=%s "
-                    "revenue_filtered=%s error=%s elapsed_seconds=%s"
-                ),
-                idx,
-                len(sme_df),
-                success_count,
-                asset_filtered_count,
-                revenue_filtered_count,
-                error_count,
-                elapsed,
-            )
-
+    progress_bar = tqdm(sme_df.iterrows(), total=len(sme_df))
+    for idx, (_, row) in enumerate(progress_bar):
         result = process_company(row, business_year, report_code, error_logs)
         status = result["status"]
 
@@ -521,6 +507,19 @@ def run_collection(sme_df, business_year, report_code, temp_save_path):
             revenue_filtered_count += 1
         else:
             error_count += 1
+
+        if idx % 50 == 0:
+            elapsed = round(time.time() - start_time, 1)
+            progress_bar.set_postfix(
+                {
+                    "success": success_count,
+                    "asset_filtered": asset_filtered_count,
+                    "revenue_filtered": revenue_filtered_count,
+                    "error": error_count,
+                    "elapsed_s": elapsed,
+                },
+                refresh=False,
+            )
 
     stats = {
         "success_count": success_count,
@@ -726,7 +725,7 @@ def run_self_tests():
 
 def execute_dart_pipeline(
     year: int,
-    sample_size: int = None,
+    sample_size: int | None = None,
     skip_db_save: bool = False,
     output_dir: str = ".",
 ):
