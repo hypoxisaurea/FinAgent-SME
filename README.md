@@ -7,10 +7,13 @@ FinAgent-SME는 중소기업 대상 B2B 거래 리스크 심사를 지원하는 
 - 백엔드: FastAPI API와 에이전트 모듈 제공
 - 프론트엔드: Streamlit 검색/리포트 UI 제공
 - 기본 실행 흐름: 프론트 `검색` 버튼 -> `/api/v1/workflows/orchestrator` -> `run_credit_workflow()`
-- 기본 오케스트레이터 단계: `CollectorAgent`
-- 선택 단계: `pdf_path`가 있을 때 `MultiModalDocumentAgent`
+- 현재 오케스트레이터 흐름:
+  - `CompanyResolverAgent`로 대상 기업 여부 판별
+  - 병렬 분석: `NewsCollectorAgent`, `FinancialAnalystAgent`, `IndustryAnalystAgent`, `RiskEventAgent`
+  - 후속 단계: `DecisionAgent`, `ReportAgent`
+  - 선택 단계: `pdf_path`가 있을 때 `MultiModalDocumentAgent`
 
-재무 분석, 산업 분석, 리스크 이벤트 모듈은 저장소에 포함되어 있지만 현재 기본 프론트 검색 흐름에 자동 연결되지는 않습니다.
+기업 마스터/재무 DB 구축용 배치 에이전트는 `company_registry`, 런타임 뉴스 수집은 `news_collector`로 분리되어 있습니다.
 
 ## 저장소 구조
 
@@ -83,16 +86,6 @@ OPEN_DART_API_KEY=...
 ECOS_API_KEY=...
 KOSIS_API_KEY=...
 DATABASE_URL=...
-```
-
-또는 PostgreSQL 접속 정보를 아래 값들로 나눠서 줄 수 있습니다.
-
-```env
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=finagent
-POSTGRES_PASSWORD=finagent
-POSTGRES_DB=finagent
 ```
 
 시작 전 예시 파일이 필요하면 다음처럼 준비합니다.

@@ -6,17 +6,20 @@
 
 - FastAPI 앱 제공
 - 오케스트레이터 기반 심사 워크플로우 실행
-- DART/뉴스 수집 파이프라인 실행
+- 기업 마스터/재무 DB 구축 파이프라인 실행
+- 대상 기업 뉴스 수집 파이프라인 실행
 - 선택적 멀티모달 문서 처리
-- 재무/산업 분석 모듈 보관
+- 재무/산업/리스크/리포트 에이전트 실행
 
 ## 현재 요청 흐름
 
 1. 프론트에서 회사명을 입력하고 `검색` 버튼을 누릅니다.
 2. `POST /api/v1/workflows/orchestrator`가 호출됩니다.
 3. API 라우터가 `run_credit_workflow(company_name)`를 실행합니다.
-4. 오케스트레이터가 기본적으로 `CollectorAgent`를 수행합니다.
-5. `pdf_path`가 payload에 포함되면 `MultiModalDocumentAgent`가 추가로 실행됩니다.
+4. 오케스트레이터가 먼저 `CompanyResolverAgent`로 대상 기업 여부를 판별합니다.
+5. 대상 기업이면 `NewsCollectorAgent`, `FinancialAnalystAgent`, `IndustryAnalystAgent`, `RiskEventAgent`를 병렬 실행합니다.
+6. `pdf_path`가 payload에 포함되면 병렬 단계에 `MultiModalDocumentAgent`가 추가됩니다.
+7. 병렬 분석 결과를 바탕으로 `DecisionAgent`와 `ReportAgent`를 순차 실행합니다.
 
 ## 실행 방법
 
@@ -88,10 +91,14 @@ backend/
 └── agents/
     ├── base.py
     ├── collector/
+    ├── company_registry/
+    ├── company_resolver/
+    ├── news_collector/
     ├── multimodal_document/
     ├── orchestrator/
     ├── financial_analyst/
     ├── industry_analyst/
+    ├── report/
     └── risk_event/
 ```
 
@@ -112,24 +119,51 @@ backend/
 ### `agents/orchestrator/orchestrator.py`
 
 - `WorkflowOrchestrator` 정의
-- 단계별 `steps` 결과 집계
-- `success`, `partial`, `failed`, `not_started` 상태 계산
+- 대상 기업 판별 단계와 병렬 분석 단계를 관리
+- `DecisionAgent`, `ReportAgent` 후속 단계 실행
+- `success`, `partial`, `failed`, `not_target` 상태 계산
 
-### `agents/collector/agent.py`
+### `agents/company_resolver/agent.py`
 
-- 현재 기본 오케스트레이터 단계
-- `dart`, `news` 수집원을 조합 가능
-- 기본 수집원은 `dart`
+- 기업명을 기준으로 기업 마스터 테이블 조회
+- `corp_code`, `corp_name` 확보
+- 미존재 시 `not_target` 상태로 종료
+
+### `agents/company_registry/`
+
+- 기업 마스터(`sme_list`) 및 재무 피처 DB 구축 담당
+- DART 기반 배치 수집 파이프라인 보관
+- 조회용 DB 유틸도 이 영역 기준으로 사용
+
+### `agents/news_collector/`
+
+- 대상 기업 뉴스 수집 전용 에이전트
+- 오케스트레이터 병렬 분석 단계에서 사용
+- 현재 뉴스 파이프라인은 placeholder 구조를 유지
 
 ### `agents/multimodal_document/`
 
 - `pdf_path`가 있을 때 문서 분석 수행
 - 텍스트, 차트 이미지, 페이지 수 등을 반환
 
-### `agents/financial_analyst/`, `agents/industry_analyst/`, `agents/risk_event/`
+### `agents/financial_analyst/`
 
-- 저장소에 구현이 존재하는 분석 모듈
-- 현재 기본 프론트 검색 플로우에는 자동 연결되지 않음
+- 재무제표, 비율, 추세, `grade_cap` 분석
+- 오케스트레이터 병렬 분석 단계에서 사용
+
+### `agents/industry_analyst/`
+
+- 업종 매핑, 산업 평균, 업황, 경기 국면, 거시 지표 분석
+- 오케스트레이터 병렬 분석 단계에서 사용
+
+### `agents/risk_event/`
+
+- 뉴스·공시·법적·재무 이상 징후를 통합 분석
+- 심각도 분류, 타임라인, 전체 리스크 수준 집계
+
+### `agents/report/`
+
+- `DecisionAgent` 결과와 중간 분석 결과를 묶어 최종 리포트 생성
 
 ## 환경 변수
 
