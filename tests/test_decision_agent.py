@@ -184,8 +184,7 @@ class TestLimitRecommender:
 # ─── 전체 워크플로우 통합 테스트 ─────────────────────────────────────────────
 
 class TestDecisionAgentWorkflow:
-    @pytest.mark.asyncio
-    async def test_full_workflow_clean_company(self, clean_context):
+    def test_full_workflow_clean_company(self, clean_context):
         """정상 기업 전체 흐름 — Claude API mock 처리."""
         mock_explanation = {
             "summary":              "리스크 낮은 우량 기업입니다.",
@@ -208,14 +207,13 @@ class TestDecisionAgentWorkflow:
 
             from agents.decision.agent import DecisionAgent
             agent = DecisionAgent()
-            result = await agent.run(clean_context)
+            result = asyncio.run(agent.run(clean_context))
 
         assert result.get("decision") in ("approve", "review", "reject")
         assert result.get("credit_grade") in ("A", "B", "C", "D", "E")
         assert isinstance(result.get("credit_score"), int)
 
-    @pytest.mark.asyncio
-    async def test_full_workflow_risky_company(self, risky_context):
+    def test_full_workflow_risky_company(self, risky_context):
         """위험 기업 전체 흐름 — 거절 결정 예상."""
         mock_explanation = {
             "summary":              "다수의 리스크 이벤트가 탐지되었습니다.",
@@ -238,12 +236,11 @@ class TestDecisionAgentWorkflow:
 
             from agents.decision.agent import DecisionAgent
             agent = DecisionAgent()
-            result = await agent.run(risky_context)
+            result = asyncio.run(agent.run(risky_context))
 
         assert result.get("decision") == "reject"
 
-    @pytest.mark.asyncio
-    async def test_agent_returns_dict(self, clean_context):
+    def test_agent_returns_dict(self, clean_context):
         """run()이 반드시 dict를 반환해야 한다 (Agent 프로토콜)."""
         with patch(
             "agents.decision.handlers.explanation_generator.call_claude",
@@ -260,6 +257,6 @@ class TestDecisionAgentWorkflow:
 
             from agents.decision.agent import DecisionAgent
             agent  = DecisionAgent()
-            result = await agent.run(clean_context)
+            result = asyncio.run(agent.run(clean_context))
 
         assert isinstance(result, dict)

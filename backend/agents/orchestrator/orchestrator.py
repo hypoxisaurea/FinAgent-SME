@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-import asyncio
+import logging
+import operator
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import Annotated, Any, TypedDict
+
+from langgraph.graph import END, START, StateGraph
 
 from agents.base import Agent
 from agents.company_resolver import CompanyResolverAgent
@@ -13,6 +16,8 @@ from agents.multimodal_document import MultiModalDocumentAgent
 from agents.news_collector import NewsCollectorAgent
 from agents.report import ReportAgent
 from agents.risk_event import RiskEventAgent
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -25,8 +30,24 @@ class StepResult:
     error: str | None = None
 
 
+def _merge_context(
+    left: dict[str, Any] | None,
+    right: dict[str, Any] | None,
+) -> dict[str, Any]:
+    merged: dict[str, Any] = dict(left or {})
+    merged.update(right or {})
+    return merged
+
+
+class WorkflowState(TypedDict, total=False):
+    """LangGraph 오케스트레이션 상태."""
+
+    context: Annotated[dict[str, Any], _merge_context]
+    steps: Annotated[list[dict[str, Any]], operator.add]
+
+
 class WorkflowOrchestrator:
-    """대상 기업 판별, 병렬 분석, 후속 심사 단계를 관리한다."""
+    """의존성을 고려해 분석 에이전트를 병렬 실행하는 워크플로우 관리자."""
 
     def __init__(
         self,
@@ -41,6 +62,9 @@ class WorkflowOrchestrator:
         self._sequential_agents = sequential_agents or []
         self._continue_on_error = continue_on_error
         self._validate_agents()
+        self._news_agent = self._find_parallel_agent("news_collector")
+        self._financial_agent = self._find_parallel_agent("financial_analyst")
+        self._graph = self._build_graph()
 
     def _validate_agents(self) -> None:
         candidates = [
@@ -48,76 +72,211 @@ class WorkflowOrchestrator:
             *self._parallel_agents,
             *self._sequential_agents,
         ]
+        seen_names: set[str] = set()
         for agent in candidates:
             if not isinstance(agent, Agent):
                 raise TypeError(
                     f"Agent 프로토콜 미준수 객체가 포함되어 있습니다: {agent!r}"
                 )
+            if agent.name in seen_names:
+                raise ValueError(f"중복된 agent.name이 감지되었습니다: {agent.name}")
+            seen_names.add(agent.name)
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
-        context: dict[str, Any] = dict(payload)
-        steps: list[StepResult] = []
+        logger.info(
+            "workflow_started company_name=%s continue_on_error=%s",
+            payload.get("company_name"),
+            self._continue_on_error,
+        )
+        initial_state: WorkflowState = {
+            "context": dict(payload),
+            "steps": [],
+        }
+        final_state = await self._graph.ainvoke(initial_state)
+        result = _build_result(final_state)
+        logger.info(
+            "workflow_finished company_name=%s status=%s step_count=%s",
+            payload.get("company_name"),
+            result["status"],
+            len(result["steps"]),
+        )
+        return result
+
+    def _build_graph(self) -> Any:
+        builder = StateGraph(WorkflowState)
+        all_agents = self._all_graph_agents()
+
+        for agent in all_agents:
+            builder.add_node(
+                agent.name,
+                self._create_agent_node(agent),
+            )
 
         if self._resolver_agent is not None:
-            resolver_step = await _run_agent_step(self._resolver_agent, context)
-            steps.append(resolver_step)
-            if resolver_step.ok:
-                context.update(resolver_step.output)
-                if context.get("company_found") is False:
-                    return {
-                        "status": "not_target",
-                        "code": context.get("workflow_code", "COMPANY_NOT_FOUND"),
-                        "message": context.get(
-                            "workflow_message",
-                            "대상 기업이 아닙니다.",
-                        ),
-                        "context": context,
-                        "steps": [asdict(step) for step in steps],
-                    }
-            elif not self._continue_on_error:
-                return {
-                    "status": _derive_status(steps),
-                    "context": context,
-                    "steps": [asdict(step) for step in steps],
-                }
+            builder.add_edge(START, self._resolver_agent.name)
+            builder.add_conditional_edges(
+                self._resolver_agent.name,
+                self._route_after_resolver,
+            )
+        else:
+            builder.add_conditional_edges(START, self._route_from_start)
 
-        parallel_steps = await self._run_parallel_agents(context)
-        steps.extend(parallel_steps)
-        for step in parallel_steps:
-            if step.ok:
-                context.update(step.output)
+        self._connect_analysis_agents(builder)
+        self._connect_sequential_agents(builder)
 
-        if any(not step.ok for step in parallel_steps) and not self._continue_on_error:
-            return {
-                "status": _derive_status(steps),
-                "context": context,
-                "steps": [asdict(step) for step in steps],
-            }
+        return builder.compile()
 
-        for agent in self._sequential_agents:
+    def _all_graph_agents(self) -> list[Agent]:
+        ordered_agents: list[Agent] = []
+        if self._resolver_agent is not None:
+            ordered_agents.append(self._resolver_agent)
+        ordered_agents.extend(self._parallel_agents)
+        ordered_agents.extend(self._sequential_agents)
+        return ordered_agents
+
+    def _create_agent_node(self, agent: Agent) -> Any:
+        async def _node(state: WorkflowState) -> WorkflowState:
+            context = dict(state.get("context", {}))
+            if context.get("_halt_workflow"):
+                return {}
+
+            logger.info(
+                "workflow_agent_started company_name=%s agent_name=%s",
+                context.get("company_name"),
+                agent.name,
+            )
             step = await _run_agent_step(agent, context)
-            steps.append(step)
+            node_state: WorkflowState = {"steps": [asdict(step)]}
+
             if step.ok:
-                context.update(step.output)
+                logger.info(
+                    (
+                        "workflow_agent_completed company_name=%s "
+                        "agent_name=%s output_keys=%s"
+                    ),
+                    context.get("company_name"),
+                    agent.name,
+                    sorted(step.output.keys()),
+                )
+                if step.output:
+                    node_state["context"] = step.output
+            elif not self._continue_on_error:
+                logger.warning(
+                    (
+                        "workflow_agent_failed company_name=%s agent_name=%s "
+                        "continue_on_error=%s error=%s"
+                    ),
+                    context.get("company_name"),
+                    agent.name,
+                    self._continue_on_error,
+                    step.error,
+                )
+                node_state["context"] = {"_halt_workflow": True}
+            else:
+                logger.warning(
+                    (
+                        "workflow_agent_failed company_name=%s agent_name=%s "
+                        "continue_on_error=%s error=%s"
+                    ),
+                    context.get("company_name"),
+                    agent.name,
+                    self._continue_on_error,
+                    step.error,
+                )
+
+            return node_state
+
+        return _node
+
+    def _route_after_resolver(self, state: WorkflowState) -> str | list[str]:
+        context = state.get("context", {})
+        if context.get("company_found") is False or context.get("_halt_workflow"):
+            return END
+        return self._route_to_start_nodes()
+
+    def _route_from_start(self, state: WorkflowState) -> str | list[str]:
+        context = state.get("context", {})
+        if context.get("_halt_workflow"):
+            return END
+        return self._route_to_start_nodes()
+
+    def _route_to_start_nodes(self) -> str | list[str]:
+        start_nodes = self._analysis_start_node_names()
+        if start_nodes:
+            return start_nodes
+        first_sequential = self._first_sequential_agent_name()
+        return first_sequential or END
+
+    def _analysis_start_node_names(self) -> list[str]:
+        node_names: list[str] = []
+        for agent in self._parallel_agents:
+            if agent.name == "risk_event" and self._news_agent is not None:
                 continue
-            if not self._continue_on_error:
-                break
+            if (
+                agent.name == "industry_analyst"
+                and self._financial_agent is not None
+            ):
+                continue
+            node_names.append(agent.name)
+        return node_names
 
-        return {
-            "status": _derive_status(steps),
-            "context": context,
-            "steps": [asdict(step) for step in steps],
-        }
+    def _analysis_terminal_node_names(self) -> list[str]:
+        node_names: list[str] = []
+        for agent in self._parallel_agents:
+            if (
+                agent.name == "news_collector"
+                and self._has_parallel_agent("risk_event")
+            ):
+                continue
+            if (
+                agent.name == "financial_analyst"
+                and self._has_parallel_agent("industry_analyst")
+            ):
+                continue
+            node_names.append(agent.name)
+        return node_names
 
-    async def _run_parallel_agents(self, context: dict[str, Any]) -> list[StepResult]:
-        if not self._parallel_agents:
-            return []
+    def _connect_analysis_agents(self, builder: StateGraph) -> None:
+        if self._has_parallel_agent("risk_event"):
+            if self._news_agent is not None:
+                builder.add_edge(self._news_agent.name, "risk_event")
 
-        tasks = [
-            _run_agent_step(agent, dict(context))
-            for agent in self._parallel_agents
-        ]
-        return list(await asyncio.gather(*tasks))
+        if self._has_parallel_agent("industry_analyst"):
+            if self._financial_agent is not None:
+                builder.add_edge(self._financial_agent.name, "industry_analyst")
+
+    def _connect_sequential_agents(self, builder: StateGraph) -> None:
+        if not self._sequential_agents:
+            for terminal_name in self._analysis_terminal_node_names():
+                builder.add_edge(terminal_name, END)
+            return
+
+        first_sequential = self._sequential_agents[0].name
+        analysis_terminal_names = self._analysis_terminal_node_names()
+        for terminal_name in analysis_terminal_names:
+            builder.add_edge(terminal_name, first_sequential)
+
+        for current_agent, next_agent in zip(
+            self._sequential_agents,
+            self._sequential_agents[1:],
+        ):
+            builder.add_edge(current_agent.name, next_agent.name)
+
+        builder.add_edge(self._sequential_agents[-1].name, END)
+
+    def _find_parallel_agent(self, name: str) -> Agent | None:
+        for agent in self._parallel_agents:
+            if agent.name == name:
+                return agent
+        return None
+
+    def _has_parallel_agent(self, name: str) -> bool:
+        return self._find_parallel_agent(name) is not None
+
+    def _first_sequential_agent_name(self) -> str | None:
+        if not self._sequential_agents:
+            return None
+        return self._sequential_agents[0].name
 
 
 def create_credit_workflow(
@@ -164,14 +323,16 @@ async def run_credit_workflow(
 
     기본 실행 순서:
       1. CompanyResolverAgent   — 대상 기업 여부 판별
-      2. 병렬 분석 단계
-         - NewsCollectorAgent   — 뉴스 수집
+      2. 1차 병렬 단계
+         - NewsCollectorAgent
          - FinancialAnalystAgent
-         - IndustryAnalystAgent
-         - RiskEventAgent
          - MultiModalDocumentAgent (pdf_path 있을 때만)
-      3. DecisionAgent        — 신용등급·승인 판단
-      4. ReportAgent          — 최종 리포트 생성
+      3. 의존 단계
+         - NewsCollectorAgent 이후 RiskEventAgent
+         - FinancialAnalystAgent 이후 IndustryAnalystAgent
+      4. 후속 심사 단계
+         - DecisionAgent
+         - ReportAgent
     """
     normalized_name = company_name.strip()
     if not normalized_name:
@@ -195,10 +356,33 @@ async def run_credit_workflow(
     return result
 
 
-def _derive_status(steps: list[StepResult]) -> str:
+def _build_result(state: WorkflowState) -> dict[str, Any]:
+    context = dict(state.get("context", {}))
+    steps = list(state.get("steps", []))
+
+    if context.get("company_found") is False:
+        return {
+            "status": "not_target",
+            "code": context.get("workflow_code", "COMPANY_NOT_FOUND"),
+            "message": context.get(
+                "workflow_message",
+                "대상 기업이 아닙니다.",
+            ),
+            "context": context,
+            "steps": steps,
+        }
+
+    return {
+        "status": _derive_status(steps),
+        "context": context,
+        "steps": steps,
+    }
+
+
+def _derive_status(steps: list[dict[str, Any]]) -> str:
     if not steps:
         return "not_started"
-    ok_count = sum(1 for step in steps if step.ok)
+    ok_count = sum(1 for step in steps if step["ok"])
     if ok_count == len(steps):
         return "success"
     if ok_count == 0:
@@ -232,8 +416,8 @@ def _build_parallel_agents(payload: dict[str, Any]) -> list[Agent]:
     parallel_agents: list[Agent] = [
         NewsCollectorAgent(),
         FinancialAnalystAgent(),
-        IndustryAnalystAgent(),
         RiskEventAgent(),
+        IndustryAnalystAgent(),
     ]
     if payload.get("pdf_path"):
         parallel_agents.append(MultiModalDocumentAgent())

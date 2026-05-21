@@ -17,9 +17,9 @@
 2. `POST /api/v1/workflows/orchestrator`가 호출됩니다.
 3. API 라우터가 `run_credit_workflow(company_name)`를 실행합니다.
 4. 오케스트레이터가 먼저 `CompanyResolverAgent`로 대상 기업 여부를 판별합니다.
-5. 대상 기업이면 `NewsCollectorAgent`, `FinancialAnalystAgent`, `IndustryAnalystAgent`, `RiskEventAgent`를 병렬 실행합니다.
-6. `pdf_path`가 payload에 포함되면 병렬 단계에 `MultiModalDocumentAgent`가 추가됩니다.
-7. 병렬 분석 결과를 바탕으로 `DecisionAgent`와 `ReportAgent`를 순차 실행합니다.
+5. 대상 기업이면 `NewsCollectorAgent`, `FinancialAnalystAgent`, `MultiModalDocumentAgent(optional)`를 1차 병렬 실행합니다.
+6. 이어서 `NewsCollectorAgent` 결과를 입력으로 `RiskEventAgent`, `FinancialAnalystAgent` 결과를 입력으로 `IndustryAnalystAgent`를 실행합니다.
+7. 분석 종단 노드 결과가 모이면 `DecisionAgent`, `ReportAgent`를 순차 실행합니다.
 
 ## 실행 방법
 
@@ -118,7 +118,7 @@ backend/
 ### `agents/orchestrator/orchestrator.py`
 
 - `WorkflowOrchestrator` 정의
-- 대상 기업 판별 단계와 병렬 분석 단계를 관리
+- 대상 기업 판별 후 LangGraph 기반 DAG로 병렬·의존 단계를 관리
 - `DecisionAgent`, `ReportAgent` 후속 단계 실행
 - `success`, `partial`, `failed`, `not_target` 상태 계산
 
