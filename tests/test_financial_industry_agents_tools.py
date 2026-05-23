@@ -110,7 +110,8 @@ from agents.industry_analyst.industry_tools import (
 # ── 6. map_corp_to_ksic ──────────────────────────────────────
 sep("6. map_corp_to_ksic")
 try:
-    ksic = map_corp_to_ksic.invoke({"corp_code": CORP_CODE})
+    result = map_corp_to_ksic.invoke({"corp_code": CORP_CODE})
+    ksic = result["ksic_code"]   # 도구는 dict 반환 → 문자열만 추출
     print(f"✅ 성공: {ksic}")
 except Exception as e:
     print(f"❌ 실패: {e}")

@@ -6,6 +6,9 @@ from langchain_core.tools import tool
 import pandas as pd
 import requests
 
+import logging
+logger = logging.getLogger(__name__)
+
 from backend_env import load_backend_env
 
 load_backend_env()
@@ -472,7 +475,8 @@ def _kosis_param_query(tbl_id: str, itm_id: str = "ALL",
         res = requests.get(url, params=params, timeout=10)
         data = res.json()
         return data if isinstance(data, list) else []
-    except Exception:
+    except Exception as e:
+        logger.warning(f"KOSIS API 호출 실패 (tbl_id={tbl_id}): {e}")
         return []
 
 
@@ -585,7 +589,7 @@ def get_industry_avg_ratios(
             "avg_current_ratio": None, "avg_interest_coverage": None,
             "avg_borrow_dep": None, "avg_receivable_turnover": None,
             "avg_asset_turnover": None, "avg_sales_growth": None,
-            "ksic_code": ksic_code, "year": year,
+            "ksic_code": ksic_code, "year": year, "data_year": year,
             "note": "산업평균 데이터 없음",
             "sector_note": _SECTOR_NOTES.get(ksic_code, ""),
         }
@@ -610,7 +614,8 @@ def get_industry_avg_ratios(
         "avg_asset_turnover":      _read_csv_val(ACTIVITY_CSV, "총자산회전율",   ksic_code, year_str),
         "avg_sales_growth":        _r(GROWTH_CSV,   "매출액증가율"),
         "ksic_code":   ksic_code,
-        "year":        year,
+        "year":        year, # 요청 연도
+        "data_year":  int(year_str),  # 실제 데이터 기준 연도 (폴백 시 다를 수 있음)
         "sector_note": _SECTOR_NOTES.get(ksic_code, ""),
     }
 

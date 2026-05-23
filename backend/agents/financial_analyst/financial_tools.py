@@ -156,7 +156,7 @@ def calc_financial_ratios(fs: dict) -> dict:
     revenue       = max(fs["매출액"],    1)
     net_income    = fs["당기순이익"]
     op_income     = fs["영업이익"]
-    interest_exp  = max(fs["이자비용"],  1)
+    interest_exp  = fs["이자비용"]
     ocf           = fs["영업현금흐름"]
     capex         = fs["유형자산취득"]   # 0.0이면 데이터 없음
 
@@ -173,9 +173,9 @@ def calc_financial_ratios(fs: dict) -> dict:
         # 안정성
         "debt_ratio":        fs["부채총계"] / equity,
         "current_ratio":     fs["유동자산"] / current_liab,
-        "quick_ratio":       quick_assets   / current_liab,
-        "borrow_dep":        total_borrow   / total_assets,   # 차입금의존도
-        "interest_coverage": op_income      / interest_exp,   # 이자보상배율
+        "quick_ratio":       quick_assets / current_liab,
+        "borrow_dep":        total_borrow / total_assets,   # 차입금의존도
+        "interest_coverage": op_income / interest_exp if interest_exp > 0 else None,   # 이자보상배율
 
         # 활동성
         "receivable_turnover": revenue / max(fs["매출채권"], 1),
@@ -255,6 +255,7 @@ def trend_analysis(corp_code: str, years: list[int]) -> dict:
     for year in sorted(years):
         fs_raw = dart.finstate_all(corp_code, year)
         if fs_raw is None or fs_raw.empty:
+            flags.append(f"{year}_data_missing")
             continue
         fs = _normalize_accounts(fs_raw)
 
@@ -263,13 +264,14 @@ def trend_analysis(corp_code: str, years: list[int]) -> dict:
         total_assets = fs["총자산"]
         debt_ratio = fs["부채총계"] / max(fs["자본총계"], 1)
         op_margin  = fs["영업이익"] / max(revenue, 1)
-        icr        = fs["영업이익"] / max(fs["이자비용"], 1)
+        interest_exp = fs["이자비용"]
+        icr = fs["영업이익"] / interest_exp if interest_exp > 0 else None
 
         history.append({
             "year":          year,
             "debt_ratio":    round(debt_ratio, 4),
             "op_margin":     round(op_margin,  4),
-            "icr":           round(icr,        4),
+            "icr": round(icr, 4) if icr is not None else None,
             "revenue":       revenue,
             "net_income":    net_income,
             "total_assets":  total_assets,
@@ -321,10 +323,11 @@ def trend_analysis(corp_code: str, years: list[int]) -> dict:
         yr = latest["year"]
 
         icr = latest["icr"]
-        if icr < 1.0:
-            flags.append(f"{yr}_icr_danger_{icr:.2f}")
-        elif icr < 1.5:
-            flags.append(f"{yr}_icr_caution_{icr:.2f}")
+        if icr is not None:
+            if icr < 1.0:
+                flags.append(f"{yr}_icr_danger_{icr:.2f}")
+            elif icr < 1.5:
+                flags.append(f"{yr}_icr_caution_{icr:.2f}")
 
         dr = latest["debt_ratio"]
         if dr >= 3.0:

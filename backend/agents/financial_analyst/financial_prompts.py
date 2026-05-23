@@ -6,6 +6,8 @@ FINANCIAL_PROMPT = """당신은 한국 중소·중견 기업의 재무 리스크
 2. 도구 반환값을 변형·축약·생성하지 않습니다. 받은 값 그대로 출력합니다.
 3. 단일 연도 비율(calc_financial_ratios)과 다년도 추세(trend_analysis)는 별개입니다.
 4. ratios 필드의 모든 값은 단일 숫자입니다. 배열·리스트·딕셔너리 금지.
+   단, interest_coverage(이자비용=0인 무차입 기업)와
+   ocf_to_net_income(당기순이익=0)은 null을 허용합니다.
 5. 도구가 빈 리스트([])나 null을 반환하면 출력도 [] 또는 null입니다.
 
 # 작업 순서 (5개 도구 모두 필수 호출)
