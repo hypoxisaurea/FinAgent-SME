@@ -1,139 +1,138 @@
-==================================================
-1. get_financial_statements
-==================================================
+============================================================
+[A] 기존 도구 회귀 테스트 — DART API 호출 포함
+============================================================
+
+[A-1] get_financial_statements
 reprt_code='11011', fs_div='CFS' (사업보고서, 연결제무제표)'
-✅ 성공
-  유동자산: 214,990,218,391
-  유동부채: 370,015,192,280
-  총자산: 878,342,477,244
-  자본총계: 466,740,892,004
-  부채총계: 411,601,585,240
-  이익잉여금: 316,969,120,678
-  재고자산: 63,869,521,428
-  매출채권: 50,692,196,702
-  매입채무: 74,623,688,125
-  단기차입금: 13,374,895,586
-  유동성장기차입금: 24,999,996
-  장기차입금: 45,833,326
-  사채: 0
-  유형자산: 283,983,246,188
-  매출액: 942,249,234,214
-  매출원가: 408,704,544,532
-  영업이익: 123,624,491,071
-  당기순이익: 50,154,643,118
-  이자비용: 5,470,981,717
-  영업현금흐름: 174,424,399,593
-  유형자산취득: 15,712,187,686
+  ✅ PASS  반환값이 dict
+  ✅ PASS  매출액 키 존재
+  ✅ PASS  자본총계 키 존재
+  ✅ PASS  audit_opinion 키 존재 (신규)
+  ✅ PASS  is_external_audit 키 존재 (신규)
+  ✅ PASS  is_external_audit 가 bool
+     audit_opinion    = 적정의견
+     is_external_audit= True
 
-==================================================
-2. calc_financial_ratios
-==================================================
-✅ 성공
-  debt_ratio: 0.8819
-  current_ratio: 0.581
-  quick_ratio: 0.4084
-  borrow_dep: 0.0153
-  interest_coverage: 22.5964
-  receivable_turnover: 18.5877
-  asset_turnover: 1.0728
-  payable_turnover: 5.4769
-  roa: 0.0571
-  op_margin: 0.1312
-  cogs_ratio: 0.4338
-  ocf_to_sales: 0.1851
-  ocf_to_net_income: 3.4777
-  fcf: 158712211907.0
-  fcf_to_sales: 0.1684
+[A-2] calc_financial_ratios
+  ✅ PASS  반환값이 dict
+  ✅ PASS  debt_ratio 존재
+  ✅ PASS  op_margin 존재
+  ✅ PASS  15개 이상 비율 반환
+     debt_ratio = 0.8819
+     op_margin  = 0.1312
 
-==================================================
-3. calc_altman_z_prime
-==================================================
-✅ 성공
-  Z' = 2.163  →  Grey
-  구성요소: {'X1': -0.1765, 'X2': 0.3609, 'X3': 0.1407, 'X4': 1.134, 'X5': 1.0728}
+[A-3] calc_altman_z_prime
+  ✅ PASS  반환값이 dict
+  ✅ PASS  z_prime 존재
+  ✅ PASS  zone 값이 유효
+     Z' = 2.163  →  Grey
 
-==================================================
-4. trend_analysis
-==================================================
+[A-4] trend_analysis — growth_ratios 섹션 포함
 reprt_code='11011', fs_div='CFS' (사업보고서, 연결제무제표)'
 reprt_code='11011', fs_div='CFS' (사업보고서, 연결제무제표)'
 reprt_code='11011', fs_div='CFS' (사업보고서, 연결제무제표)'
-✅ 성공
-  flags: []
-  yoy:   {'debt_ratio': [-0.1419, -0.0622], 'op_margin': [-0.0257, -0.0051], 'revenue_growth': [0.1188, 0.0075], 'asset_growth': [0.0561, -0.0807]}
-  [2022] 부채비율=108.60%, 영업이익률=16.20%, ICR=26.97
-  [2023] 부채비율=94.41%, 영업이익률=13.63%, ICR=15.94
-  [2024] 부채비율=88.19%, 영업이익률=13.12%, ICR=22.60
+  ✅ PASS  반환값이 dict
+  ✅ PASS  flags 키 존재
+  ✅ PASS  yoy 키 존재
+  ✅ PASS  history 키 존재
+  ✅ PASS  growth_ratios 키 존재 (신규)
+  ✅ PASS    revenue_growth 존재
+  ✅ PASS    asset_growth 존재
+  ✅ PASS    net_income_growth 존재
+  ✅ PASS    tangible_asset_growth 존재
+     revenue_growth    = 0.0075
+     asset_growth      = -0.0807
+     net_income_growth = -0.4764
 
-==================================================
-5. apply_risk_filters
-==================================================
-✅ 성공
-  grade_cap:         None
-  triggered_filters: []
-  filter_detail:     {}
+============================================================
+[B] apply_risk_filters 보완 테스트 — mock 데이터
+============================================================
 
-==================================================
-6. map_corp_to_ksic
-==================================================
-✅ 성공: P 교육 서비스업
+[B-1 정상 기업 → 필터 없음]
+  ✅ PASS  grade_cap = None  (기대: None)
+  ✅ PASS  triggered 빈 리스트  (실제: [])
 
-==================================================
-7. get_industry_avg_ratios
-==================================================
-✅ 성공
-  avg_op_margin: 0.038
-  avg_debt_ratio: 1.3743
-  avg_current_ratio: 1.117
-  avg_interest_coverage: 2.3025
-  avg_borrow_dep: 0.38409999999999994
-  avg_receivable_turnover: 34.07
-  avg_asset_turnover: 0.84
-  avg_sales_growth: 0.0866
-  ksic_code: P 교육 서비스업
-  year: 2024
-  sector_note: 수강료 선수금이 유동부채 증가 요인 → 유동비율 낮아도 실질 위험 낮을 수 있음. 학령인구 감소 장기 구조적 리스크. 온라인 전환 가속화로 고정비(임대·강사) 구조 변화 중.
-  peer_comparison:
-    debt_ratio: better
-    current_ratio: worse
-    op_margin: better
-    interest_coverage: better
-    borrow_dep: better
-    receivable_turnover: worse
-    asset_turnover: better
-    sales_growth: worse
+[B-2 완전자본잠식 + 3년 연속 흑자 → CCC 면제]
+  ✅ PASS  grade_cap = None  (기대: None)
+  ✅ PASS  triggered 빈 리스트  (실제: [])
+  ✅ PASS  완전자본잠식_면제 detail 키 존재
 
-==================================================
-8. get_industry_outlook
-==================================================
-✅ 성공
-  production_index_yoy: -0.0049
-  inventory_index_yoy: None
-  shipment_index_yoy: None
-  outlook_score: Medium
-  source: KOSIS 서비스업생산지수
+[B-3 완전자본잠식 + 흑자 미충족 → CCC]
+  ✅ PASS  grade_cap = 'CCC'  (기대: 'CCC')
+  ✅ PASS  '완전자본잠식' triggered 에 포함
 
-==================================================
-9. get_business_cycle
-==================================================
-✅ 성공
-  leading_latest: 126.4
-  coincident_latest: 116.2
-  leading_trend: rising
-  coincident_trend: rising
-  business_cycle_phase: 확장
+[B-4 자기자본비율 8% → CCC]
+  ✅ PASS  grade_cap = 'CCC'  (기대: 'CCC')
+  ✅ PASS  '자기자본비율_10%이하' triggered 에 포함
 
-==================================================
-10. get_macro_indicators
-==================================================
-✅ 성공
-  base_rate: 2.5
-  usd_krw: 1480.6
-  rate_trend: stable
-  fx_sensitivity: 내수형
-  fx_direction: 원화 약세
-  fx_impact: 중립 (직접 영향 낮음, 수입물가 간접 영향)
+[B-5 감사의견 부적정 + 외감 → CCC]
+  ✅ PASS  grade_cap = 'CCC'  (기대: 'CCC')
+  ✅ PASS  '감사의견_부적정또는거절' triggered 에 포함
 
-==================================================
-테스트 완료
-==================================================
+[B-6 감사의견 부적정 + 비외감 → 필터 미발동]
+  ✅ PASS  grade_cap = None  (기대: None)
+  ✅ PASS  triggered 빈 리스트  (실제: [])
+
+[B-7 감사의견 거절 + 외감 → CCC]
+  ✅ PASS  grade_cap = 'CCC'  (기대: 'CCC')
+  ✅ PASS  '감사의견_부적정또는거절' triggered 에 포함
+
+[B-8 당기순손실 2년 연속 → B]
+  ✅ PASS  grade_cap = 'B'  (기대: 'B')
+  ✅ PASS  '당기순손실_2년연속' triggered 에 포함
+
+[B-9 매출 1억 → B+]
+  ✅ PASS  grade_cap = 'B+'  (기대: 'B+')
+  ✅ PASS  '매출액_3억미만' triggered 에 포함
+
+[B-10 매출 15억 → BB+]
+  ✅ PASS  grade_cap = 'BB+'  (기대: 'BB+')
+  ✅ PASS  '매출액_20억미만' triggered 에 포함
+
+[B-11 복수 필터 (감사의견CCC + 순손실B) → CCC 우선]
+  ✅ PASS  grade_cap = 'CCC'  (기대: 'CCC')
+  ✅ PASS  '감사의견_부적정또는거절' triggered 에 포함
+  ✅ PASS  '당기순손실_2년연속' triggered 에 포함
+
+============================================================
+[C] get_financial_statements — audit 필드 실제 API 검증
+============================================================
+
+[C-1] 메가스터디교육(주) — 상장사이므로 is_external_audit=True 기대
+  ✅ PASS  is_external_audit=True  (실제: True)
+  ✅ PASS  audit_opinion 값 있음  (실제: '적정의견')
+
+============================================================
+[D] industry 도구 회귀 테스트 — DART/ECOS/KOSIS API 호출 포함
+============================================================
+
+[D-1] map_corp_to_ksic
+  ✅ PASS  ksic_code 반환: P 교육 서비스업
+
+     [참고] company_ratios.sales_growth = 0.0075  (growth_ratios 경로 확인)
+
+[D-2] get_industry_avg_ratios
+  ✅ PASS  반환값이 dict
+  ✅ PASS  peer_comparison 존재
+  ✅ PASS  company_ratios 전달 시 peer_comparison 활성화
+
+[D-3] get_industry_outlook
+  ✅ PASS  반환값이 dict
+  ✅ PASS  outlook_score 유효: Medium
+
+[D-4] get_business_cycle
+  ✅ PASS  반환값이 dict
+  ✅ PASS  경기 국면 키 존재: ['leading_latest', 'coincident_latest', 'leading_trend', 'coincident_trend', 'business_cycle_phase']
+
+[D-5] get_macro_indicators
+  ✅ PASS  반환값이 dict
+  ✅ PASS  base_rate 존재: 2.5
+  ✅ PASS  usd_krw 존재:   1484.8
+
+============================================================
+최종 결과
+============================================================
+  PASS: 59 / 59
+  FAIL: 0 / 59
+
+  🎉 모든 테스트 통과

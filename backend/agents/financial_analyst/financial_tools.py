@@ -12,18 +12,18 @@ load_backend_env()
 logger = logging.getLogger(__name__)
 
 try:
-    import opendartreader as OpenDartReader
+    import OpenDartReader as odr
 except ModuleNotFoundError:
-    OpenDartReader = None
+    odr = None
 
 
 def _get_dart():
-    if OpenDartReader is None:
+    if odr is None:
         raise ModuleNotFoundError("opendartreader가 설치되어 있지 않습니다.")
     api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
     if not api_key:
         raise ValueError("환경변수 OPEN_DART_API_KEY가 설정되지 않았습니다.")
-    dart = OpenDartReader.OpenDartReader(api_key)
+    dart = odr(api_key)
     return dart
 
 

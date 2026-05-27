@@ -23,13 +23,13 @@ test_financial_industry_agents_tools.py
 import sys
 import os
 
-# ── backend/ 를 sys.path 에 추가 (backend_env 임포트 가능하게) ──────────────
-BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BACKEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend")
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
 from backend_env import load_backend_env
-load_backend_env()
+from pathlib import Path
+load_backend_env(env_path=Path(BACKEND_DIR) / ".env")
 
 from agents.financial_analyst.financial_tools import (
     get_financial_statements,
