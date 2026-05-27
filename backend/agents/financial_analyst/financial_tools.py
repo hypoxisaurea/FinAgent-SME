@@ -335,7 +335,22 @@ def trend_analysis(corp_code: str, years: list[int]) -> dict:
         elif dr >= 2.0:
             flags.append(f"{yr}_debt_ratio_caution_{dr:.0%}")
 
-    return {"flags": flags, "yoy": yoy, "history": history}
+    growth_ratios = {}
+    if history:
+        latest = history[-1]
+        prev   = history[-2] if len(history) >= 2 else None
+
+        growth_ratios = {
+            "revenue_growth": yoy["revenue_growth"][-1] if yoy["revenue_growth"] else None, # 매출액증가율 (최신년도 YoY)
+            "asset_growth":   yoy["asset_growth"][-1]   if yoy["asset_growth"]   else None, # 총자산증가율
+            "net_income_growth": (                                                          # 순이익증가율 (history에서 계산)
+                round((latest["net_income"] - prev["net_income"]) / abs(prev["net_income"]), 4)
+                if prev and prev["net_income"] != 0 else None
+            ),
+            "tangible_asset_growth": None, # 유형자산증가율 (fs에 유형자산 있으면 산출) # history에 유형자산 미포함 — 추후 확장
+        }
+
+    return {"flags": flags, "yoy": yoy, "history": history, "growth_ratios": growth_ratios}
 
 
 @tool

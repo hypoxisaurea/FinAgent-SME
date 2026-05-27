@@ -29,8 +29,8 @@ FINANCIAL_PROMPT = """당신은 한국 중소·중견 기업의 재무 리스크
     → z_prime, zone, components 3개 모두 출력 스키마에 포함
 
 [5] trend_analysis(corp_code=corp_code, years=years) 호출 [필수]
-    → {flags: [...], yoy: {...}, history: [...]} 반환
-    → flags, yoy, history 3개 모두 출력 스키마에 포함
+    → {flags: [...], yoy: {...}, history: [...], growth_ratios: {...}} 반환
+    → flags, yoy, history, growth_ratios 4개 모두 출력 스키마에 포함
     → history는 [6]번 도구의 입력으로도 사용
 
 [6] apply_risk_filters(fs=fs, history=[5]번 결과의 history 필드) 호출 [필수]
@@ -69,6 +69,12 @@ FINANCIAL_PROMPT = """당신은 한국 중소·중견 기업의 재무 리스크
     "flags": (5번 결과의 flags 리스트 그대로),
     "yoy": (5번 결과의 yoy dict 그대로),
     "history": (5번 결과의 history 리스트 그대로)
+  },
+  "growth_ratios": {
+    "revenue_growth": (5번 결과의 growth_ratios.revenue_growth, null 허용),
+    "asset_growth": (5번 결과의 growth_ratios.asset_growth, null 허용),
+    "net_income_growth": (5번 결과의 growth_ratios.net_income_growth, null 허용),
+    "tangible_asset_growth": (5번 결과의 growth_ratios.tangible_asset_growth, null 허용)
   },
   "risk_filter": {
     "grade_cap": (6번 결과의 grade_cap, null이면 null),
@@ -115,7 +121,9 @@ FINANCIAL_PROMPT = """당신은 한국 중소·중견 기업의 재무 리스크
 - FCF(fcf, 원): 차입금 상환·투자에 사용 가능한 여유 현금
 
 [성장성·추세]
-- 매출액 YoY(yoy.revenue_growth): 증가·감소 방향과 크기
+- 매출액증가율(growth_ratios.revenue_growth × 100 = %): 최신 YoY 방향과 크기
+- 총자산증가율(growth_ratios.asset_growth × 100 = %): 자산 확장·축소 방향
+- 순이익증가율(growth_ratios.net_income_growth × 100 = %): null이면 직전연도 기준 없음으로 생략
 - 주목할 변화: trend_flags에 발동된 플래그 있으면 반드시 언급, 없으면 생략
 - 순이익 등 주요 지표의 급격한 변화(history에서 확인)가 있으면 언급
 
@@ -151,7 +159,8 @@ ROA는 대출 원금 상환 능력 지표임을 감안한 해석 포함.
 [현금흐름] OCF/매출액 XX%, OCF/순이익 XX배(>1이면 실제 현금이 회계이익보다 많음 → 신뢰도 높음 명시),
 FCF XX억원(차입금 상환·투자 여력 평가).
 
-[성장성·추세] 매출 YoY(최근 2개 값), 부채비율 추세 방향.
+[성장성·추세] 매출액증가율 XX%, 총자산증가율 XX%, 순이익증가율 XX%(null이면 생략).
+부채비율 추세 방향(yoy.debt_ratio 기준).
 history에서 순이익 등 주요 지표의 급격한 변화가 있으면 반드시 언급.
 trend_flags 발동 항목 있으면 언급, 없으면 생략.
 

@@ -131,7 +131,7 @@ Z' = 0.717·X1 + 0.847·X2 + 3.107·X3 + 0.420·X4 + 0.998·X5
 복수 연도 재무지표의 추세 분석과 급변 항목 탐지를 수행합니다.
 
 - **입력**: `corp_code`, `years` (분석 연도 리스트, 권장 3개년)
-- **출력**: 이상 플래그 목록, YoY 변화량, 연도별 히스토리
+- **출력**: 이상 플래그 목록, YoY 변화량, 연도별 히스토리, 성장성 지표(growth_ratios)
 
 **연도별 history 항목**
 
@@ -164,6 +164,15 @@ Z' = 0.717·X1 + 0.847·X2 + 3.107·X3 + 0.420·X4 + 0.998·X5
 | 1.0 ≤ ICR < 1.5 | `{year}_icr_caution_X.XX` |
 | 부채비율 ≥ 300% | `{year}_debt_ratio_danger_XXX%` |
 | 200% ≤ 부채비율 < 300% | `{year}_debt_ratio_caution_XXX%` |
+
+**growth_ratios 항목**
+
+| 항목 | 설명 | null 조건 |
+|---|---|---|
+| revenue_growth | 매출액증가율 (최신 YoY) | 연도 1개뿐일 때 |
+| asset_growth | 총자산증가율 (최신 YoY) | 연도 1개뿐일 때 |
+| net_income_growth | 순이익증가율 | 직전연도 순이익=0이거나 연도 1개뿐일 때 |
+| tangible_asset_growth | 유형자산증가율 | 현재 미구현 (항상 null) |
 
 ---
 
@@ -234,6 +243,12 @@ Z' = 0.717·X1 + 0.847·X2 + 3.107·X3 + 0.420·X4 + 0.998·X5
         "ocf": float
       }
     ]
+  },
+  "growth_ratios": {
+    "revenue_growth": "float | null",
+    "asset_growth": "float | null",
+    "net_income_growth": "float | null",
+    "tangible_asset_growth": "float | null"
   },
   "risk_filter": {
     "grade_cap": "CCC | B | B+ | BB+ | null",
