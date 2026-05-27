@@ -1,11 +1,15 @@
+import logging
 import os
 
+import requests
 from langchain_core.tools import tool
 import pandas as pd
 
 from backend_env import load_backend_env
 
 load_backend_env()
+
+logger = logging.getLogger(__name__)
 
 try:
     import opendartreader as OpenDartReader
@@ -21,6 +25,52 @@ def _get_dart():
         raise ValueError("환경변수 OPEN_DART_API_KEY가 설정되지 않았습니다.")
     dart = OpenDartReader.OpenDartReader(api_key)
     return dart
+
+
+def _fetch_audit_opinion(corp_code: str, year: int) -> tuple[str | None, bool]:
+    """DART 회계감사인의 명칭 및 감사의견 API로 감사의견과 외감 여부를 반환한다."""
+    api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
+    if not api_key:
+        logger.warning("OPEN_DART_API_KEY 미설정 - 감사의견 조회 생략")
+        return None, False
+
+    url = "https://opendart.fss.or.kr/api/accnutAdtorNmNdAdtOpinion.json"
+    params = {
+        "crtfc_key": api_key,
+        "corp_code": corp_code,
+        "bsns_year": str(year),
+        "reprt_code": "11011",
+    }
+
+    try:
+        resp = requests.get(url, params=params, timeout=5)
+        resp.raise_for_status()
+        data = resp.json()
+    except requests.RequestException as e:
+        logger.warning("감사의견 API 호출 실패 corp_code=%s year=%s: %s", corp_code, year, e)
+        return None, False
+
+    if data.get("status") != "000":
+        logger.info(
+            "감사의견 데이터 없음 corp_code=%s year=%s status=%s",
+            corp_code, year, data.get("status"),
+        )
+        return None, False
+
+    items: list[dict] = data.get("list", [])
+    if not items:
+        return None, False
+
+    target = next(
+        (item for item in items if "당기" in item.get("bsns_year", "")),
+        items[0],
+    )
+
+    opinion = target.get("adt_opinion", "").strip()
+    if opinion in ("", "-"):
+        opinion = None
+
+    return opinion, True
 
 
 def _normalize_accounts(fs: pd.DataFrame) -> dict:
@@ -138,6 +188,15 @@ def get_financial_statements(corp_code: str, year: int) -> dict:
 
     result = _normalize_accounts(fs)
     result["회사명"] = corp_name
+
+    audit_opinion, is_external_audit = _fetch_audit_opinion(corp_code, year)
+    result["audit_opinion"] = audit_opinion
+    result["is_external_audit"] = is_external_audit
+
+    logger.info(
+        "get_financial_statements corp_code=%s year=%s audit_opinion=%s is_external_audit=%s",
+        corp_code, year, audit_opinion, is_external_audit,
+    )
     return result
 
 
@@ -358,40 +417,77 @@ def apply_risk_filters(fs: dict, history: list[dict]) -> dict:
     """재무 데이터 기반 신용등급 상한(grade_cap)을 결정하는 리스크 필터.
 
     필터 우선순위 (높을수록 강한 제약):
-    1. 자기자본 전액잠식          → grade_cap: CCC
-    2. 자기자본비율 10% 이하       → grade_cap: CCC
-    3. 당기순손실 2개년 연속       → grade_cap: B
-    4. 매출액 3억 미만             → grade_cap: B+
-    5. 매출액 20억 미만            → grade_cap: BB+
+    1. 자기자본 전액잠식 (단, 3년 연속 당기순이익 흑자 시 면제) → grade_cap: CCC
+    2. 자기자본비율 10% 이하 (영세·개인사업자 제외)             → grade_cap: CCC
+    3. 감사의견 부적정 또는 거절 (외감기업 전용)                 → grade_cap: CCC
+    4. 당기순손실 2개년 연속                                    → grade_cap: B
+    5. 매출액 3억 미만                                          → grade_cap: B+
+    6. 매출액 20억 미만                                         → grade_cap: BB+
 
-    반환:
-    - grade_cap: 적용된 최저 등급 상한 (없으면 None)
-    - triggered_filters: 발동된 필터 목록
-    - filter_detail: 각 필터별 판단 근거
+    복수 필터 발동 시 가장 강한 제약(낮은 등급) 적용.
+    grade_cap은 절대 상한이며 실제 최종 등급은 XAI/Decision Agent에서 산출.
+    재무제표 없는 기업은 get_financial_statements에서 ValueError로 차단됨.
     """
     # 등급 순서 (낮은 인덱스 = 더 강한 제약)
     GRADE_ORDER = ["CCC", "B", "B+", "BB-", "BB", "BB+", "BBB-", "BBB", "BBB+",
                    "A-", "A", "A+", "AA-", "AA", "AA+", "AAA"]
+    
+    # 발동된 필터들의 등급 상한 결정
+    FILTER_CAP = {
+        "완전자본잠식":           "CCC",
+        "자기자본비율_10%이하":    "CCC",
+        "감사의견_부적정또는거절":  "CCC",
+        "당기순손실_2년연속":      "B",
+        "매출액_3억미만":          "B+",
+        "매출액_20억미만":         "BB+",
+    }
 
-    triggered = []
-    detail    = {}
+    triggered: list[str] = []
+    detail: dict[str, str] = {}
 
-    equity       = fs.get("자본총계", 0.0)
-    total_assets = fs.get("총자산",   0.0)
-    revenue      = fs.get("매출액",   0.0)
+    equity            = fs.get("자본총계", 0.0)
+    total_assets      = fs.get("총자산",   0.0)
+    revenue           = fs.get("매출액",   0.0)
+    audit_opinion     = fs.get("audit_opinion", None)
+    is_external_audit = fs.get("is_external_audit", False)
+    is_exempt_equity  = (
+        fs.get("is_small_enterprise", False)
+        or fs.get("is_individual", False)
+    )
+
     equity_ratio = equity / total_assets if total_assets > 0 else 0.0
 
-    # 필터 1: 자기자본 전액잠식
+    # 필터 1: 자기자본 전액잠식 (3년 연속 흑자 시 면제)
     if equity <= 0:
-        triggered.append("완전자본잠식")
-        detail["완전자본잠식"] = f"자본총계={equity:,.0f}원 (≤ 0)"
+        three_year_profit = (
+            len(history) >= 3
+            and all(h.get("net_income", 0) > 0 for h in history[-3:])
+        )
+        if three_year_profit:
+            detail["완전자본잠식_면제"] = (
+                f"자본총계={equity:,.0f}원이나 "
+                f"최근 3개년({', '.join(str(h['year']) for h in history[-3:])}) "
+                "연속 당기순이익 흑자로 CCC 필터 면제"
+            )
+        else:
+            triggered.append("완전자본잠식")
+            profit_years = [h["year"] for h in history if h.get("net_income", 0) > 0]
+            detail["완전자본잠식"] = (
+                f"자본총계={equity:,.0f}원 (≤ 0), "
+                f"3년 연속 흑자 미충족 (흑자 연도: {profit_years if profit_years else '없음'})"
+            )
 
-    # 필터 2: 자기자본비율 10% 이하
-    if 0 < equity_ratio <= 0.10:
+    # 필터 2: 자기자본비율 10% 이하 (영세·개인사업자 제외)
+    if 0 < equity_ratio <= 0.10 and not is_exempt_equity:
         triggered.append("자기자본비율_10%이하")
         detail["자기자본비율_10%이하"] = f"자기자본비율={equity_ratio:.1%}"
 
-    # 필터 3: 당기순손실 2개년 연속 (history 최근 2개 연도 기준)
+    # 필터 3: 감사의견 부적정 또는 거절 (외감기업 전용)
+    if is_external_audit and audit_opinion in ("부적정", "거절"):
+        triggered.append("감사의견_부적정또는거절")
+        detail["감사의견_부적정또는거절"] = f"감사의견={audit_opinion} (외감기업)"
+
+    # 필터 4: 당기순손실 2개년 연속
     if len(history) >= 2:
         recent_two = history[-2:]
         if all(h.get("net_income", 0) < 0 for h in recent_two):
@@ -399,24 +495,15 @@ def apply_risk_filters(fs: dict, history: list[dict]) -> dict:
             triggered.append("당기순손실_2년연속")
             detail["당기순손실_2년연속"] = f"{years_str}년 연속 순손실"
 
-    # 필터 4: 매출액 3억 미만
+    # 필터 5: 매출액 3억 미만
     if 0 < revenue < 300_000_000:
         triggered.append("매출액_3억미만")
         detail["매출액_3억미만"] = f"매출액={revenue / 1e8:.2f}억원"
 
-    # 필터 5: 매출액 20억 미만 (필터 4 미발동 시에만 의미 있음)
+    # 필터 6: 매출액 20억 미만 (필터 5 미발동 시에만 의미 있음)
     elif 0 < revenue < 2_000_000_000:
         triggered.append("매출액_20억미만")
         detail["매출액_20억미만"] = f"매출액={revenue / 1e8:.2f}억원"
-
-    # 발동된 필터들의 등급 상한 결정
-    FILTER_CAP = {
-        "완전자본잠식":        "CCC",
-        "자기자본비율_10%이하": "CCC",
-        "당기순손실_2년연속":   "B",
-        "매출액_3억미만":       "B+",
-        "매출액_20억미만":      "BB+",
-    }
 
     # 가장 강한 제약(낮은 등급) 선택
     grade_cap = None
