@@ -1,0 +1,3872 @@
+﻿error_datetime,corp_code,corp_name,error_type,message,traceback
+2026-05-23 15:28:16,00663289,위월드,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:17,00393618,제노텍,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:18,00861100,아이케이세미콘,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:19,01293388,무진메디,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:21,01366824,제이엠멀티,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:22,01187458,에스알바이오텍,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:24,00830447,수프로,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:25,00963000,썬테크,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:28,01117422,나눔테크,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:35,01065785,노브메타파마,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:42,00553025,데이터스트림즈,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:46,01020269,탈로스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:50,00611286,블루탑,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:53,01396931,유엑스엔,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:28:55,00808022,메지온,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:28:56,01116380,씨앤에스링크,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:03,00832700,에이펙스인텍,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:07,00364847,이글루,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:29:09,01119651,엘리비젼,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:10,01115044,안지오랩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:10,01188749,지앤이헬스케어,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:14,00669450,바이오프로테크,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:16,01583953,티엘엔지니어링,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:25,01345724,타임기술,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:26,01018802,엔솔바이오사이언스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:34,00302236,태양3C,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:39,01775952,한국제13호스팩,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:29:42,01116344,이비테크,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:44,01365384,이성씨엔아이,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:45,01023822,메디젠휴먼케어,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:29:50,01792825,대신밸런스제17호스팩,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:29:56,01797440,SK증권제11호스팩,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:29:58,00876209,미래엔에듀파트너,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:30:07,00886792,루켄테크놀러지스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:30:07,01110058,바이오인프라,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:30:14,01205514,큐라켐,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:30:16,00607797,엄지하우스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:30:19,01792791,IBKS제24호스팩,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:30:20,00156895,아주IB투자,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:30:28,00978075,머니무브,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:30:29,00337296,원포유,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:30:39,00857480,사람인,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:30:41,01063237,플럼라인생명과학,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:30:42,01113718,올릭스,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:30:46,01814233,미래에셋비전스팩4호,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:30:46,01381984,SKAI,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:30:47,01281541,에피바이오텍,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:30:55,01003040,케이사인,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:30:57,01353848,이노벡스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:31:22,00929228,엔에스컴퍼니,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:31:29,01801822,SK증권제13호스팩,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:31:30,00606770,참좋은여행,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:31:31,01817249,미래에셋비전스팩5호,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:31:36,01374717,미트박스,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:31:37,01872219,유안타제17호스팩,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:31:37,00321204,지에이이노더스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:31:39,01458161,티엑스알로보틱스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:31:43,01881800,한화플러스제5호스팩,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:31:50,00765897,한국피아이엠,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:31:52,00414540,대주이엔티,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:31:53,01363924,한국미라클피플사,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:02,00397252,조이시티,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:32:05,01632912,온코닉테라퓨틱스,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:32:07,00910202,대동고려삼,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:07,01085187,씨알푸드,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:11,01018617,메디쎄이,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:15,00533809,바스칸바이오제약,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:17,01798722,SK증권제12호스팩,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:32:22,01807747,신한제13호스팩,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:32:22,01809569,신한제12호스팩,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:32:25,01008762,데브시스터즈,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:32:37,01709065,마키나락스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:38,01466832,라피치,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:38,01579020,아이엠지티,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:39,01933981,비엔케이제3호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:39,01782004,뉴로핏,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:41,00914341,아이티켐,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:42,01428948,오아,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:43,01466373,알트,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:46,01010615,세나테크놀로지,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:49,00683061,한라캐스트,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:50,01957909,삼성스팩13호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:52,01946532,삼성스팩12호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:53,01512575,코어라인소프트,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:32:54,00874937,탑선,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:55,01817920,페스카로,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:32:59,00442631,태양기계,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:01,01294110,에스엔시스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:03,00521433,엔지브이아이,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:07,01063556,질경이,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:07,00578325,럭스피아,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:09,00666329,코나솔,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:12,01206717,마이크로엔엑스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:17,01565364,폴레드,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:17,01671285,쿼드메디슨,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:33:18,01818682,한국제15호스팩,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:33:19,01246742,테크트랜스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:19,00410915,서울옥션,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:33:26,01551042,애드포러스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:27,01921199,에스테크엠,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:28,01594791,나우로보틱스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:36,01380578,도우인시스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:38,01279698,채비,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:39,01784677,키움히어로제1호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:39,01859500,아이엠바이오로직스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:40,01708163,엔알비,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:40,00381756,티씨머티리얼즈,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:41,01688568,프로티나,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:41,00136101,메이슨캐피탈,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:33:42,01211889,이지스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:43,00816696,큐엠씨,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:46,01188730,SK시그넷,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:48,00924931,엔비알모션,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:50,01902990,KB제32호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:33:55,01508855,블리츠웨이엔터테인먼트,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:34:00,01786958,큐리오시스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:00,01203659,이뮨온시아,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:01,00762377,씨앗,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:02,01507722,켈스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:02,01869710,인벤테라,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:04,00267942,큐캐피탈,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:34:05,01194607,비츠로넥스텍,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:08,00404941,한텍,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:10,01964246,키움히어로제2호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:10,00991225,더콘텐츠온,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:12,00366517,KC산업,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:14,01276901,엔피,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:34:14,01445024,한패스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:15,01513699,포바이포,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:34:16,01229240,가이아코퍼레이션,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:19,01227039,파라택시스코리아,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:34:20,01875146,신한제16호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:21,01669794,아이엘로보틱스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:22,00556712,힘스,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:34:24,01335930,티움바이오,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:34:27,01307593,에이아이코리아,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:28,01034730,크로넥스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:29,01639508,뉴엔AI,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:29,01450938,지에프아이,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:30,01565054,그래피,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:30,00990396,레드우즈,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:31,00874168,싸이닉솔루션,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:35,01290132,인터로이드,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:40,01352575,바이오텐,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:40,01910324,교보18호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:43,00965062,코셋,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:46,01872459,본시스템즈,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:46,01118139,타스컴,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:47,01949469,미래에셋비전스팩10호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:49,00204323,키스트론,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:50,00263371,한국경제TV,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:34:51,01385005,리브스메드,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:51,01829819,아크릴,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:53,00610861,코스텍시스템,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:34:57,01626391,오가노이드사이언스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:02,00406222,쎄크,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:03,01782183,카나프테라퓨틱스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:05,00488244,원일티엔아이,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:05,01130885,바이오인프라생명과학,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:05,01156795,프로젠,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:07,01375822,에이프릴바이오,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:35:12,01931585,엔에이치스팩32호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:13,01139497,에스제이켐,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:16,01210066,리파인,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:35:19,01035942,메디안디노스틱,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:20,01051065,엔비티,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:35:24,01638387,케이지에이,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:24,01963520,신한제17호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:25,01947072,미래에셋비전스팩8호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:25,01946596,미래에셋비전스팩9호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:25,01060735,로지스몬,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:26,01867749,유비씨,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:26,01649620,아우토크립트,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:29,01507810,애니메디솔루션,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:29,01781999,에임드바이오,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:31,01965698,엔에이치스팩33호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:31,00756163,볼빅,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:36,01906598,하나35호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:36,01853214,신한제14호스팩,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:35:38,01554508,액스비스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:39,01429220,피아이이,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:39,01949140,교보19호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:39,01949584,IBKS제25호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:39,00871587,보원케미칼,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:48,00141583,삼양컴텍,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:49,01187148,케어랩스,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:35:51,01109690,도부,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:51,01957282,테라뷰,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:52,01518506,타조이엔터테인먼트,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:35:52,01745173,이노테크,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:05,00127875,삼익제약,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:07,01803635,에스투더블유,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:08,01627363,세미파이브,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:09,01958111,메리츠제1호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:11,01351080,지아이이노베이션,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:36:12,01963140,신한제18호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:13,01802928,코스모로보틱스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:15,01085442,오건에코텍,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:16,00565215,아이티센코어,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:19,01405451,알체라,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:36:19,01780608,메쥬,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:22,00364254,알티캐스트,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:36:22,01381805,아로마티카,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:22,01516933,덕양에너젠,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:25,01884065,디비금융제14호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:25,01906552,엘에스스팩1호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:26,01657197,바이오비쥬,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:27,01118643,솔루믹스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:28,00925967,이엠티,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:28,01336735,펨토바이오메드,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:31,01685677,리센스메디컬,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:32,01262023,루트락,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:33,01185867,퓨쳐메디신,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:36:35,01985203,교보20호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:38,01529982,씨엠티엑스,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:38,00614089,에이원큐브텍,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:40,00185301,제이피아이헬스케어,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:40,01910759,삼성스팩10호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:42,00677486,그린광학,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:43,01563667,더즌,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:43,01945339,신영스팩11호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:44,00541862,판도라티비,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:44,01432598,지씨지놈,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:46,01288827,HPSP,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:36:48,01309069,타이드,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:48,01810477,노타,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:49,01467503,뉴키즈온,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:51,00273420,이스트소프트,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:36:52,01935183,삼성스팩11호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:56,01290248,스코넥,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:36:56,01860010,오션스바이오,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:57,01680131,아이오바이오,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:36:57,01379563,에스팀,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:37:01,01787355,나라스페이스테크놀로지,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:37:01,00341314,엔더블유시,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:37:02,01948220,미래에셋비전스팩11호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:37:02,01949195,하나36호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:37:02,00445869,유니포인트,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:37:05,01370322,삼진식품,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:37:05,01012640,슈어소프트테크,NO_REVENUE,매출 관련 계정 없음,
+2026-05-23 15:37:07,01954832,유진스팩12호,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"
+2026-05-23 15:37:07,01934935,KB제33호스팩,EXCEPTION,조회된 데이타가 없습니다.,"Traceback (most recent call last):
+  File ""C:\2026\FinAgent-SME\backend\agents\company_registry\tools.py"", line 305, in process_company
+    data = dart.api.finance.fnltt_singl_acnt(
+        corp_code=corp_code,
+        bsns_year=str(business_year),
+        reprt_code=report_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\finance\fnltt_singl_acnt.py"", line 32, in fnltt_singl_acnt
+    return api_request(
+        api_key=api_key,
+    ...<3 lines>...
+        reprt_code=reprt_code,
+    )
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\api\helper.py"", line 118, in api_request
+    check_status(**dataset)
+    ~~~~~~~~~~~~^^^^^^^^^^^
+  File ""C:\2026\FinAgent-SME\.venv\Lib\site-packages\dart_fss\errors\checker.py"", line 47, in check_status
+    raise err(msg)
+dart_fss.errors.errors.NoDataReceived: 조회된 데이타가 없습니다.
+"

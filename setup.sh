@@ -68,12 +68,12 @@ command_exists() {
 
 
 choose_python() {
-    if command_exists python3.11; then
-        echo "python3.11"
+    if command_exists python.11; then
+        echo "python.11"
         return
     fi
-    if command_exists python3; then
-        echo "python3"
+    if command_exists python; then
+        echo "python"
         return
     fi
     if command_exists python; then
@@ -94,7 +94,7 @@ ensure_runtime_dirs() {
 ensure_venv() {
     local python_bin
 
-    if [[ -x "$VENV_DIR/bin/python" ]]; then
+    if [[ -x "$VENV_DIR/Scripts/python" ]]; then
         return
     fi
 
@@ -122,7 +122,7 @@ ensure_dependencies() {
 
     log "Installing Python dependencies"
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-        "$VENV_DIR/bin/python" -m pip install -r "$ROOT_DIR/requirements.txt"
+        "$VENV_DIR/Scripts/python" -m pip install -r "$ROOT_DIR/requirements.txt"
     printf '%s\n' "$current_hash" >"$REQUIREMENTS_HASH_FILE"
 }
 
@@ -228,7 +228,7 @@ start_backend() {
     log "Starting backend on http://$BACKEND_HOST:$BACKEND_PORT"
     (
         cd "$ROOT_DIR/backend"
-        nohup "$VENV_DIR/bin/python" -m uvicorn main:app \
+        nohup "$VENV_DIR/Scripts/python" -m uvicorn main:app \
             --host "$BACKEND_HOST" \
             --port "$BACKEND_PORT" \
             >"$BACKEND_LOG_FILE" 2>&1 &
@@ -246,7 +246,7 @@ start_frontend() {
     log "Starting frontend on http://$FRONTEND_HOST:$FRONTEND_PORT"
     (
         cd "$ROOT_DIR/frontend"
-        nohup "$VENV_DIR/bin/python" -m streamlit run main.py \
+        nohup "$VENV_DIR/Scripts/python" -m streamlit run main.py \
             --server.address "$FRONTEND_HOST" \
             --server.port "$FRONTEND_PORT" \
             >"$FRONTEND_LOG_FILE" 2>&1 &
@@ -419,7 +419,7 @@ build_database() {
     start_database
     log "Running company registry build pipeline"
     PYTHONPATH="$BACKEND_DIR" \
-        "$VENV_DIR/bin/python" "$BACKEND_DIR/scripts/build_db.py" "$@"
+        "$VENV_DIR/Scripts/python" "$BACKEND_DIR/scripts/build_db.py" "$@"
 }
 
 
