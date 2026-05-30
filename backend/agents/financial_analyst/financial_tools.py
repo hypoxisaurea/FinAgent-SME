@@ -1,9 +1,9 @@
 import logging
 import os
 
+import pandas as pd
 import requests
 from langchain_core.tools import tool
-import pandas as pd
 
 from backend_env import load_backend_env
 
@@ -12,18 +12,18 @@ load_backend_env()
 logger = logging.getLogger(__name__)
 
 try:
-    import OpenDartReader as odr
+    from opendartreader import OpenDartReader
 except ModuleNotFoundError:
-    odr = None
+    OpenDartReader = None
 
 
 def _get_dart():
-    if odr is None:
+    if OpenDartReader is None:
         raise ModuleNotFoundError("opendartreader가 설치되어 있지 않습니다.")
     api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
     if not api_key:
         raise ValueError("환경변수 OPEN_DART_API_KEY가 설정되지 않았습니다.")
-    dart = odr(api_key)
+    dart = OpenDartReader(api_key)
     return dart
 
 

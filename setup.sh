@@ -67,21 +67,81 @@ command_exists() {
 }
 
 
-choose_python() {
-    if command_exists python.11; then
-        echo "python.11"
-        return
-    fi
-    if command_exists python; then
-        echo "python"
-        return
-    fi
-    if command_exists python; then
-        echo "python"
+create_venv() {
+    if command_exists python3.11; then
+        log "Creating virtual environment with python3.11"
+        python3.11 -m venv "$VENV_DIR"
         return
     fi
 
-    echo "Python 3 is required." >&2
+    if command_exists python3; then
+        log "Creating virtual environment with python3"
+        python3 -m venv "$VENV_DIR"
+        return
+    fi
+
+    if command_exists python; then
+        log "Creating virtual environment with python"
+        python -m venv "$VENV_DIR"
+        return
+    fi
+
+    if command_exists py && py -3.11 -c "import sys" >/dev/null 2>&1; then
+        log "Creating virtual environment with py -3.11"
+        py -3.11 -m venv "$VENV_DIR"
+        return
+    fi
+
+    if command_exists py && py -3 -c "import sys" >/dev/null 2>&1; then
+        log "Creating virtual environment with py -3"
+        py -3 -m venv "$VENV_DIR"
+        return
+    fi
+
+    echo "Python 3.11+ is required." >&2
+    exit 1
+}
+
+
+venv_python_path() {
+    local candidate
+    local candidates=(
+        "$VENV_DIR/bin/python"
+        "$VENV_DIR/bin/python3"
+        "$VENV_DIR/Scripts/python"
+        "$VENV_DIR/Scripts/python.exe"
+    )
+
+    for candidate in "${candidates[@]}"; do
+        if [[ -x "$candidate" ]]; then
+            echo "$candidate"
+            return
+        fi
+    done
+
+    echo "$VENV_DIR/bin/python"
+}
+
+
+sha256_file() {
+    local file_path="$1"
+
+    if command_exists shasum; then
+        shasum -a 256 "$file_path" | awk '{print $1}'
+        return
+    fi
+
+    if command_exists sha256sum; then
+        sha256sum "$file_path" | awk '{print $1}'
+        return
+    fi
+
+    if command_exists openssl; then
+        openssl dgst -sha256 "$file_path" | awk '{print $NF}'
+        return
+    fi
+
+    echo "A SHA-256 command is required (shasum, sha256sum, or openssl)." >&2
     exit 1
 }
 
@@ -92,16 +152,14 @@ ensure_runtime_dirs() {
 
 
 ensure_venv() {
-    local python_bin
+    local venv_python
 
-    # if [[ -x "$VENV_DIR/Scripts/python" ]]; then
-    if [[ -x "$VENV_DIR/bin/python" ]]; then
+    venv_python="$(venv_python_path)"
+    if [[ -x "$venv_python" ]]; then
         return
     fi
 
-    python_bin="$(choose_python)"
-    log "Creating virtual environment with $python_bin"
-    "$python_bin" -m venv "$VENV_DIR"
+    create_venv
 }
 
 
@@ -110,6 +168,7 @@ ensure_dependencies() {
 
     local current_hash
     local installed_hash=""
+    local venv_python
 
     current_hash="$(compute_requirements_hash)"
     if [[ -f "$REQUIREMENTS_HASH_FILE" ]]; then
@@ -122,8 +181,9 @@ ensure_dependencies() {
     fi
 
     log "Installing Python dependencies"
-        # "$VENV_DIR/Scripts/python" -m pip install -r "$ROOT_DIR/requirements.txt"
-        "$VENV_DIR/bin/python" -m pip install -r "$ROOT_DIR/requirements.txt"
+    venv_python="$(venv_python_path)"
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+        "$venv_python" -m pip install -r "$ROOT_DIR/requirements.txt"
     printf '%s\n' "$current_hash" >"$REQUIREMENTS_HASH_FILE"
 }
 
@@ -136,11 +196,27 @@ compute_requirements_hash() {
         if [[ ! -f "$requirement_file" ]]; then
             continue
         fi
-        file_hashes+=$(shasum -a 256 "$requirement_file")
+        file_hashes+="$(sha256_file "$requirement_file")"
         file_hashes+=$'\n'
     done
 
-    printf '%s' "$file_hashes" | shasum -a 256 | awk '{print $1}'
+    if command_exists shasum; then
+        printf '%s' "$file_hashes" | shasum -a 256 | awk '{print $1}'
+        return
+    fi
+
+    if command_exists sha256sum; then
+        printf '%s' "$file_hashes" | sha256sum | awk '{print $1}'
+        return
+    fi
+
+    if command_exists openssl; then
+        printf '%s' "$file_hashes" | openssl dgst -sha256 | awk '{print $NF}'
+        return
+    fi
+
+    echo "A SHA-256 command is required (shasum, sha256sum, or openssl)." >&2
+    exit 1
 }
 
 
@@ -221,16 +297,18 @@ is_pid_running() {
 
 
 start_backend() {
+    local venv_python
+
     if is_pid_running "$BACKEND_PID_FILE"; then
         log "Backend is already running on port $BACKEND_PORT"
         return
     fi
 
+    venv_python="$(venv_python_path)"
     log "Starting backend on http://$BACKEND_HOST:$BACKEND_PORT"
     (
         cd "$ROOT_DIR/backend"
-        # nohup "$VENV_DIR/Scripts/python" -m uvicorn main:app \
-        nohup "$VENV_DIR/bin/python" -m uvicorn main:app \
+        nohup "$venv_python" -m uvicorn main:app \
             --host "$BACKEND_HOST" \
             --port "$BACKEND_PORT" \
             >"$BACKEND_LOG_FILE" 2>&1 &
@@ -240,16 +318,18 @@ start_backend() {
 
 
 start_frontend() {
+    local venv_python
+
     if is_pid_running "$FRONTEND_PID_FILE"; then
         log "Frontend is already running on port $FRONTEND_PORT"
         return
     fi
 
+    venv_python="$(venv_python_path)"
     log "Starting frontend on http://$FRONTEND_HOST:$FRONTEND_PORT"
     (
         cd "$ROOT_DIR/frontend"
-        # nohup "$VENV_DIR/Scripts/python" -m streamlit run main.py \
-        nohup "$VENV_DIR/bin/python" -m streamlit run main.py \
+        nohup "$venv_python" -m streamlit run main.py \
             --server.address "$FRONTEND_HOST" \
             --server.port "$FRONTEND_PORT" \
             >"$FRONTEND_LOG_FILE" 2>&1 &
@@ -417,13 +497,15 @@ start_all() {
 
 
 build_database() {
+    local venv_python
+
     ensure_runtime_dirs
     ensure_dependencies
     start_database
+    venv_python="$(venv_python_path)"
     log "Running company registry build pipeline"
     PYTHONPATH="$BACKEND_DIR" \
-        # "$VENV_DIR/Scripts/python" "$BACKEND_DIR/scripts/build_db.py" "$@"
-        "$VENV_DIR/bin/python" "$BACKEND_DIR/scripts/build_db.py" "$@"
+        "$venv_python" "$BACKEND_DIR/scripts/build_db.py" "$@"
 }
 
 

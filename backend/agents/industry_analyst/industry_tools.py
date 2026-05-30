@@ -1,22 +1,22 @@
+import logging
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 
-from langchain_core.tools import tool
 import pandas as pd
 import requests
-
-import logging
-logger = logging.getLogger(__name__)
+from langchain_core.tools import tool
 
 from backend_env import load_backend_env
 
 load_backend_env()
 
+logger = logging.getLogger(__name__)
+
 try:
-    import OpenDartReader as odr
+    from opendartreader import OpenDartReader
 except ModuleNotFoundError:
-    odr = None
+    OpenDartReader = None
 
 ECOS_BASE = "https://ecos.bok.or.kr/api"
 
@@ -389,12 +389,12 @@ _INDUTY_TO_KSIC = {
 # 내부 헬퍼
 # ===========================================================================
 def _get_dart():
-    if odr is None:
+    if OpenDartReader is None:
         raise ModuleNotFoundError("opendartreader가 설치되어 있지 않습니다.")
     api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
     if not api_key:
         raise ValueError("환경변수 OPEN_DART_API_KEY가 설정되지 않았습니다.")
-    return odr(api_key)
+    return OpenDartReader(api_key)
 
 
 def _ecos_get(stat_code: str, item_code: str, period: str) -> list[dict]:
