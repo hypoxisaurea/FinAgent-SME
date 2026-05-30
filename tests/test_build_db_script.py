@@ -19,7 +19,6 @@ def test_build_db_parser_defaults() -> None:
     assert args.year == 2024
     assert args.sample_size is None
     assert args.skip_db_save is False
-    assert args.output_dir.endswith("backend/ksm_result")
 
 
 def test_run_build_db_passes_args_to_pipeline(monkeypatch) -> None:
@@ -30,12 +29,10 @@ def test_run_build_db_passes_args_to_pipeline(monkeypatch) -> None:
         year: int,
         sample_size: int | None,
         skip_db_save: bool,
-        output_dir: str,
     ) -> dict[str, object]:
         captured["year"] = year
         captured["sample_size"] = sample_size
         captured["skip_db_save"] = skip_db_save
-        captured["output_dir"] = output_dir
         return {
             "status": "success",
             "sme_count": 3,
@@ -52,8 +49,6 @@ def test_run_build_db_passes_args_to_pipeline(monkeypatch) -> None:
             "--sample-size",
             "10",
             "--skip-db-save",
-            "--output-dir",
-            "backend/ksm_result",
         ]
     )
 
@@ -63,6 +58,5 @@ def test_run_build_db_passes_args_to_pipeline(monkeypatch) -> None:
         "year": 2023,
         "sample_size": 10,
         "skip_db_save": True,
-        "output_dir": "backend/ksm_result",
     }
     assert result["status"] == "success"

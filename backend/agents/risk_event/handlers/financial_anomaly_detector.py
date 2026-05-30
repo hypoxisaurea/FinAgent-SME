@@ -1,6 +1,6 @@
 """R-NEW | 재무 이상 징후 탐지 핸들러
 
-financial_features.csv (또는 DB)에서 가져온 재무 데이터를 기반으로
+DB에서 조회한 재무 데이터를 기반으로
 부채 급증 / 순이익 적자 전환 / 영업이익 급감 / 매출 감소 / 자본잠식을 탐지한다.
 """
 
@@ -56,7 +56,10 @@ def detect_financial_anomalies(
         logger.warning("[%s] 재무 데이터 없음 — 이상 탐지 건너뜀", company_name)
         return FinancialAnomalyResult(company_name=company_name, corp_code=corp_code)
 
-    records = sorted([_YearlyFinancials(r) for r in financial_rows], key=lambda r: r.year)
+    records = sorted(
+        [_YearlyFinancials(r) for r in financial_rows],
+        key=lambda r: r.year,
+    )
     events: list[RiskEvent] = []
 
     # 1. 부채비율 급증
@@ -65,44 +68,65 @@ def detect_financial_anomalies(
             continue
         delta_pp = curr.debt_ratio - prev.debt_ratio
         if delta_pp / 100 >= DEBT_RATIO_SPIKE_THRESHOLD:
-            events.append(RiskEvent(
-                event_type=EventType.FINANCIAL_ANOMALY,
-                source=EventSource.FINANCIAL_DATA,
-                title=f"부채비율 급증 ({prev.year}→{curr.year})",
-                description=f"부채비율 {prev.debt_ratio:.1f}% → {curr.debt_ratio:.1f}% ({delta_pp:+.1f}%p)",
-                detected_at=date(curr.year, 12, 31),
-                raw_value=curr.debt_ratio,
-                delta_value=delta_pp,
-            ))
+            description = (
+                f"부채비율 {prev.debt_ratio:.1f}% → "
+                f"{curr.debt_ratio:.1f}% ({delta_pp:+.1f}%p)"
+            )
+            events.append(
+                RiskEvent(
+                    event_type=EventType.FINANCIAL_ANOMALY,
+                    source=EventSource.FINANCIAL_DATA,
+                    title=f"부채비율 급증 ({prev.year}→{curr.year})",
+                    description=description,
+                    detected_at=date(curr.year, 12, 31),
+                    raw_value=curr.debt_ratio,
+                    delta_value=delta_pp,
+                )
+            )
 
     # 2. 영업이익 급감
     for prev, curr in zip(records, records[1:]):
         if prev.operating_income == 0:
             continue
-        chg = (curr.operating_income - prev.operating_income) / abs(prev.operating_income)
+        chg = (
+            (curr.operating_income - prev.operating_income)
+            / abs(prev.operating_income)
+        )
         if chg <= OP_INCOME_DROP_THRESHOLD:
-            events.append(RiskEvent(
-                event_type=EventType.FINANCIAL_ANOMALY,
-                source=EventSource.FINANCIAL_DATA,
-                title=f"영업이익 급감 ({prev.year}→{curr.year})",
-                description=f"영업이익 {_fmt(prev.operating_income)} → {_fmt(curr.operating_income)} ({chg*100:.1f}%)",
-                detected_at=date(curr.year, 12, 31),
-                raw_value=curr.operating_income,
-                delta_value=chg,
-            ))
+            description = (
+                f"영업이익 {_fmt(prev.operating_income)} → "
+                f"{_fmt(curr.operating_income)} ({chg*100:.1f}%)"
+            )
+            events.append(
+                RiskEvent(
+                    event_type=EventType.FINANCIAL_ANOMALY,
+                    source=EventSource.FINANCIAL_DATA,
+                    title=f"영업이익 급감 ({prev.year}→{curr.year})",
+                    description=description,
+                    detected_at=date(curr.year, 12, 31),
+                    raw_value=curr.operating_income,
+                    delta_value=chg,
+                )
+            )
 
     # 3. 당기순이익 적자 전환
     for prev, curr in zip(records, records[1:]):
         if prev.net_income >= 0 and curr.net_income < 0:
-            events.append(RiskEvent(
-                event_type=EventType.FINANCIAL_ANOMALY,
-                source=EventSource.FINANCIAL_DATA,
-                title=f"당기순이익 적자 전환 ({curr.year})",
-                description=f"당기순이익 {_fmt(prev.net_income)}(흑자) → {_fmt(curr.net_income)}(적자)",
-                detected_at=date(curr.year, 12, 31),
-                raw_value=curr.net_income,
-                delta_value=curr.net_income - prev.net_income,
-            ))
+            description = (
+                f"당기순이익 {_fmt(prev.net_income)}(흑자) → "
+                f"{_fmt(curr.net_income)}(적자)"
+            )
+            events.append(
+                RiskEvent(
+                    event_type=EventType.FINANCIAL_ANOMALY,
+                    source=EventSource.FINANCIAL_DATA,
+                    title=f"당기순이익 적자 전환 ({curr.year})",
+                    description=description,
+                    detected_at=date(curr.year, 12, 31),
+                    raw_value=curr.net_income,
+                    delta_value=curr.net_income - prev.net_income,
+                )
+            )
 
     # 4. 매출 감소
     for prev, curr in zip(records, records[1:]):
@@ -110,15 +134,21 @@ def detect_financial_anomalies(
             continue
         chg = (curr.revenue - prev.revenue) / abs(prev.revenue)
         if chg <= REVENUE_DECLINE_THRESHOLD:
-            events.append(RiskEvent(
-                event_type=EventType.FINANCIAL_ANOMALY,
-                source=EventSource.FINANCIAL_DATA,
-                title=f"매출 감소 ({prev.year}→{curr.year})",
-                description=f"매출 {_fmt(prev.revenue)} → {_fmt(curr.revenue)} ({chg*100:.1f}%)",
-                detected_at=date(curr.year, 12, 31),
-                raw_value=curr.revenue,
-                delta_value=chg,
-            ))
+            description = (
+                f"매출 {_fmt(prev.revenue)} → "
+                f"{_fmt(curr.revenue)} ({chg*100:.1f}%)"
+            )
+            events.append(
+                RiskEvent(
+                    event_type=EventType.FINANCIAL_ANOMALY,
+                    source=EventSource.FINANCIAL_DATA,
+                    title=f"매출 감소 ({prev.year}→{curr.year})",
+                    description=description,
+                    detected_at=date(curr.year, 12, 31),
+                    raw_value=curr.revenue,
+                    delta_value=chg,
+                )
+            )
 
     # 5. 자본잠식
     for r in records:

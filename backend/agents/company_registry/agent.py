@@ -19,24 +19,21 @@ class CompanyRegistryBuilderAgent(Agent):
         year = int(payload.get("target_year", 2024))
         sample_size = _parse_sample_size(payload.get("run_sample_size"))
         skip_db_save = bool(payload.get("skip_db_save", False))
-        output_dir = str(payload.get("output_dir", "."))
 
         logger.info(
             (
                 "company_registry_build_started year=%s sample_size=%s "
-                "skip_db_save=%s output_dir=%s"
+                "skip_db_save=%s"
             ),
             year,
             sample_size,
             skip_db_save,
-            output_dir,
         )
 
         result = execute_dart_pipeline(
             year=year,
             sample_size=sample_size,
             skip_db_save=skip_db_save,
-            output_dir=output_dir,
         )
 
         logger.info(
@@ -55,12 +52,10 @@ def dart_collection_node(state: dict[str, Any]) -> dict[str, Any]:
     year = int(state.get("target_year", 2024))
     sample_size = _parse_sample_size(state.get("run_sample_size"))
     skip_db_save = bool(state.get("skip_db_save", False))
-    output_dir = str(state.get("output_dir", "."))
     pipeline_result = execute_dart_pipeline(
         year=year,
         sample_size=sample_size,
         skip_db_save=skip_db_save,
-        output_dir=output_dir,
     )
     return {
         "dart_result": {

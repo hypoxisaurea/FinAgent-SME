@@ -4,8 +4,13 @@ __pycache__/
 *.py[cod]
 .finagent/
 .ruff_cache/
+backend/docs_cache/
+backend/ksm_result/
+
 # Environment files
 .env
 .env.*
 **/.env
 **/.env.*
+
+.DS_Store
