@@ -1,9 +1,10 @@
 import importlib
+import logging
 import sys
 from pathlib import Path
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT / "backend") not in sys.path:
@@ -59,6 +60,34 @@ def test_orchestrator_route_runs_orchestrator(
 
     assert response.status_code == 200
     assert response.json() == {"status": "success", "company_name": "FinAgent"}
+
+
+def test_orchestrator_route_logs_request_and_completion(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    async def fake_run_credit_workflow(company_name: str) -> dict[str, str]:
+        return {"status": "success", "company_name": company_name}
+
+    monkeypatch.setattr(workflows, "run_credit_workflow", fake_run_credit_workflow)
+
+    with caplog.at_level(logging.INFO, logger="api.routes.workflows"):
+        response = client.post(
+            "/api/v1/workflows/orchestrator",
+            json={"company_name": "FinAgent"},
+        )
+
+    assert response.status_code == 200
+    messages = [record.message for record in caplog.records]
+    assert any(
+        "credit_workflow_requested company_name=FinAgent" in msg
+        for msg in messages
+    )
+    assert any(
+        "credit_workflow_completed company_name=FinAgent status=success" in msg
+        for msg in messages
+    )
 
 
 def test_orchestrator_route_returns_400_for_normalized_empty_company_name(

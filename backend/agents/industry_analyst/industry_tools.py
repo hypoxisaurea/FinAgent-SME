@@ -1,17 +1,20 @@
+import logging
 import os
-from pathlib import Path
 import re
+from pathlib import Path
 
-from langchain_core.tools import tool
 import pandas as pd
 import requests
+from langchain_core.tools import tool
 
 from backend_env import load_backend_env
 
 load_backend_env()
 
+logger = logging.getLogger(__name__)
+
 try:
-    import opendartreader as OpenDartReader
+    from opendartreader import OpenDartReader
 except ModuleNotFoundError:
     OpenDartReader = None
 
@@ -391,7 +394,7 @@ def _get_dart():
     api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
     if not api_key:
         raise ValueError("환경변수 OPEN_DART_API_KEY가 설정되지 않았습니다.")
-    return OpenDartReader.OpenDartReader(api_key)
+    return OpenDartReader(api_key)
 
 
 def _ecos_get(stat_code: str, item_code: str, period: str) -> list[dict]:
@@ -472,7 +475,8 @@ def _kosis_param_query(tbl_id: str, itm_id: str = "ALL",
         res = requests.get(url, params=params, timeout=10)
         data = res.json()
         return data if isinstance(data, list) else []
-    except Exception:
+    except Exception as e:
+        logger.warning(f"KOSIS API 호출 실패 (tbl_id={tbl_id}): {e}")
         return []
 
 
@@ -585,7 +589,7 @@ def get_industry_avg_ratios(
             "avg_current_ratio": None, "avg_interest_coverage": None,
             "avg_borrow_dep": None, "avg_receivable_turnover": None,
             "avg_asset_turnover": None, "avg_sales_growth": None,
-            "ksic_code": ksic_code, "year": year,
+            "ksic_code": ksic_code, "year": year, "data_year": year,
             "note": "산업평균 데이터 없음",
             "sector_note": _SECTOR_NOTES.get(ksic_code, ""),
         }
@@ -610,7 +614,8 @@ def get_industry_avg_ratios(
         "avg_asset_turnover":      _read_csv_val(ACTIVITY_CSV, "총자산회전율",   ksic_code, year_str),
         "avg_sales_growth":        _r(GROWTH_CSV,   "매출액증가율"),
         "ksic_code":   ksic_code,
-        "year":        year,
+        "year":        year, # 요청 연도
+        "data_year":  int(year_str),  # 실제 데이터 기준 연도 (폴백 시 다를 수 있음)
         "sector_note": _SECTOR_NOTES.get(ksic_code, ""),
     }
 

@@ -1,8 +1,15 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.router import api_router
 from config import settings
+from logging_config import configure_logging
+
+configure_logging()
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="FinAgent-SME API",
@@ -23,4 +30,5 @@ app.include_router(api_router, prefix="/api")
 
 @app.get("/")
 def root() -> dict[str, str]:
+    logger.info("root_endpoint_requested")
     return {"service": "finagent-sme", "docs": "/docs", "health": "/api/health"}

@@ -24,7 +24,14 @@ async def credit_assessment_orchestrator(
 
 async def _execute_credit_workflow(body: CreditAssessmentRequest) -> dict[str, Any]:
     try:
-        return await run_credit_workflow(body.company_name)
+        logger.info("credit_workflow_requested company_name=%s", body.company_name)
+        result = await run_credit_workflow(body.company_name)
+        logger.info(
+            "credit_workflow_completed company_name=%s status=%s",
+            body.company_name,
+            result.get("status"),
+        )
+        return result
     except ValueError as exc:
         logger.info(
             "credit_workflow_invalid_input company_name=%s error=%s",

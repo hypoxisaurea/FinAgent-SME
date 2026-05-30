@@ -7,9 +7,12 @@ base.py의 Agent Protocol을 준수한다.
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from .graph import run_risk_event_agent
+
+logger = logging.getLogger(__name__)
 
 
 class RiskEventAgent:
@@ -31,11 +34,32 @@ class RiskEventAgent:
         Returns:
             RiskEventResult.model_dump()
         """
+        logger.info(
+            (
+                "risk_event_agent_started company_name=%s corp_code=%s "
+                "news_count=%s disclosure_count=%s court_count=%s"
+            ),
+            payload["company_name"],
+            payload["corp_code"],
+            len(payload.get("news_data", [])),
+            len(payload.get("disclosure_data", [])),
+            len(payload.get("court_data", [])),
+        )
         result = await run_risk_event_agent(
-            company_name    = payload["company_name"],
-            corp_code       = payload["corp_code"],
-            news_data       = payload.get("news_data", []),
-            disclosure_data = payload.get("disclosure_data", []),
-            court_data      = payload.get("court_data", []),
+            company_name=payload["company_name"],
+            corp_code=payload["corp_code"],
+            news_data=payload.get("news_data", []),
+            disclosure_data=payload.get("disclosure_data", []),
+            court_data=payload.get("court_data", []),
+        )
+        logger.info(
+            (
+                "risk_event_agent_finished company_name=%s corp_code=%s "
+                "overall_risk_level=%s total_event_count=%s"
+            ),
+            payload["company_name"],
+            payload["corp_code"],
+            result.overall_risk_level.value,
+            result.total_event_count,
         )
         return result.model_dump()
