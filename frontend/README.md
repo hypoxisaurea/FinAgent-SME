@@ -31,13 +31,13 @@ frontend/
 전체 스택 실행:
 
 ```bash
-./setup.sh
+./scripts/run-all.sh up
 ```
 
 프론트만 실행:
 
 ```bash
-./setup.sh install
+./scripts/setup-env.sh
 cd frontend
 ../.venv/bin/python -m streamlit run main.py --server.address 0.0.0.0 --server.port 8501
 ```
@@ -45,7 +45,7 @@ cd frontend
 종료:
 
 ```bash
-./setup.sh down
+./scripts/run-server.sh down
 ```
 
 ## 백엔드 의존성

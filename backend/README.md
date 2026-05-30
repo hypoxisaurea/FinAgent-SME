@@ -26,14 +26,14 @@
 루트 기준 전체 스택 실행:
 
 ```bash
-./setup.sh
+./scripts/run-all.sh up
 ```
 
 백엔드만 개발 모드로 실행:
 
 ```bash
-./setup.sh install
-./setup.sh db-up
+./scripts/setup-env.sh
+./scripts/setup-db.sh up
 cd backend
 ../.venv/bin/python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
@@ -41,7 +41,8 @@ cd backend
 종료:
 
 ```bash
-./setup.sh down
+./scripts/run-server.sh down
+./scripts/setup-db.sh down
 ```
 
 ## 주요 엔드포인트
@@ -179,10 +180,10 @@ DATABASE_URL=...
 PostgreSQL 컨테이너는 `backend/docker-compose.yml`로 관리합니다.
 
 ```bash
-./setup.sh db-up
-./setup.sh build-db
-./setup.sh db-status
-./setup.sh db-down
+./scripts/setup-db.sh up
+./scripts/setup-db.sh build
+./scripts/setup-db.sh status
+./scripts/setup-db.sh down
 ```
 
 기본 컨테이너 이름은 `finagent-postgres`입니다.
@@ -190,7 +191,7 @@ PostgreSQL 컨테이너는 `backend/docker-compose.yml`로 관리합니다.
 빠른 점검용 샘플 실행:
 
 ```bash
-./setup.sh build-db --sample-size 10
+./scripts/setup-db.sh build --sample-size 10
 ```
 
 ## 테스트와 품질 확인
