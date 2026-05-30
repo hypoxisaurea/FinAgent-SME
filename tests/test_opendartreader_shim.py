@@ -1,16 +1,9 @@
-# ruff: noqa: E402
-
 from __future__ import annotations
 
-import sys
 from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
-
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT / "backend") not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT / "backend"))
 
 import opendartreader as opendartreader_shim
 from agents.financial_analyst import financial_tools

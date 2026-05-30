@@ -1,6 +1,12 @@
+# ruff: noqa: E402
+
 """
-test_financial_industry_agents_tools.py
-========================================
+manual_financial_industry_agents_tools.py
+=========================================
+수동 검증 스크립트:
+  - pytest 자동 수집 대상이 아닌 로컬 점검용 실행 파일
+  - 외부 API(DART/ECOS/KOSIS) 네트워크 연결과 API 키 설정이 필요할 수 있음
+
 테스트 범위:
   [A] 기존 도구 회귀 테스트 (get_financial_statements / calc_financial_ratios /
                               calc_altman_z_prime / trend_analysis)
@@ -20,15 +26,15 @@ test_financial_industry_agents_tools.py
   [D] 기존 industry 도구 회귀 테스트
 """
 
-import sys
 import os
+import sys
+from pathlib import Path
 
 BACKEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "backend")
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
 from backend_env import load_backend_env
-from pathlib import Path
 load_backend_env(env_path=Path(BACKEND_DIR) / ".env")
 
 from agents.financial_analyst.financial_tools import (

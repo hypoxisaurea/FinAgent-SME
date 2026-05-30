@@ -5,13 +5,9 @@
 
 from __future__ import annotations
 
-import pytest
 from datetime import date
-from unittest.mock import AsyncMock, patch
 
-import sys
-import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import pytest
 
 # ─── 테스트용 모델 임포트 ─────────────────────────────────────────────────────
 from backend.agents.risk_event.models import (
@@ -395,7 +391,6 @@ class TestTimelineBuilder:
 
     def test_severity_order_within_date(self):
         """같은 날짜 내 CRITICAL이 LOW보다 앞에 와야 함"""
-        from datetime import timedelta
         from backend.agents.risk_event.models import SeverityClassifiedEvent
         d = date.today()
         events = []
