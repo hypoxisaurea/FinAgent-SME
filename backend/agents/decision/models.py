@@ -11,7 +11,6 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
 # ─── 열거형 ──────────────────────────────────────────────────────────────────
 
 class CreditGrade(str, Enum):
@@ -67,6 +66,7 @@ class DecisionExplanation(BaseModel):
     key_risk_factors:      list[str]
     key_positive_factors:  list[str]
     recommendation:        str
+    fallback_used:         bool = False
 
 
 # ─── 최종 출력 ────────────────────────────────────────────────────────────────
