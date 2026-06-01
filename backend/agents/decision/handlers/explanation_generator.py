@@ -80,6 +80,7 @@ async def generate_explanation(
             key_risk_factors=parsed.get("key_risk_factors", []),
             key_positive_factors=parsed.get("key_positive_factors", []),
             recommendation=parsed.get("recommendation", ""),
+            fallback_used=False,
         )
 
     except Exception as exc:
@@ -157,6 +158,7 @@ def _fallback_explanation(
         ],
         key_positive_factors=[r for r in reasons if "없음" in r or "양호" in r],
         recommendation=grade_result.rationale,
+        fallback_used=True,
     )
 
 

@@ -3,7 +3,6 @@ import os
 import time
 import traceback
 from datetime import datetime
-from pathlib import Path
 from urllib.parse import quote_plus
 
 import pandas as pd
@@ -48,11 +47,6 @@ REVENUE_NAMES = [
     "Revenue",
 ]
 
-# 결과 저장 파일 이름
-SME_LIST_FILENAME = "sme_list.csv"
-FEATURES_FILENAME = "financial_features.csv"
-ERROR_LOG_FILENAME = "financial_error_logs.csv"
-TEMP_FILENAME = "temp_processed_records.csv"
 ENV_API_KEY_NAME = "OPEN_DART_API_KEY"
 DB_URL_ENV_NAME = "DATABASE_URL"
 DB_HOST_ENV_NAME = "POSTGRES_HOST"
@@ -471,10 +465,7 @@ def process_company(row, business_year, report_code, error_logs):
 
 
 # 진행 상황 확인 위한 함수
-def run_collection(sme_df, business_year, report_code, temp_save_path):
-    temp_save_path = Path(temp_save_path)
-    temp_save_path.parent.mkdir(parents=True, exist_ok=True)
-
+def run_collection(sme_df, business_year, report_code):
     processed_records = []
     error_logs = []
     success_count = 0
@@ -490,17 +481,6 @@ def run_collection(sme_df, business_year, report_code, temp_save_path):
         if status == "success":
             processed_records.extend(result["records"])
             success_count += 1
-
-            if success_count % 500 == 0 and processed_records:
-                pd.DataFrame(processed_records).to_csv(
-                    temp_save_path,
-                    index=False,
-                    encoding="utf-8-sig",
-                )
-                logger.info(
-                    "collection_checkpoint_saved success_count=%s",
-                    success_count,
-                )
         elif status == "asset_filtered":
             asset_filtered_count += 1
         elif status == "revenue_filtered":
@@ -600,24 +580,6 @@ def build_sme_list_dataframe(final_df):
 
     existing_columns = [col for col in columns if col in final_df.columns]
     return final_df[existing_columns].drop_duplicates().reset_index(drop=True)
-
-
-# 결과 저장 함수
-def save_outputs(sme_list_df, final_df, error_df, output_dir):
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    sme_list_path = output_dir / SME_LIST_FILENAME
-    features_path = output_dir / FEATURES_FILENAME
-    error_log_path = output_dir / ERROR_LOG_FILENAME
-
-    sme_list_df.to_csv(sme_list_path, index=False, encoding="utf-8-sig")
-    final_df.to_csv(features_path, index=False, encoding="utf-8-sig")
-    error_df.to_csv(error_log_path, index=False, encoding="utf-8-sig")
-
-    logger.info("output_saved path=%s", sme_list_path)
-    logger.info("output_saved path=%s", features_path)
-    logger.info("output_saved path=%s", error_log_path)
 
 
 # api 호출 없이 self test 함수
@@ -727,7 +689,6 @@ def execute_dart_pipeline(
     year: int,
     sample_size: int | None = None,
     skip_db_save: bool = False,
-    output_dir: str = ".",
 ):
     if dart is None:
         raise ModuleNotFoundError("dart_fss가 설치되어 있지 않습니다.")
@@ -738,32 +699,25 @@ def execute_dart_pipeline(
     
     api_key = resolve_api_key(DummyArgs())
     dart.set_api_key(api_key=api_key)
-    
-    output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    temp_save_path = output_dir / TEMP_FILENAME
-    
-    all_corp_df, sme_df = load_sme_candidates(sample_size=sample_size)
-    
+
+    _, sme_df = load_sme_candidates(sample_size=sample_size)
+
     processed_records, error_logs, stats = run_collection(
         sme_df=sme_df,
         business_year=year,
         report_code=DEFAULT_REPORT_CODE,
-        temp_save_path=temp_save_path,
     )
-    
+
     created_at = datetime.now().strftime("%Y-%m-%d")
     final_df = build_final_dataframe(processed_records)
     final_df = add_created_at_column(final_df, created_at)
     sme_list_df = build_sme_list_dataframe(final_df)
     error_df = pd.DataFrame(error_logs)
-    
-    save_outputs(sme_list_df, final_df, error_df, output_dir)
-    
+
     db_save_counts = {}
     if not skip_db_save:
         db_save_counts = save_outputs_to_database(sme_list_df, final_df, error_df)
-        
+
     return {
         "status": "success",
         "stats": stats,

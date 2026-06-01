@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import logging
 from datetime import date
+from time import perf_counter
 from typing import Any
 
 from agents.base import Agent
+from agents.contracts import build_agent_output, elapsed_ms
 
 logger = logging.getLogger(__name__)
 
@@ -16,10 +18,18 @@ class ReportAgent(Agent):
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Decision 결과와 중간 분석 결과를 리포트로 정리한다."""
+        started_at = perf_counter()
         decision = payload.get("decision")
         credit_grade = payload.get("credit_grade")
         decision_reasons = payload.get("decision_reasons", [])
         explanation = payload.get("explanation")
+        summary_fallback_used = not (
+            isinstance(explanation, dict) and explanation.get("summary")
+        )
+        recommendation_fallback_used = not (
+            isinstance(explanation, dict) and explanation.get("recommendation")
+        )
+        fallback_used = summary_fallback_used or recommendation_fallback_used
 
         report = {
             "company_name": payload.get("company_name"),
@@ -49,7 +59,12 @@ class ReportAgent(Agent):
             decision,
             credit_grade,
         )
-        return {"report": report}
+        return build_agent_output(
+            {"report": report},
+            fallback_used=fallback_used,
+            error_code="REPORT_FALLBACK_USED" if fallback_used else "OK",
+            latency_ms=elapsed_ms(started_at),
+        )
 
 
 def _build_summary(payload: dict[str, Any]) -> str:

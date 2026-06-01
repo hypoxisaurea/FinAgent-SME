@@ -8,7 +8,16 @@ base.py의 Agent Protocol을 준수한다.
 from __future__ import annotations
 
 import logging
+from time import perf_counter
 from typing import Any
+
+from agents.contracts import (
+    AGENT_FAILED_STATUS,
+    AGENT_PARTIAL_STATUS,
+    AGENT_SUCCESS_STATUS,
+    build_agent_output,
+    elapsed_ms,
+)
 
 from .graph import run_decision_agent
 
@@ -46,6 +55,7 @@ class DecisionAgent:
         Returns:
             DecisionOutput.model_dump()
         """
+        started_at = perf_counter()
         company_name = payload.get("company_name", "unknown")
         logger.info("decision_agent_started company=%s", company_name)
 
@@ -53,10 +63,15 @@ class DecisionAgent:
 
         if output is None:
             logger.error("decision_agent_failed company=%s output=None", company_name)
-            return {
-                "decision_output": None,
-                "decision_error":  "Decision Agent 실행 실패",
-            }
+            return build_agent_output(
+                {
+                    "decision_output": None,
+                    "decision_error": "Decision Agent 실행 실패",
+                },
+                status=AGENT_FAILED_STATUS,
+                error_code="DECISION_OUTPUT_MISSING",
+                latency_ms=elapsed_ms(started_at),
+            )
 
         logger.info(
             "decision_agent_finished company=%s grade=%s decision=%s",
@@ -66,6 +81,12 @@ class DecisionAgent:
         )
 
         result = output.model_dump()
+        fallback_used = bool(
+            output.processing_errors
+            or (output.explanation and output.explanation.fallback_used)
+        )
+        agent_status = AGENT_PARTIAL_STATUS if fallback_used else AGENT_SUCCESS_STATUS
+        agent_error_code = "DECISION_DEGRADED" if fallback_used else "OK"
 
         # Orchestrator·Report Agent가 바로 참조할 수 있도록 최상위 키로 노출
         result["decision"]            = output.decision.value
@@ -75,4 +96,10 @@ class DecisionAgent:
         result["decision_reasons"]    = output.reasons
         result["recommended_limit"]   = output.recommended_limit
 
-        return result
+        return build_agent_output(
+            result,
+            status=agent_status,
+            error_code=agent_error_code,
+            fallback_used=fallback_used,
+            latency_ms=elapsed_ms(started_at),
+        )

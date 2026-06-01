@@ -3,9 +3,11 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pathlib import Path
+from time import perf_counter
 from typing import Any, Callable
 
 from agents.base import Agent
+from agents.contracts import build_agent_output, elapsed_ms
 from agents.multimodal_document.processor import (
     extract_pdf_chart_images,
     extract_pdf_text,
@@ -34,6 +36,7 @@ class MultiModalDocumentAgent(Agent):
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """payload 컨텍스트를 기반으로 내부 작업을 계획하고 순차 실행합니다."""
+        started_at = perf_counter()
         context = self._build_context(payload)
         task_results: dict[str, Any] = {
             "name": self.name,
@@ -46,13 +49,16 @@ class MultiModalDocumentAgent(Agent):
             result = task.handler(context)
             if not isinstance(result, dict):
                 raise TypeError(
-                    f"{self.name} task '{task.name}' must return a dict, got {type(result).__name__}"
+                    (
+                        f"{self.name} task '{task.name}' must return a dict, "
+                        f"got {type(result).__name__}"
+                    )
                 )
             context.update(result)
             task_results.update(result)
 
         task_results["page_count"] = len(task_results.get("texts", []))
-        return task_results
+        return build_agent_output(task_results, latency_ms=elapsed_ms(started_at))
 
     def _build_context(self, payload: dict[str, Any]) -> dict[str, Any]:
         pdf_path = payload.get("pdf_path")

@@ -8,7 +8,15 @@ base.py의 Agent Protocol을 준수한다.
 from __future__ import annotations
 
 import logging
+from time import perf_counter
 from typing import Any
+
+from agents.contracts import (
+    AGENT_PARTIAL_STATUS,
+    AGENT_SUCCESS_STATUS,
+    build_agent_output,
+    elapsed_ms,
+)
 
 from .graph import run_risk_event_agent
 
@@ -34,6 +42,7 @@ class RiskEventAgent:
         Returns:
             RiskEventResult.model_dump()
         """
+        started_at = perf_counter()
         logger.info(
             (
                 "risk_event_agent_started company_name=%s corp_code=%s "
@@ -62,4 +71,14 @@ class RiskEventAgent:
             result.overall_risk_level.value,
             result.total_event_count,
         )
-        return result.model_dump()
+        result_payload = result.model_dump()
+        fallback_used = bool(result_payload.get("processing_errors"))
+        agent_status = AGENT_PARTIAL_STATUS if fallback_used else AGENT_SUCCESS_STATUS
+        agent_error_code = "RISK_SIGNAL_PARTIAL" if fallback_used else "OK"
+        return build_agent_output(
+            result_payload,
+            status=agent_status,
+            error_code=agent_error_code,
+            fallback_used=fallback_used,
+            latency_ms=elapsed_ms(started_at),
+        )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import operator
 from dataclasses import asdict, dataclass
@@ -9,6 +10,18 @@ from langgraph.graph import END, START, StateGraph
 
 from agents.base import Agent
 from agents.company_resolver import CompanyResolverAgent
+from agents.contracts import (
+    build_agent_failure_output,
+    build_agent_output,
+    classify_agent_error,
+    extract_agent_business_output,
+    extract_agent_execution,
+    is_agent_step_ok,
+    resolve_agent_retry_attempts,
+    resolve_agent_retry_backoff_seconds,
+    resolve_agent_timeout_seconds,
+    should_retry_agent_error,
+)
 from agents.decision import DecisionAgent
 from agents.financial_analyst import FinancialAnalystAgent
 from agents.industry_analyst import IndustryAnalystAgent
@@ -26,6 +39,10 @@ class StepResult:
 
     agent_name: str
     ok: bool
+    status: str
+    error_code: str
+    fallback_used: bool
+    latency_ms: int
     output: dict[str, Any]
     error: str | None = None
 
@@ -83,10 +100,18 @@ class WorkflowOrchestrator:
             seen_names.add(agent.name)
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
+        request_id = payload.get("request_id")
         logger.info(
-            "workflow_started company_name=%s continue_on_error=%s",
+            (
+                "workflow_started request_id=%s company_name=%s continue_on_error=%s "
+                "resolver_agent=%s parallel_agents=%s sequential_agents=%s"
+            ),
+            request_id,
             payload.get("company_name"),
             self._continue_on_error,
+            getattr(self._resolver_agent, "name", None),
+            [agent.name for agent in self._parallel_agents],
+            [agent.name for agent in self._sequential_agents],
         )
         initial_state: WorkflowState = {
             "context": dict(payload),
@@ -94,11 +119,21 @@ class WorkflowOrchestrator:
         }
         final_state = await self._graph.ainvoke(initial_state)
         result = _build_result(final_state)
+        step_summary = _summarize_steps(result["steps"])
         logger.info(
-            "workflow_finished company_name=%s status=%s step_count=%s",
+            (
+                "workflow_finished request_id=%s company_name=%s status=%s "
+                "step_count=%s success_steps=%s partial_steps=%s "
+                "failed_steps=%s fallback_steps=%s"
+            ),
+            request_id,
             payload.get("company_name"),
             result["status"],
             len(result["steps"]),
+            step_summary["success"],
+            step_summary["partial"],
+            step_summary["failed"],
+            step_summary["fallback"],
         )
         return result
 
@@ -141,7 +176,8 @@ class WorkflowOrchestrator:
                 return {}
 
             logger.info(
-                "workflow_agent_started company_name=%s agent_name=%s",
+                "workflow_agent_started request_id=%s company_name=%s agent_name=%s",
+                context.get("request_id"),
                 context.get("company_name"),
                 agent.name,
             )
@@ -151,11 +187,16 @@ class WorkflowOrchestrator:
             if step.ok:
                 logger.info(
                     (
-                        "workflow_agent_completed company_name=%s "
-                        "agent_name=%s output_keys=%s"
+                        "workflow_agent_completed request_id=%s company_name=%s "
+                        "agent_name=%s status=%s fallback_used=%s "
+                        "latency_ms=%s output_keys=%s"
                     ),
+                    context.get("request_id"),
                     context.get("company_name"),
                     agent.name,
+                    step.status,
+                    step.fallback_used,
+                    step.latency_ms,
                     sorted(step.output.keys()),
                 )
                 if step.output:
@@ -163,11 +204,15 @@ class WorkflowOrchestrator:
             elif not self._continue_on_error:
                 logger.warning(
                     (
-                        "workflow_agent_failed company_name=%s agent_name=%s "
+                        "workflow_agent_failed request_id=%s company_name=%s "
+                        "agent_name=%s status=%s error_code=%s "
                         "continue_on_error=%s error=%s"
                     ),
+                    context.get("request_id"),
                     context.get("company_name"),
                     agent.name,
+                    step.status,
+                    step.error_code,
                     self._continue_on_error,
                     step.error,
                 )
@@ -175,14 +220,37 @@ class WorkflowOrchestrator:
             else:
                 logger.warning(
                     (
-                        "workflow_agent_failed company_name=%s agent_name=%s "
+                        "workflow_agent_failed request_id=%s company_name=%s "
+                        "agent_name=%s status=%s error_code=%s "
                         "continue_on_error=%s error=%s"
                     ),
+                    context.get("request_id"),
                     context.get("company_name"),
                     agent.name,
+                    step.status,
+                    step.error_code,
                     self._continue_on_error,
                     step.error,
                 )
+
+            progress_steps = list(state.get("steps", [])) + [asdict(step)]
+            progress_summary = _summarize_steps(progress_steps)
+            logger.info(
+                (
+                    "workflow_progress request_id=%s company_name=%s "
+                    "completed_steps=%s success_steps=%s partial_steps=%s "
+                    "failed_steps=%s fallback_steps=%s last_agent=%s last_status=%s"
+                ),
+                context.get("request_id"),
+                context.get("company_name"),
+                len(progress_steps),
+                progress_summary["success"],
+                progress_summary["partial"],
+                progress_summary["failed"],
+                progress_summary["fallback"],
+                agent.name,
+                step.status,
+            )
 
             return node_state
 
@@ -390,26 +458,120 @@ def _derive_status(steps: list[dict[str, Any]]) -> str:
     return "partial"
 
 
+def _summarize_steps(steps: list[dict[str, Any]]) -> dict[str, int]:
+    success_steps = sum(1 for step in steps if step.get("status") == "success")
+    partial_steps = sum(1 for step in steps if step.get("status") == "partial")
+    failed_steps = sum(1 for step in steps if step.get("status") == "failed")
+    fallback_steps = sum(1 for step in steps if step.get("fallback_used") is True)
+    return {
+        "success": success_steps,
+        "partial": partial_steps,
+        "failed": failed_steps,
+        "fallback": fallback_steps,
+    }
+
+
 async def _run_agent_step(agent: Agent, context: dict[str, Any]) -> StepResult:
-    try:
-        output = await agent.run(context)
-        if not isinstance(output, dict):
-            raise TypeError(
-                f"{agent.name}.run() 반환값은 dict여야 합니다. "
-                f"실제 타입: {type(output).__name__}"
+    agent_name = getattr(agent, "name", agent.__class__.__name__)
+    timeout_seconds = resolve_agent_timeout_seconds(context, agent_name)
+    retry_attempts = resolve_agent_retry_attempts(context, agent_name)
+    retry_backoff_seconds = resolve_agent_retry_backoff_seconds(context, agent_name)
+    logger.info(
+        (
+            "workflow_agent_execution_config request_id=%s company_name=%s "
+            "agent_name=%s timeout_seconds=%s retry_attempts=%s "
+            "retry_backoff_seconds=%s"
+        ),
+        context.get("request_id"),
+        context.get("company_name"),
+        agent_name,
+        timeout_seconds,
+        retry_attempts,
+        retry_backoff_seconds,
+    )
+    attempt = 0
+
+    while attempt < retry_attempts:
+        attempt += 1
+        started_at = asyncio.get_running_loop().time()
+        try:
+            raw_output = await asyncio.wait_for(agent.run(context), timeout_seconds)
+            if not isinstance(raw_output, dict):
+                raise TypeError(
+                    f"{agent_name}.run() 반환값은 dict여야 합니다. "
+                    f"실제 타입: {type(raw_output).__name__}"
+                )
+
+            contract_output = build_agent_output(
+                raw_output,
+                latency_ms=int((asyncio.get_running_loop().time() - started_at) * 1000),
             )
-        return StepResult(
-            agent_name=agent.name,
-            ok=True,
-            output=output,
-        )
-    except Exception as exc:  # noqa: BLE001
-        return StepResult(
-            agent_name=getattr(agent, "name", agent.__class__.__name__),
-            ok=False,
-            output={},
-            error=str(exc),
-        )
+            execution = extract_agent_execution(contract_output)
+            return StepResult(
+                agent_name=agent_name,
+                ok=is_agent_step_ok(execution["status"]),
+                status=execution["status"],
+                error_code=execution["error_code"],
+                fallback_used=execution["fallback_used"],
+                latency_ms=execution["latency_ms"],
+                output=extract_agent_business_output(contract_output),
+                error=(
+                    None
+                    if is_agent_step_ok(execution["status"])
+                    else execution["error_code"]
+                ),
+            )
+        except Exception as exc:  # noqa: BLE001
+            error_code = classify_agent_error(exc)
+            if attempt < retry_attempts and should_retry_agent_error(exc):
+                logger.warning(
+                    (
+                        "workflow_agent_retry request_id=%s company_name=%s "
+                        "agent_name=%s attempt=%s max_attempts=%s "
+                        "error_code=%s error=%s"
+                    ),
+                    context.get("request_id"),
+                    context.get("company_name"),
+                    agent_name,
+                    attempt,
+                    retry_attempts,
+                    error_code,
+                    exc,
+                )
+                await asyncio.sleep(retry_backoff_seconds * attempt)
+                continue
+
+            failure_output = build_agent_failure_output(
+                error_code=error_code,
+                latency_ms=int((asyncio.get_running_loop().time() - started_at) * 1000),
+            )
+            execution = extract_agent_execution(failure_output)
+            return StepResult(
+                agent_name=agent_name,
+                ok=False,
+                status=execution["status"],
+                error_code=execution["error_code"],
+                fallback_used=execution["fallback_used"],
+                latency_ms=execution["latency_ms"],
+                output=extract_agent_business_output(failure_output),
+                error=str(exc),
+            )
+
+    failure_output = build_agent_failure_output(
+        error_code="AGENT_EXECUTION_FAILED",
+        latency_ms=0,
+    )
+    execution = extract_agent_execution(failure_output)
+    return StepResult(
+        agent_name=agent_name,
+        ok=False,
+        status=execution["status"],
+        error_code=execution["error_code"],
+        fallback_used=execution["fallback_used"],
+        latency_ms=execution["latency_ms"],
+        output={},
+        error="알 수 없는 에이전트 실행 실패",
+    )
 
 
 def _build_parallel_agents(payload: dict[str, Any]) -> list[Agent]:

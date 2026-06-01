@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import logging
+from time import perf_counter
 from typing import Any
 
+from agents.contracts import build_agent_output, elapsed_ms
 from agents.news_collector.prompts import NEWS_COLLECTOR_PROMPT
 from agents.news_collector.tools import (
     DEFAULT_LOOKBACK_DAYS,
@@ -21,6 +23,7 @@ class NewsCollectorAgent:
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """대상 기업 뉴스 수집 파이프라인을 실행한다."""
+        started_at = perf_counter()
         lookback_days = int(payload.get("lookback_days", DEFAULT_LOOKBACK_DAYS))
         max_articles = int(payload.get("max_articles", DEFAULT_MAX_ARTICLES))
         company_limit = payload.get("company_limit")
@@ -66,18 +69,30 @@ class NewsCollectorAgent:
             news_result.get("updated_count"),
         )
 
-        return {
-            "news_data": news_result.get("collected_news_data", []),
-            "news_result": news_result,
-            "news_collector_config": {
-                "lookback_days": lookback_days,
-                "max_articles": max_articles,
-                "company_limit": company_limit,
-                "summarize": summarize,
-                "model_name": model_name,
-                "prompt": NEWS_COLLECTOR_PROMPT,
+        agent_status = "success"
+        agent_error_code = "OK"
+        pipeline_status = str(news_result.get("status", "success"))
+        if pipeline_status not in {"success", "ok"}:
+            agent_status = "partial"
+            agent_error_code = "NEWS_PIPELINE_DEGRADED"
+
+        return build_agent_output(
+            {
+                "news_data": news_result.get("collected_news_data", []),
+                "news_result": news_result,
+                "news_collector_config": {
+                    "lookback_days": lookback_days,
+                    "max_articles": max_articles,
+                    "company_limit": company_limit,
+                    "summarize": summarize,
+                    "model_name": model_name,
+                    "prompt": NEWS_COLLECTOR_PROMPT,
+                },
             },
-        }
+            status=agent_status,
+            error_code=agent_error_code,
+            latency_ms=elapsed_ms(started_at),
+        )
 
 
 def news_collection_node(state: dict[str, Any]) -> dict[str, Any]:

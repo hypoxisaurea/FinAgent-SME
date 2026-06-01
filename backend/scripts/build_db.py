@@ -3,14 +3,11 @@ from __future__ import annotations
 import argparse
 import logging
 from collections.abc import Sequence
-from pathlib import Path
 from typing import Any
 
 from agents.company_registry import execute_dart_pipeline
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_OUTPUT_DIR = Path(__file__).resolve().parents[1] / "ksm_result"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -33,12 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--skip-db-save",
         action="store_true",
-        help="CSV만 저장하고 DB 저장은 건너뜁니다.",
-    )
-    parser.add_argument(
-        "--output-dir",
-        default=str(DEFAULT_OUTPUT_DIR),
-        help="CSV 산출물 저장 디렉터리",
+        help="수집 결과의 DB 저장을 건너뜁니다.",
     )
     return parser
 
@@ -48,19 +40,17 @@ def run_build_db(args: argparse.Namespace) -> dict[str, Any]:
     logger.info(
         (
             "build_db_started year=%s sample_size=%s "
-            "skip_db_save=%s output_dir=%s"
+            "skip_db_save=%s"
         ),
         args.year,
         args.sample_size,
         args.skip_db_save,
-        args.output_dir,
     )
 
     result = execute_dart_pipeline(
         year=args.year,
         sample_size=args.sample_size,
         skip_db_save=args.skip_db_save,
-        output_dir=args.output_dir,
     )
 
     logger.info(

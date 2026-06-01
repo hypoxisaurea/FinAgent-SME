@@ -17,6 +17,7 @@
 - 대상: Orchestrator + 다수 Agent 조합
 - 병렬 단계 결과 병합, 상태값 계산, 실패 전파를 검증한다
 - `continue_on_error` on/off 시나리오를 모두 검증한다
+- 각 단계 결과에 `status`, `error_code`, `fallback_used`, `latency_ms`가 남는지 검증한다
 
 ### 3) API 테스트
 
@@ -31,6 +32,7 @@
 - 실패 흐름: 핵심 단계 실패 시 `status=failed`
 - 미구성 흐름: Agent 미등록 시 `status=not_configured`
 - 입력 검증: 빈 `company_name` 요청 실패
+- 공통 실패 계약: 모든 step에 실행 메타데이터 존재
 
 ## 파일/네이밍 규칙
 

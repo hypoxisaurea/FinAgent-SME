@@ -1,14 +1,11 @@
-# ruff: noqa: E402
-
 from __future__ import annotations
 
-import sys
+from datetime import datetime
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-if str(PROJECT_ROOT / "backend") not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT / "backend"))
+import pandas as pd
 
+import opendartreader as opendartreader_shim
 from agents.financial_analyst import financial_tools
 from agents.industry_analyst import industry_tools
 from opendartreader import OpenDartReader
@@ -21,3 +18,45 @@ def test_opendartreader_shim_exposes_vendor_reader() -> None:
 def test_agent_tools_use_opendartreader_shim() -> None:
     assert financial_tools.OpenDartReader is OpenDartReader
     assert industry_tools.OpenDartReader is OpenDartReader
+
+
+def test_opendartreader_shim_redirects_cache_outside_backend(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    cache_dir = tmp_path / "dart-cache"
+    cache_file = cache_dir / (
+        f"opendartreader_corp_codes_{datetime.today().strftime('%Y%m%d')}.pkl"
+    )
+    corp_codes_df = pd.DataFrame(
+        [
+            {
+                "corp_code": "00123456",
+                "corp_name": "테스트기업",
+                "stock_code": "123456",
+            }
+        ]
+    )
+    call_count = {"count": 0}
+
+    def fake_corp_codes(api_key: str) -> pd.DataFrame:
+        call_count["count"] += 1
+        assert api_key == "test-key"
+        return corp_codes_df
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("OPENDARTREADER_CACHE_DIR", str(cache_dir))
+    monkeypatch.setattr(
+        opendartreader_shim._vendor_module.dart_list,
+        "corp_codes",
+        fake_corp_codes,
+    )
+
+    reader = OpenDartReader("test-key")
+    second_reader = OpenDartReader("test-key")
+
+    assert reader.api_key == "test-key"
+    assert second_reader.api_key == "test-key"
+    assert call_count["count"] == 1
+    assert cache_file.exists()
+    assert not (tmp_path / "docs_cache").exists()

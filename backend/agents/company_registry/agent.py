@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
+from time import perf_counter
 from typing import Any
 
 from agents.base import Agent
 from agents.company_registry.tools import execute_dart_pipeline
+from agents.contracts import build_agent_output, elapsed_ms
 
 logger = logging.getLogger(__name__)
 
@@ -16,27 +18,25 @@ class CompanyRegistryBuilderAgent(Agent):
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """DART 기반 기업 마스터와 재무 피처 데이터를 구축한다."""
+        started_at = perf_counter()
         year = int(payload.get("target_year", 2024))
         sample_size = _parse_sample_size(payload.get("run_sample_size"))
         skip_db_save = bool(payload.get("skip_db_save", False))
-        output_dir = str(payload.get("output_dir", "."))
 
         logger.info(
             (
                 "company_registry_build_started year=%s sample_size=%s "
-                "skip_db_save=%s output_dir=%s"
+                "skip_db_save=%s"
             ),
             year,
             sample_size,
             skip_db_save,
-            output_dir,
         )
 
         result = execute_dart_pipeline(
             year=year,
             sample_size=sample_size,
             skip_db_save=skip_db_save,
-            output_dir=output_dir,
         )
 
         logger.info(
@@ -44,10 +44,21 @@ class CompanyRegistryBuilderAgent(Agent):
             result.get("status"),
             result.get("sme_count"),
         )
-        return {
-            "company_registry_result": result,
-            "dart_result": result,
-        }
+        agent_status = "success"
+        agent_error_code = "OK"
+        if result.get("status") != "success":
+            agent_status = "partial"
+            agent_error_code = "DART_PIPELINE_DEGRADED"
+
+        return build_agent_output(
+            {
+                "company_registry_result": result,
+                "dart_result": result,
+            },
+            status=agent_status,
+            error_code=agent_error_code,
+            latency_ms=elapsed_ms(started_at),
+        )
 
 
 def dart_collection_node(state: dict[str, Any]) -> dict[str, Any]:
@@ -55,12 +66,10 @@ def dart_collection_node(state: dict[str, Any]) -> dict[str, Any]:
     year = int(state.get("target_year", 2024))
     sample_size = _parse_sample_size(state.get("run_sample_size"))
     skip_db_save = bool(state.get("skip_db_save", False))
-    output_dir = str(state.get("output_dir", "."))
     pipeline_result = execute_dart_pipeline(
         year=year,
         sample_size=sample_size,
         skip_db_save=skip_db_save,
-        output_dir=output_dir,
     )
     return {
         "dart_result": {
