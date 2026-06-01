@@ -52,7 +52,7 @@ esac
 cd "$PROJECT_ROOT"
 
 echo "[1/2] Running automated pytest suite"
-"$PYTEST_BIN" tests
+"$PYTEST_BIN" -o cache_dir=.cache/pytest tests
 
 if [[ "$run_manual" == true ]]; then
   echo "[2/2] Running manual external-API validation script"

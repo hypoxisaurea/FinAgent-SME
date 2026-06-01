@@ -72,7 +72,7 @@ tests/
 전체 실행:
 
 ```bash
-.venv/bin/pytest tests/
+.venv/bin/pytest -o cache_dir=.cache/pytest tests/
 ```
 
 ## 수동 검증 스크립트
@@ -107,7 +107,7 @@ tests/
 ```bash
 ./tests/run_all_tests.sh
 ./tests/clean_test_cache.sh
-.venv/bin/pytest tests/
+.venv/bin/pytest -o cache_dir=.cache/pytest tests/
 .venv/bin/ruff check backend tests
 ```
 
