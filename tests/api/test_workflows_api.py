@@ -125,14 +125,12 @@ def test_orchestrator_route_returns_400_for_normalized_empty_company_name(
 
     assert response.status_code == 400
     assert response.json() == {
-        "detail": {
-            "code": "INVALID_INPUT",
-            "message": "입력값이 올바르지 않습니다.",
-            "detail": {"company_name": "   "},
-            "request_id": response.json()["detail"]["request_id"],
-        }
+        "code": "INVALID_INPUT",
+        "message": "입력값이 올바르지 않습니다.",
+        "detail": {"company_name": "   "},
+        "request_id": response.json()["request_id"],
     }
-    assert response.json()["detail"]["request_id"].startswith("req-")
+    assert response.json()["request_id"].startswith("req-")
 
 
 def test_orchestrator_route_returns_500_when_orchestrator_fails(
@@ -155,11 +153,9 @@ def test_orchestrator_route_returns_500_when_orchestrator_fails(
 
     assert response.status_code == 500
     assert response.json() == {
-        "detail": {
-            "code": "AGENT_EXECUTION_FAILED",
-            "message": "오케스트레이터 실행 중 오류가 발생했습니다.",
-            "detail": {"company_name": "FinAgent"},
-            "request_id": response.json()["detail"]["request_id"],
-        }
+        "code": "AGENT_EXECUTION_FAILED",
+        "message": "오케스트레이터 실행 중 오류가 발생했습니다.",
+        "detail": {"company_name": "FinAgent"},
+        "request_id": response.json()["request_id"],
     }
-    assert response.json()["detail"]["request_id"].startswith("req-")
+    assert response.json()["request_id"].startswith("req-")
