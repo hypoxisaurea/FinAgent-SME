@@ -692,11 +692,11 @@ def execute_dart_pipeline(
 ):
     if dart is None:
         raise ModuleNotFoundError("dart_fss가 설치되어 있지 않습니다.")
-        
+
     class DummyArgs:
-        api_key = None
-        env_file = None
-    
+        api_key: str | None = None
+        env_file: str | None = None
+
     api_key = resolve_api_key(DummyArgs())
     dart.set_api_key(api_key=api_key)
 

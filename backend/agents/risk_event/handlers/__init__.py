@@ -1,8 +1,8 @@
-from .keyword_detector import detect_keywords
-from .sentiment_analyzer import analyze_sentiment
 from .disclosure_detector import detect_disclosure_anomalies
-from .legal_risk_detector import detect_legal_risks
 from .financial_anomaly_detector import detect_financial_anomalies
+from .keyword_detector import detect_keywords
+from .legal_risk_detector import detect_legal_risks
+from .sentiment_analyzer import analyze_sentiment
 from .severity_classifier import classify_severity
 from .timeline_builder import build_timeline
 

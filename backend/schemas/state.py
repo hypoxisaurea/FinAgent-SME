@@ -12,9 +12,10 @@ FinAgent-SME 멀티 에이전트 공유 State 스키마.
 """
 
 from __future__ import annotations
-from typing import Any
-from pydantic import BaseModel, Field
 
+from typing import Any
+
+from pydantic import BaseModel, Field
 
 # Financial Agent 출력 서브 모델
 

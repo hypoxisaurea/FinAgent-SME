@@ -9,7 +9,10 @@ from __future__ import annotations
 from datetime import date
 
 from ..models import (
-    DisclosureAnomalyResult, EventSource, EventType, RiskEvent,
+    DisclosureAnomalyResult,
+    EventSource,
+    EventType,
+    RiskEvent,
 )
 
 # ─── 이상 공시 패턴 ───────────────────────────────────────────────────────────

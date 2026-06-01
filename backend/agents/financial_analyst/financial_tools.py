@@ -66,9 +66,8 @@ def _fetch_audit_opinion(corp_code: str, year: int) -> tuple[str | None, bool]:
         items[0],
     )
 
-    opinion = target.get("adt_opinion", "").strip()
-    if opinion in ("", "-"):
-        opinion = None
+    opinion_text = target.get("adt_opinion", "").strip()
+    opinion: str | None = opinion_text if opinion_text not in ("", "-") else None
 
     return opinion, True
 
@@ -76,28 +75,32 @@ def _fetch_audit_opinion(corp_code: str, year: int) -> tuple[str | None, bool]:
 def _normalize_accounts(fs: pd.DataFrame) -> dict:
     """DART finstate_all 결과에서 필요한 계정과목만 추출."""
 
-    def _get(account_nm: str, sj_div: str = None, account_id: str = None) -> float | None:
-            df = fs
-            if sj_div:
-                df = fs[fs["sj_div"] == sj_div]
-                
-            # 1. 표준 계정코드(account_id)가 들어오면 최우선으로 정확히 저격
-            if account_id:
-                row = df[df["account_id"].str.strip() == account_id]
-            else:
-                row = pd.DataFrame()
-                
-            # 2. 코드로 못 찾았거나 없을 경우, 모든 종류의 공백(\xa0 포함)을 제거하고 텍스트 매칭
-            if row.empty:
-                clean_nm = account_nm.replace(" ", "")
-                row = df[df["account_nm"].str.replace(r"\s+", "", regex=True) == clean_nm]
-                
-            if row.empty:
-                return None
-            val = row.iloc[0]["thstrm_amount"]
-            if pd.isna(val) or val == "":
-                return None
-            return float(str(val).replace(",", ""))
+    def _get(
+        account_nm: str,
+        sj_div: str | None = None,
+        account_id: str | None = None,
+    ) -> float | None:
+        df = fs
+        if sj_div:
+            df = fs[fs["sj_div"] == sj_div]
+
+        # 1. 표준 계정코드(account_id)가 들어오면 최우선으로 정확히 저격
+        if account_id:
+            row = df[df["account_id"].str.strip() == account_id]
+        else:
+            row = pd.DataFrame()
+
+        # 2. 코드로 못 찾았거나 없을 경우, 모든 종류의 공백(\xa0 포함)을 제거하고 텍스트 매칭
+        if row.empty:
+            clean_nm = account_nm.replace(" ", "")
+            row = df[df["account_nm"].str.replace(r"\s+", "", regex=True) == clean_nm]
+
+        if row.empty:
+            return None
+        val = row.iloc[0]["thstrm_amount"]
+        if pd.isna(val) or val == "":
+            return None
+        return float(str(val).replace(",", ""))
 
     is_div = "IS" if not fs[fs["sj_div"] == "IS"].empty else "CIS"
 
@@ -310,6 +313,7 @@ def trend_analysis(corp_code: str, years: list[int]) -> dict:
     """
     dart = _get_dart()
     history = []
+    flags = []
 
     for year in sorted(years):
         fs_raw = dart.finstate_all(corp_code, year)
@@ -337,7 +341,6 @@ def trend_analysis(corp_code: str, years: list[int]) -> dict:
             "ocf":           fs["영업현금흐름"],
         })
 
-    flags = []
     yoy = {
         "debt_ratio":    [],
         "op_margin":     [],
@@ -429,11 +432,27 @@ def apply_risk_filters(fs: dict, history: list[dict]) -> dict:
     재무제표 없는 기업은 get_financial_statements에서 ValueError로 차단됨.
     """
     # 등급 순서 (낮은 인덱스 = 더 강한 제약)
-    GRADE_ORDER = ["CCC", "B", "B+", "BB-", "BB", "BB+", "BBB-", "BBB", "BBB+",
-                   "A-", "A", "A+", "AA-", "AA", "AA+", "AAA"]
+    grade_order = [
+        "CCC",
+        "B",
+        "B+",
+        "BB-",
+        "BB",
+        "BB+",
+        "BBB-",
+        "BBB",
+        "BBB+",
+        "A-",
+        "A",
+        "A+",
+        "AA-",
+        "AA",
+        "AA+",
+        "AAA",
+    ]
     
     # 발동된 필터들의 등급 상한 결정
-    FILTER_CAP = {
+    filter_cap = {
         "완전자본잠식":           "CCC",
         "자기자본비율_10%이하":    "CCC",
         "감사의견_부적정또는거절":  "CCC",
@@ -508,8 +527,8 @@ def apply_risk_filters(fs: dict, history: list[dict]) -> dict:
     # 가장 강한 제약(낮은 등급) 선택
     grade_cap = None
     for f in triggered:
-        cap = FILTER_CAP[f]
-        if grade_cap is None or GRADE_ORDER.index(cap) < GRADE_ORDER.index(grade_cap):
+        cap = filter_cap[f]
+        if grade_cap is None or grade_order.index(cap) < grade_order.index(grade_cap):
             grade_cap = cap
 
     return {

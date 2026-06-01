@@ -1,6 +1,8 @@
 from agents.multimodal_document.agent import MultiModalDocumentAgent
 from agents.multimodal_document.dart import (
     fetch_opendart_list_records as fetch_opendart_list,
+)
+from agents.multimodal_document.dart import (
     resolve_api_key,
 )
 from agents.multimodal_document.processor import (

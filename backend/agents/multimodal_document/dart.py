@@ -12,7 +12,6 @@ from bs4 import BeautifulSoup
 
 from backend_env import get_backend_env_path, load_backend_env
 
-
 logger = logging.getLogger(__name__)
 
 DART_LIST_URL = "https://opendart.fss.or.kr/api/list.json"

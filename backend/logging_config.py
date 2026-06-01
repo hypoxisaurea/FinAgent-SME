@@ -4,6 +4,7 @@ import logging
 import os
 
 DEFAULT_LOG_LEVEL_NAME = os.getenv("FINAGENT_LOG_LEVEL", "INFO").upper()
+DEFAULT_LOG_LEVEL = getattr(logging, DEFAULT_LOG_LEVEL_NAME, logging.INFO)
 DEFAULT_LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 PROJECT_LOGGERS = (
     "api",
@@ -18,9 +19,7 @@ def _resolve_log_level(level_name: str) -> int:
 
 def configure_logging(level: int | None = None) -> None:
     """프로젝트 로거가 콘솔에 구조화된 진행 로그를 출력하도록 설정한다."""
-    resolved_level = level if level is not None else _resolve_log_level(
-        DEFAULT_LOG_LEVEL_NAME
-    )
+    resolved_level = level if level is not None else DEFAULT_LOG_LEVEL
     root_logger = logging.getLogger()
     root_logger.setLevel(resolved_level)
 

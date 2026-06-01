@@ -435,11 +435,15 @@ def _compare(company_val: float | None, avg_val: float | None,
         return "n/a"
     ratio = company_val / avg_val
     if reverse:
-        if ratio < 1 - threshold: return "better" # 낮아서 좋으니까 better
-        if ratio > 1 + threshold: return "worse" # 높아서 나쁘니까 worse
+        if ratio < 1 - threshold:
+            return "better"
+        if ratio > 1 + threshold:
+            return "worse"
     else:
-        if ratio > 1 + threshold: return "better" # 높아서 좋으니까 better
-        if ratio < 1 - threshold: return "worse"  # 낮아서 나쁘니까 worse
+        if ratio > 1 + threshold:
+            return "better"
+        if ratio < 1 - threshold:
+            return "worse"
     return "in-line"
 
 
@@ -452,8 +456,10 @@ def _score_from_yoy(prod_yoy: float | None) -> str:
     """
     if prod_yoy is None:
         return "Medium"
-    if prod_yoy >= 0.03:  return "Low"
-    if prod_yoy >= -0.03: return "Medium"
+    if prod_yoy >= 0.03:
+        return "Low"
+    if prod_yoy >= -0.03:
+        return "Medium"
     return "High"
 
 
@@ -571,7 +577,7 @@ def map_corp_to_ksic(corp_code: str) -> dict:
 def get_industry_avg_ratios(
     ksic_code: str,
     year: int,
-    company_ratios: dict = None,
+    company_ratios: dict[str, float] | None = None,
 ) -> dict:
     """한국은행 기업경영분석 CSV에서 KSIC 업종 중소기업 평균 재무비율 조회.
 
@@ -594,10 +600,23 @@ def get_industry_avg_ratios(
             "sector_note": _SECTOR_NOTES.get(ksic_code, ""),
         }
 
-    AVAILABLE_YEARS = ["2012","2013","2014","2015","2016","2017",
-                   "2018","2019","2020","2021","2022","2023","2024"]
-    year_str = str(year) if str(year) in AVAILABLE_YEARS else str(
-        max(int(y) for y in AVAILABLE_YEARS if int(y) <= year)
+    available_years = [
+        "2012",
+        "2013",
+        "2014",
+        "2015",
+        "2016",
+        "2017",
+        "2018",
+        "2019",
+        "2020",
+        "2021",
+        "2022",
+        "2023",
+        "2024",
+    ]
+    year_str = str(year) if str(year) in available_years else str(
+        max(int(y) for y in available_years if int(y) <= year)
     )
 
     def _r(path, nm):
@@ -668,9 +687,12 @@ def get_industry_outlook(ksic_code: str) -> dict:
         for row in rows:
             itm = row.get("ITM_ID", "")
             val = float(row.get("DT", 0) or 0)
-            if itm == "T10":   prod_v.append(val)
-            elif itm == "T11": inv_v.append(val)
-            elif itm == "T12": ship_v.append(val)
+            if itm == "T10":
+                prod_v.append(val)
+            elif itm == "T11":
+                inv_v.append(val)
+            elif itm == "T12":
+                ship_v.append(val)
 
         def _yoy(vals):
             return (vals[-1] - vals[-13]) / vals[-13] if len(vals) >= 13 else 0.0
@@ -679,9 +701,12 @@ def get_industry_outlook(ksic_code: str) -> dict:
         inv_yoy  = _yoy(inv_v)
         ship_yoy = _yoy(ship_v)
 
-        if   prod_yoy <= -0.10 and inv_yoy > 0:    score = "High"
-        elif prod_yoy <= -0.05 or  inv_yoy > 0.05: score = "Medium"
-        else:                                        score = "Low"
+        if prod_yoy <= -0.10 and inv_yoy > 0:
+            score = "High"
+        elif prod_yoy <= -0.05 or inv_yoy > 0.05:
+            score = "Medium"
+        else:
+            score = "Low"
 
         return {
             "production_index_yoy": round(prod_yoy,  4),
@@ -783,10 +808,14 @@ def get_business_cycle() -> dict:
     lead_trend = _trend(leading)
     coin_trend = _trend(coincident)
 
-    if   coin_trend == "rising"  and lead_trend == "rising":  phase = "확장"
-    elif coin_trend == "falling" and lead_trend == "rising":  phase = "회복"
-    elif coin_trend == "rising"  and lead_trend == "falling": phase = "둔화"
-    else:                                                       phase = "수축"
+    if coin_trend == "rising" and lead_trend == "rising":
+        phase = "확장"
+    elif coin_trend == "falling" and lead_trend == "rising":
+        phase = "회복"
+    elif coin_trend == "rising" and lead_trend == "falling":
+        phase = "둔화"
+    else:
+        phase = "수축"
 
     return {
         "leading_latest":       round(leading[-1],    2) if leading    else None,
@@ -838,9 +867,12 @@ def get_macro_indicators(ksic_code: str = "") -> dict:
         fx_type = _FX_SENSITIVITY.get(ksic_code, "중립형")
         result["fx_sensitivity"] = fx_type
 
-        if   usd_krw and usd_krw > 1350: fx_dir = "원화 약세"
-        elif usd_krw and usd_krw < 1200: fx_dir = "원화 강세"
-        else:                             fx_dir = "원화 중립"
+        if usd_krw and usd_krw > 1350:
+            fx_dir = "원화 약세"
+        elif usd_krw and usd_krw < 1200:
+            fx_dir = "원화 강세"
+        else:
+            fx_dir = "원화 중립"
 
         _impact: dict[str, dict[str, str]] = {
             "수출형":       {"원화 약세": "긍정적 (수출 경쟁력↑, 원화 환산 매출↑)",

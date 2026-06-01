@@ -10,13 +10,19 @@ import logging
 from datetime import date
 from typing import Any
 
-from langgraph.graph import StateGraph, END
+from langgraph.graph import END, StateGraph
 
-from .handlers.grade_calculator import calculate_grade
 from .handlers.decision_maker import make_decision
-from .handlers.limit_recommender import recommend_limit
 from .handlers.explanation_generator import generate_explanation
-from .models import DecisionOutput
+from .handlers.grade_calculator import calculate_grade
+from .handlers.limit_recommender import recommend_limit
+from .models import (
+    DecisionExplanation,
+    DecisionMakerResult,
+    DecisionOutput,
+    GradeCalculationResult,
+    LimitRecommendationResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +32,7 @@ DecisionState = dict[str, Any]
 # ─── 노드 1: 신용등급 산출 (D-001) ───────────────────────────────────────────
 
 async def _grade_calculation(state: DecisionState) -> DecisionState:
+    grade_result: GradeCalculationResult | None
     try:
         grade_result = calculate_grade(state)
     except Exception as exc:
@@ -45,6 +52,7 @@ async def _decision_making(state: DecisionState) -> DecisionState:
         return {**state, "decision_result": None}
 
     try:
+        decision_result: DecisionMakerResult | None
         decision_result = make_decision(
             grade=grade_result.grade,
             score=grade_result.score,
@@ -69,6 +77,7 @@ async def _limit_recommendation(state: DecisionState) -> DecisionState:
         return {**state, "limit_result": None}
 
     try:
+        limit_result: LimitRecommendationResult | None
         limit_result = recommend_limit(
             grade=grade_result.grade,
             decision=decision_result.result,
@@ -94,6 +103,7 @@ async def _explanation(state: DecisionState) -> DecisionState:
         return {**state, "explanation_result": None}
 
     try:
+        explanation_result: DecisionExplanation | None
         explanation_result = await generate_explanation(
             company_name=state.get("company_name", ""),
             grade_result=grade_result,
