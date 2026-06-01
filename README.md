@@ -172,5 +172,8 @@ cd frontend && ../.venv/bin/python -m streamlit run main.py --server.address 0.0
 
 ```bash
 .venv/bin/pytest tests/
+.venv/bin/pytest tests/ --cov=backend --cov-report=term-missing --cov-fail-under=75
 .venv/bin/ruff check backend frontend tests
 ```
+
+GitHub Actions CI(`.github/workflows/ci.yml`)에서도 PR/Push마다 `ruff`와 coverage gate 포함 `pytest`를 자동 실행합니다.
