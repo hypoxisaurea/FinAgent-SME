@@ -1,16 +1,14 @@
-from langchain_openai import ChatOpenAI
-from langgraph.prebuilt import create_react_agent
-
-from backend_env import load_backend_env
-
-from .financial_prompts import FINANCIAL_PROMPT
-from .financial_tools import (
+from backend.agents.financial_analyst.financial_prompts import FINANCIAL_PROMPT
+from backend.agents.financial_analyst.financial_tools import (
     apply_risk_filters,
     calc_altman_z_prime,
     calc_financial_ratios,
     get_financial_statements,
     trend_analysis,
 )
+from backend.backend_env import load_backend_env
+from langchain_openai import ChatOpenAI
+from langgraph.prebuilt import create_react_agent
 
 load_backend_env()
 

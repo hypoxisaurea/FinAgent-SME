@@ -1,11 +1,10 @@
 import logging
 
+from backend.api.router import api_router
+from backend.config import settings
+from backend.logging_config import configure_logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-from api.router import api_router
-from config import settings
-from logging_config import configure_logging
 
 configure_logging()
 

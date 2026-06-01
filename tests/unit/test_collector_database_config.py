@@ -1,8 +1,8 @@
 from pathlib import Path
 
-import backend_env
+import backend.backend_env as backend_env
 import pytest
-from agents.company_registry.tools import get_env_path, resolve_database_url
+from backend.agents.company_registry.tools import get_env_path, resolve_database_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 

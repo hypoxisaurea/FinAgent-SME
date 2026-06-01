@@ -6,9 +6,9 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any, Callable
 
-from agents.base import Agent
-from agents.contracts import build_agent_output, elapsed_ms
-from agents.multimodal_document.processor import (
+from backend.agents.base import Agent
+from backend.agents.contracts import build_agent_output, elapsed_ms
+from backend.agents.multimodal_document.processor import (
     extract_pdf_chart_images,
     extract_pdf_text,
 )

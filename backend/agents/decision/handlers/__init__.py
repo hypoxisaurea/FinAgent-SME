@@ -1,7 +1,7 @@
-from .decision_maker import make_decision
-from .explanation_generator import generate_explanation
-from .grade_calculator import calculate_grade
-from .limit_recommender import recommend_limit
+from backend.agents.decision.handlers.decision_maker import make_decision
+from backend.agents.decision.handlers.explanation_generator import generate_explanation
+from backend.agents.decision.handlers.grade_calculator import calculate_grade
+from backend.agents.decision.handlers.limit_recommender import recommend_limit
 
 __all__ = [
     "calculate_grade",

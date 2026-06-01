@@ -1,6 +1,5 @@
+from backend.api.routes import health, workflows
 from fastapi import APIRouter
-
-from api.routes import health, workflows
 
 api_router = APIRouter()
 api_router.include_router(health.router)

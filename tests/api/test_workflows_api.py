@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 
 
 def _load_modules() -> tuple[object, object]:
-    main_module = importlib.import_module("main")
-    workflows_module = importlib.import_module("api.routes.workflows")
+    main_module = importlib.import_module("backend.main")
+    workflows_module = importlib.import_module("backend.api.routes.workflows")
     return main_module, workflows_module
 
 
@@ -84,7 +84,7 @@ def test_orchestrator_route_logs_request_and_completion(
 
     monkeypatch.setattr(workflows, "run_credit_workflow", fake_run_credit_workflow)
 
-    with caplog.at_level(logging.INFO, logger="api.routes.workflows"):
+    with caplog.at_level(logging.INFO, logger="backend.api.routes.workflows"):
         response = client.post(
             "/api/v1/workflows/orchestrator",
             json={"company_name": "FinAgent"},

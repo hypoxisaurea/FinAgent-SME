@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import asyncio
 
-import agents.financial_analyst.agent as financial_agent_module
-import agents.industry_analyst.agent as industry_agent_module
-import agents.news_collector.agent as news_agent_module
-from agents.financial_analyst.agent import FinancialAnalystAgent
-from agents.industry_analyst.agent import IndustryAnalystAgent
-from agents.news_collector.agent import NewsCollectorAgent
+import backend.agents.financial_analyst.agent as financial_agent_module
+import backend.agents.industry_analyst.agent as industry_agent_module
+import backend.agents.news_collector.agent as news_agent_module
+from backend.agents.financial_analyst.agent import FinancialAnalystAgent
+from backend.agents.industry_analyst.agent import IndustryAnalystAgent
+from backend.agents.news_collector.agent import NewsCollectorAgent
 
 
 class _DummyTool:

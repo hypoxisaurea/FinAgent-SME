@@ -1,5 +1,5 @@
-from .agent import DecisionAgent
-from .models import CreditGrade, DecisionOutput, DecisionResult
+from backend.agents.decision.agent import DecisionAgent
+from backend.agents.decision.models import CreditGrade, DecisionOutput, DecisionResult
 
 __all__ = [
     "DecisionAgent",

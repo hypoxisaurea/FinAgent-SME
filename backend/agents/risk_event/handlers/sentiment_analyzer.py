@@ -9,15 +9,14 @@ from __future__ import annotations
 import logging
 from datetime import date
 
-from utils.api_client import call_openai, get_client, parse_json_response
-
-from ..models import (
+from backend.agents.risk_event.models import (
     EventSource,
     EventType,
     RiskEvent,
     SentimentAnalysisResult,
     SentimentLabel,
 )
+from backend.utils.api_client import call_openai, get_client, parse_json_response
 
 logger = logging.getLogger(__name__)
 

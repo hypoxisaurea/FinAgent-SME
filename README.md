@@ -142,7 +142,7 @@ DB가 이미 떠 있는 상태에서 앱 서버만 실행하려면 아래 명령
 ./scripts/setup-env.sh
 ./scripts/setup-db.sh up
 ./scripts/setup-db.sh build --year 2024 --sample-size 10
-cd backend && ../.venv/bin/python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+./.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 cd frontend && ../.venv/bin/python -m streamlit run main.py --server.address 0.0.0.0 --server.port 8501
 ```
 

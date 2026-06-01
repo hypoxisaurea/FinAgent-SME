@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import date
 
-from ..models import SeverityClassifiedEvent, TimelineEntry
+from backend.agents.risk_event.models import SeverityClassifiedEvent, TimelineEntry
 
 
 def build_timeline(

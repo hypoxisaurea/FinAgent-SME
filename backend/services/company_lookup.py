@@ -3,9 +3,8 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
+from backend.agents.company_registry.tools import SME_LIST_TABLE_NAME, create_db_engine
 from sqlalchemy import inspect, text
-
-from agents.company_registry.tools import SME_LIST_TABLE_NAME, create_db_engine
 
 logger = logging.getLogger(__name__)
 

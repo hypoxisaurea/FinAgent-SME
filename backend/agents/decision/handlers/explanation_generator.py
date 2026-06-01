@@ -8,14 +8,13 @@ from __future__ import annotations
 
 import logging
 
-from utils.api_client import call_openai, get_client, parse_json_response
-
-from ..models import (
+from backend.agents.decision.models import (
     DecisionExplanation,
     DecisionResult,
     GradeCalculationResult,
     LimitRecommendationResult,
 )
+from backend.utils.api_client import call_openai, get_client, parse_json_response
 
 logger = logging.getLogger(__name__)
 

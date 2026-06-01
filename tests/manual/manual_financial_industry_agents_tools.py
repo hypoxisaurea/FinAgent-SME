@@ -34,17 +34,17 @@ BACKEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 if BACKEND_DIR not in sys.path:
     sys.path.insert(0, BACKEND_DIR)
 
-from backend_env import load_backend_env
+from backend.backend_env import load_backend_env
 load_backend_env(env_path=Path(BACKEND_DIR) / ".env")
 
-from agents.financial_analyst.financial_tools import (
+from backend.agents.financial_analyst.financial_tools import (
     get_financial_statements,
     calc_financial_ratios,
     calc_altman_z_prime,
     trend_analysis,
     apply_risk_filters,
 )
-from agents.industry_analyst.industry_tools import (
+from backend.agents.industry_analyst.industry_tools import (
     map_corp_to_ksic,
     get_industry_avg_ratios,
     get_industry_outlook,

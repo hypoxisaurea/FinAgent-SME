@@ -1,4 +1,8 @@
-from .sme_loader import get_company_info, get_financial_rows, search_companies_by_name
+from backend.agents.risk_event.data.sme_loader import (
+    get_company_info,
+    get_financial_rows,
+    search_companies_by_name,
+)
 
 __all__ = [
     "get_financial_rows",

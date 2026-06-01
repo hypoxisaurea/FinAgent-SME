@@ -348,7 +348,7 @@ stack_start_backend() {
         "$STACK_BACKEND_LOG_FILE" \
         "$STACK_BACKEND_DIR" \
         "http://$STACK_BACKEND_HOST:$STACK_BACKEND_PORT" \
-        uvicorn main:app --host "$STACK_BACKEND_HOST" --port "$STACK_BACKEND_PORT"
+        uvicorn backend.main:app --app-dir .. --host "$STACK_BACKEND_HOST" --port "$STACK_BACKEND_PORT"
 }
 
 

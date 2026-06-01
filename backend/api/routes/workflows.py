@@ -2,11 +2,10 @@ import logging
 from typing import Any
 from uuid import uuid4
 
+from backend.agents.orchestrator import run_credit_workflow
+from backend.schemas.credit import CreditAssessmentRequest
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
-
-from agents.orchestrator import run_credit_workflow
-from schemas.credit import CreditAssessmentRequest
 
 router = APIRouter(prefix="/v1/workflows", tags=["workflows"])
 logger = logging.getLogger(__name__)

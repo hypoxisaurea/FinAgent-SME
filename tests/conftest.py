@@ -6,9 +6,8 @@ from pathlib import Path
 sys.dont_write_bytecode = True
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-BACKEND_ROOT = PROJECT_ROOT / "backend"
 
-for path in (PROJECT_ROOT, BACKEND_ROOT):
+for path in (PROJECT_ROOT,):
     path_str = str(path)
     if path_str not in sys.path:
         sys.path.insert(0, path_str)

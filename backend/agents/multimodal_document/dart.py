@@ -8,9 +8,8 @@ import zipfile
 from pathlib import Path
 
 import requests
+from backend.backend_env import get_backend_env_path, load_backend_env
 from bs4 import BeautifulSoup
-
-from backend_env import get_backend_env_path, load_backend_env
 
 logger = logging.getLogger(__name__)
 

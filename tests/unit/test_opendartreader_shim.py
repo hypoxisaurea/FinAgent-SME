@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pandas as pd
 
-import opendartreader as opendartreader_shim
-from agents.financial_analyst import financial_tools
-from agents.industry_analyst import industry_tools
-from opendartreader import OpenDartReader
+import backend.opendartreader as opendartreader_shim
+from backend.agents.financial_analyst import financial_tools
+from backend.agents.industry_analyst import industry_tools
+from backend.opendartreader import OpenDartReader
 
 
 def test_opendartreader_shim_exposes_vendor_reader() -> None:

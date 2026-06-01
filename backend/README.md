@@ -35,7 +35,7 @@
 ./scripts/setup-env.sh
 ./scripts/setup-db.sh up
 cd backend
-../.venv/bin/python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+../.venv/bin/python -m uvicorn backend.main:app --app-dir .. --reload --host 0.0.0.0 --port 8000
 ```
 
 종료:

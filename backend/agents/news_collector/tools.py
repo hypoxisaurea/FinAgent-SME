@@ -10,6 +10,8 @@ from typing import Any
 from urllib.parse import quote_plus
 
 import requests
+from backend.agents.news_collector.prompts import NEWS_SUMMARY_PROMPT_TEMPLATE
+from backend.backend_env import load_backend_env
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -25,9 +27,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 from tqdm.auto import tqdm
-
-from agents.news_collector.prompts import NEWS_SUMMARY_PROMPT_TEMPLATE
-from backend_env import load_backend_env
 
 logger = logging.getLogger(__name__)
 

@@ -4,8 +4,8 @@ import asyncio
 import logging
 from typing import Any
 
-from agents.base import Agent
-from agents.orchestrator.orchestrator import WorkflowOrchestrator
+from backend.agents.base import Agent
+from backend.agents.orchestrator.orchestrator import WorkflowOrchestrator
 
 
 class _FakeAgent(Agent):

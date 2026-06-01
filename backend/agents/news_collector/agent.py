@@ -4,15 +4,15 @@ import logging
 from time import perf_counter
 from typing import Any
 
-from agents.contracts import build_agent_output, elapsed_ms
-from agents.news_collector.prompts import NEWS_COLLECTOR_PROMPT
-from agents.news_collector.tools import (
+from backend.agents.contracts import build_agent_output, elapsed_ms
+from backend.agents.news_collector.prompts import NEWS_COLLECTOR_PROMPT
+from backend.agents.news_collector.tools import (
     DEFAULT_LOOKBACK_DAYS,
     DEFAULT_MAX_ARTICLES,
     DEFAULT_SUMMARY_MODEL,
     execute_news_pipeline,
 )
-from agents.tool_runtime import (
+from backend.agents.tool_runtime import (
     execute_tool_step,
     serialize_tool_runs,
     summarize_tool_runs,

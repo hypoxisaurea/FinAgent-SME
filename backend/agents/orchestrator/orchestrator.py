@@ -6,11 +6,9 @@ import operator
 from dataclasses import asdict, dataclass
 from typing import Annotated, Any, TypedDict
 
-from langgraph.graph import END, START, StateGraph
-
-from agents.base import Agent
-from agents.company_resolver import CompanyResolverAgent
-from agents.contracts import (
+from backend.agents.base import Agent
+from backend.agents.company_resolver import CompanyResolverAgent
+from backend.agents.contracts import (
     build_agent_failure_output,
     build_agent_output,
     classify_agent_error,
@@ -22,13 +20,14 @@ from agents.contracts import (
     resolve_agent_timeout_seconds,
     should_retry_agent_error,
 )
-from agents.decision import DecisionAgent
-from agents.financial_analyst import FinancialAnalystAgent
-from agents.industry_analyst import IndustryAnalystAgent
-from agents.multimodal_document import MultiModalDocumentAgent
-from agents.news_collector import NewsCollectorAgent
-from agents.report import ReportAgent
-from agents.risk_event import RiskEventAgent
+from backend.agents.decision import DecisionAgent
+from backend.agents.financial_analyst import FinancialAnalystAgent
+from backend.agents.industry_analyst import IndustryAnalystAgent
+from backend.agents.multimodal_document import MultiModalDocumentAgent
+from backend.agents.news_collector import NewsCollectorAgent
+from backend.agents.report import ReportAgent
+from backend.agents.risk_event import RiskEventAgent
+from langgraph.graph import END, START, StateGraph
 
 logger = logging.getLogger(__name__)
 

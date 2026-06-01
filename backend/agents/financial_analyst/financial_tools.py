@@ -3,16 +3,15 @@ import os
 
 import pandas as pd
 import requests
+from backend.backend_env import load_backend_env
 from langchain_core.tools import tool
-
-from backend_env import load_backend_env
 
 load_backend_env()
 
 logger = logging.getLogger(__name__)
 
 try:
-    from opendartreader import OpenDartReader
+    from backend.opendartreader import OpenDartReader
 except ModuleNotFoundError:
     OpenDartReader = None
 

@@ -4,16 +4,16 @@ import logging
 from time import perf_counter
 from typing import Any
 
-from agents.base import Agent
-from agents.contracts import build_agent_output, elapsed_ms
-from agents.financial_analyst.financial_tools import (
+from backend.agents.base import Agent
+from backend.agents.contracts import build_agent_output, elapsed_ms
+from backend.agents.financial_analyst.financial_tools import (
     apply_risk_filters,
     calc_altman_z_prime,
     calc_financial_ratios,
     get_financial_statements,
     trend_analysis,
 )
-from agents.tool_runtime import (
+from backend.agents.tool_runtime import (
     build_skipped_tool_result,
     execute_tool_step,
     serialize_tool_runs,

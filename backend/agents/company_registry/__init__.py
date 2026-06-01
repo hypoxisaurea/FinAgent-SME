@@ -1,8 +1,8 @@
-from agents.company_registry.agent import (
+from backend.agents.company_registry.agent import (
     CompanyRegistryBuilderAgent,
     dart_collection_node,
 )
-from agents.company_registry.tools import (
+from backend.agents.company_registry.tools import (
     CREATED_AT_COLUMN,
     ERROR_LOG_TABLE_NAME,
     FEATURES_TABLE_NAME,

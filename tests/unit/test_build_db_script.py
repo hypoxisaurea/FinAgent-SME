@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from scripts import build_db
+from backend.scripts import build_db
 
 
 def test_build_db_parser_defaults() -> None:

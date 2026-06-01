@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 
-from logging_config import DEFAULT_LOG_LEVEL, PROJECT_LOGGERS, configure_logging
+from backend.logging_config import DEFAULT_LOG_LEVEL, PROJECT_LOGGERS, configure_logging
 
 
 def test_configure_logging_sets_project_logger_levels() -> None:

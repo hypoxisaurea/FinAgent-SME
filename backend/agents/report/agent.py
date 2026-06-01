@@ -5,8 +5,8 @@ from datetime import date
 from time import perf_counter
 from typing import Any
 
-from agents.base import Agent
-from agents.contracts import build_agent_output, elapsed_ms
+from backend.agents.base import Agent
+from backend.agents.contracts import build_agent_output, elapsed_ms
 
 logger = logging.getLogger(__name__)
 

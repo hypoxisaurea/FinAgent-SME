@@ -3,13 +3,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from sqlalchemy import inspect, text
-
-from agents.company_registry.tools import (
+from backend.agents.company_registry.tools import (
     FEATURES_TABLE_NAME,
     SME_LIST_TABLE_NAME,
     create_db_engine,
 )
+from sqlalchemy import inspect, text
 
 logger = logging.getLogger(__name__)
 

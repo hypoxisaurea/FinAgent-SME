@@ -4,16 +4,16 @@ import logging
 from time import perf_counter
 from typing import Any
 
-from agents.base import Agent
-from agents.contracts import build_agent_output, elapsed_ms
-from agents.industry_analyst.industry_tools import (
+from backend.agents.base import Agent
+from backend.agents.contracts import build_agent_output, elapsed_ms
+from backend.agents.industry_analyst.industry_tools import (
     get_business_cycle,
     get_industry_avg_ratios,
     get_industry_outlook,
     get_macro_indicators,
     map_corp_to_ksic,
 )
-from agents.tool_runtime import (
+from backend.agents.tool_runtime import (
     execute_tool_step,
     serialize_tool_runs,
     summarize_tool_runs,

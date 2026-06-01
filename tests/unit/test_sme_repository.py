@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from services import sme_repository
+from backend.services import sme_repository
 
 
 class _FakeResult:
