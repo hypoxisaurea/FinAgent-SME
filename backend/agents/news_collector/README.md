@@ -117,7 +117,7 @@ OPEN_AI_API_KEY=...
 ### 2. 기존 오케스트레이터 회귀 테스트
 
 ```bash
-.venv/bin/pytest -q tests/test_workflow_orchestrator.py
+.venv/bin/pytest -q tests/integration/test_workflow_orchestrator.py
 ```
 
 이 테스트는 `news_collector` 출력이 downstream 문맥에 합쳐져 `risk_event`로 전달되는 계약을 검증합니다.

@@ -13,6 +13,12 @@ from agents.financial_analyst.financial_tools import (
     get_financial_statements,
     trend_analysis,
 )
+from agents.tool_runtime import (
+    build_skipped_tool_result,
+    execute_tool_step,
+    serialize_tool_runs,
+    summarize_tool_runs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,28 +31,104 @@ class FinancialAnalystAgent(Agent):
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """재무제표, 비율, 추세, 등급 상한을 계산한다."""
         started_at = perf_counter()
+        request_id = payload.get("request_id")
+        company_name = payload.get("company_name")
         corp_code = str(payload.get("corp_code", "")).strip()
         if not corp_code:
             raise ValueError("financial_analyst 실행에는 corp_code가 필요합니다.")
 
         target_year = int(payload.get("target_year", 2024))
         years = _build_analysis_years(target_year)
+        tool_runs = []
 
-        fs = get_financial_statements.invoke(
-            {"corp_code": corp_code, "year": target_year}
+        fs, fs_run = execute_tool_step(
+            logger=logger,
+            agent_name=self.name,
+            tool_name="get_financial_statements",
+            request_id=request_id,
+            company_name=company_name,
+            runner=lambda: get_financial_statements.invoke(
+                {"corp_code": corp_code, "year": target_year}
+            ),
+            fallback_factory=lambda: {},
+            validate_dict=True,
         )
-        ratios = calc_financial_ratios.invoke({"fs": fs})
-        altman_z = calc_altman_z_prime.invoke({"fs": fs})
-        trend = trend_analysis.invoke({"corp_code": corp_code, "years": years})
-        risk_filters = apply_risk_filters.invoke(
-            {"fs": fs, "history": trend.get("history", [])}
+        tool_runs.append(fs_run)
+
+        if fs:
+            ratios, ratios_run = execute_tool_step(
+                logger=logger,
+                agent_name=self.name,
+                tool_name="calc_financial_ratios",
+                request_id=request_id,
+                company_name=company_name,
+                runner=lambda: calc_financial_ratios.invoke({"fs": fs}),
+                fallback_factory=lambda: {},
+                validate_dict=True,
+            )
+            altman_z, altman_run = execute_tool_step(
+                logger=logger,
+                agent_name=self.name,
+                tool_name="calc_altman_z_prime",
+                request_id=request_id,
+                company_name=company_name,
+                runner=lambda: calc_altman_z_prime.invoke({"fs": fs}),
+                fallback_factory=lambda: _default_altman_z(),
+                validate_dict=True,
+            )
+        else:
+            ratios = {}
+            altman_z = _default_altman_z()
+            ratios_run = build_skipped_tool_result(
+                tool_name="calc_financial_ratios",
+                reason="UPSTREAM_DATA_MISSING",
+            )
+            altman_run = build_skipped_tool_result(
+                tool_name="calc_altman_z_prime",
+                reason="UPSTREAM_DATA_MISSING",
+            )
+        tool_runs.extend([ratios_run, altman_run])
+
+        trend, trend_run = execute_tool_step(
+            logger=logger,
+            agent_name=self.name,
+            tool_name="trend_analysis",
+            request_id=request_id,
+            company_name=company_name,
+            runner=lambda: trend_analysis.invoke(
+                {"corp_code": corp_code, "years": years}
+            ),
+            fallback_factory=lambda: _default_financial_trend(),
+            validate_dict=True,
         )
+        tool_runs.append(trend_run)
+
+        risk_filters, risk_run = execute_tool_step(
+            logger=logger,
+            agent_name=self.name,
+            tool_name="apply_risk_filters",
+            request_id=request_id,
+            company_name=company_name,
+            runner=lambda: apply_risk_filters.invoke(
+                {"fs": fs, "history": trend.get("history", [])}
+            ),
+            fallback_factory=lambda: _default_risk_filters(),
+            validate_dict=True,
+        )
+        tool_runs.append(risk_run)
+        fallback_used, tool_errors = summarize_tool_runs(tool_runs)
 
         logger.info(
-            "financial_analysis_finished corp_code=%s target_year=%s grade_cap=%s",
+            (
+                "financial_analysis_finished request_id=%s company_name=%s "
+                "corp_code=%s target_year=%s grade_cap=%s tool_error_count=%s"
+            ),
+            request_id,
+            company_name,
             corp_code,
             target_year,
             risk_filters.get("grade_cap"),
+            len(tool_errors),
         )
 
         return build_agent_output(
@@ -71,8 +153,14 @@ class FinancialAnalystAgent(Agent):
                     "triggered_filters": risk_filters.get("triggered_filters", []),
                     "z_prime": altman_z.get("z_prime"),
                     "z_prime_zone": altman_z.get("zone"),
+                    "tool_error_count": len(tool_errors),
                 },
+                "financial_tool_runs": serialize_tool_runs(tool_runs),
+                "financial_tool_errors": tool_errors,
             },
+            status="partial" if fallback_used else "success",
+            error_code="FINANCIAL_TOOL_FALLBACK" if fallback_used else "OK",
+            fallback_used=fallback_used,
             latency_ms=elapsed_ms(started_at),
         )
 
@@ -80,3 +168,27 @@ class FinancialAnalystAgent(Agent):
 def _build_analysis_years(target_year: int) -> list[int]:
     start_year = max(target_year - 2, 1)
     return list(range(start_year, target_year + 1))
+
+
+def _default_altman_z() -> dict[str, Any]:
+    return {
+        "z_prime": None,
+        "zone": "unavailable",
+        "components": {},
+    }
+
+
+def _default_financial_trend() -> dict[str, Any]:
+    return {
+        "history": [],
+        "flags": [],
+        "yoy": {},
+    }
+
+
+def _default_risk_filters() -> dict[str, Any]:
+    return {
+        "grade_cap": None,
+        "triggered_filters": [],
+        "filter_detail": {},
+    }

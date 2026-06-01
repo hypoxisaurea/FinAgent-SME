@@ -12,6 +12,11 @@ from agents.news_collector.tools import (
     DEFAULT_SUMMARY_MODEL,
     execute_news_pipeline,
 )
+from agents.tool_runtime import (
+    execute_tool_step,
+    serialize_tool_runs,
+    summarize_tool_runs,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +29,8 @@ class NewsCollectorAgent:
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """대상 기업 뉴스 수집 파이프라인을 실행한다."""
         started_at = perf_counter()
+        request_id = payload.get("request_id")
+        company_name = payload.get("company_name")
         lookback_days = int(payload.get("lookback_days", DEFAULT_LOOKBACK_DAYS))
         max_articles = int(payload.get("max_articles", DEFAULT_MAX_ARTICLES))
         company_limit = payload.get("company_limit")
@@ -44,35 +51,50 @@ class NewsCollectorAgent:
             model_name,
         )
 
-        news_result = execute_news_pipeline(
-            database_url=database_url,
-            lookback_days=lookback_days,
-            max_articles=max_articles,
-            summarize=summarize,
-            model_name=model_name,
-            company_limit=company_limit,
-            show_progress=show_progress,
-            company_name=payload.get("company_name"),
-            corp_name=payload.get("corp_name"),
-            stock_code=payload.get("stock_code"),
+        news_result, pipeline_run = execute_tool_step(
+            logger=logger,
+            agent_name=self.name,
+            tool_name="execute_news_pipeline",
+            request_id=request_id,
+            company_name=company_name,
+            runner=lambda: execute_news_pipeline(
+                database_url=database_url,
+                lookback_days=lookback_days,
+                max_articles=max_articles,
+                summarize=summarize,
+                model_name=model_name,
+                company_limit=company_limit,
+                show_progress=show_progress,
+                company_name=payload.get("company_name"),
+                corp_name=payload.get("corp_name"),
+                stock_code=payload.get("stock_code"),
+            ),
+            fallback_factory=_default_news_result,
+            validate_dict=True,
         )
+        tool_runs = [pipeline_run]
+        fallback_used, tool_errors = summarize_tool_runs(tool_runs)
 
         logger.info(
             (
-                "news_collector_finished status=%s company_count=%s "
-                "article_count=%s inserted_count=%s updated_count=%s"
+                "news_collector_finished request_id=%s company_name=%s "
+                "status=%s company_count=%s article_count=%s "
+                "inserted_count=%s updated_count=%s tool_error_count=%s"
             ),
+            request_id,
+            company_name,
             news_result.get("status"),
             news_result.get("company_count"),
             news_result.get("article_count"),
             news_result.get("inserted_count"),
             news_result.get("updated_count"),
+            len(tool_errors),
         )
 
         agent_status = "success"
         agent_error_code = "OK"
         pipeline_status = str(news_result.get("status", "success"))
-        if pipeline_status not in {"success", "ok"}:
+        if pipeline_status not in {"success", "ok"} or fallback_used:
             agent_status = "partial"
             agent_error_code = "NEWS_PIPELINE_DEGRADED"
 
@@ -88,9 +110,12 @@ class NewsCollectorAgent:
                     "model_name": model_name,
                     "prompt": NEWS_COLLECTOR_PROMPT,
                 },
+                "news_tool_runs": serialize_tool_runs(tool_runs),
+                "news_tool_errors": tool_errors,
             },
             status=agent_status,
             error_code=agent_error_code,
+            fallback_used=fallback_used,
             latency_ms=elapsed_ms(started_at),
         )
 
@@ -112,4 +137,15 @@ def news_collection_node(state: dict[str, Any]) -> dict[str, Any]:
     return {
         "news_data": pipeline_result.get("collected_news_data", []),
         "news_result": pipeline_result,
+    }
+
+
+def _default_news_result() -> dict[str, Any]:
+    return {
+        "status": "error",
+        "company_count": 0,
+        "article_count": 0,
+        "inserted_count": 0,
+        "updated_count": 0,
+        "collected_news_data": [],
     }

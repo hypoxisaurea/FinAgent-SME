@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 PUBLIC_SCRIPT_HELP_CASES = [
     ("setup-env.sh", ["help"], "Usage: ./scripts/setup-env.sh"),

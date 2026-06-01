@@ -206,5 +206,5 @@ PostgreSQL 컨테이너는 `backend/docker-compose.yml`로 관리합니다.
 워크플로우 API 회귀 테스트:
 
 ```bash
-.venv/bin/pytest tests/test_workflows_api.py
+.venv/bin/pytest tests/api/test_workflows_api.py
 ```

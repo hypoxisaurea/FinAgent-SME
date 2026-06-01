@@ -83,5 +83,8 @@
 ## 구현 메모
 
 - 공통 헬퍼는 `backend/agents/contracts.py`를 사용한다.
+- Agent 내부 tool 호출은 `backend/agents/tool_runtime.py`로 감싸는 것을 권장한다.
 - 개별 Agent는 가능하면 직접 공통 필드를 반환하고, 오케스트레이터는 누락 시 동일 계약으로 보정한다.
+- 외부 API/Tool 실패 시 Agent 전체를 즉시 실패시키기보다, 가능한 범위의 fallback 결과와 `tool_errors`를 함께 남긴다.
+- Agent별로 `*_tool_runs`, `*_tool_errors` 형태의 namespaced 실행 흔적을 보존할 수 있다.
 - 테스트는 최소 한 건 이상 `status`, `error_code`, `fallback_used`, `latency_ms` 존재를 검증해야 한다.

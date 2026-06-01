@@ -1,6 +1,6 @@
 """Risk Event Agent 핸들러 단위 테스트 (고도화 포함)
 
-실행: python -m pytest tests/test_risk_event_handlers.py -v
+실행: python -m pytest tests/unit/test_risk_event_handlers.py -v
 """
 
 from __future__ import annotations
