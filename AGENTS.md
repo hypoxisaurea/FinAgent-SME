@@ -8,7 +8,7 @@
 - Main Goal: 더 빠르고 정확한 대출 심사, 리스크 관리 강화, 효율적인 의사 결정
 - 언어: Python
 - 프레임워크: FastAPI, Pydantic
-- 런타임: Python 3.11, Node.js 20+
+- 런타임: Python 3.13+, Node.js 20+
 
 ## 코드 규칙
 

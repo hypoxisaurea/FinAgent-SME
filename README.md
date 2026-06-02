@@ -29,7 +29,7 @@ FinAgent-SME/
 
 ## 요구사항
 
-- Python 3.11+
+- Python 3.13+
 - Docker Desktop 또는 `docker compose`
 - OpenDART, OpenAI, ECOS, KOSIS 사용 시 해당 API 키
 
