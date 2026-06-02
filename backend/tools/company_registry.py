@@ -1,14 +1,25 @@
 import logging
-import os
 import time
 import traceback
 from datetime import datetime
-from urllib.parse import quote_plus
+from typing import Any
 
 import pandas as pd
-from backend.backend_env import get_backend_env_path
+from backend import backend_env
+from backend.data.db import (
+    CREATED_AT_COLUMN,
+)
+from backend.data.db import (
+    create_db_engine as infrastructure_create_db_engine,
+)
+from backend.data.db import (
+    resolve_database_url as infrastructure_resolve_database_url,
+)
+from backend.data.repositories.company_registry import (
+    add_created_at_column,
+    filter_new_rows,
+)
 from backend.integrations.dart_client import resolve_dart_api_key
-from sqlalchemy import create_engine, inspect, text
 from tqdm.auto import tqdm
 
 try:
@@ -47,140 +58,24 @@ REVENUE_NAMES = [
     "Revenue",
 ]
 
-DB_URL_ENV_NAME = "DATABASE_URL"
-DB_HOST_ENV_NAME = "POSTGRES_HOST"
-DB_PORT_ENV_NAME = "POSTGRES_PORT"
-DB_USER_ENV_NAME = "POSTGRES_USER"
-DB_PASSWORD_ENV_NAME = "POSTGRES_PASSWORD"
-DB_NAME_ENV_NAME = "POSTGRES_DB"
-SME_LIST_TABLE_NAME = "sme_list"
-FEATURES_TABLE_NAME = "financial_features"
-ERROR_LOG_TABLE_NAME = "financial_error_logs"
-CREATED_AT_COLUMN = "created_at"
-
-
 # API key 호출 함수
 def resolve_api_key(args):
     return resolve_dart_api_key(args.api_key, env_path=get_env_path(args.env_file))
 
 
-# SQLAlchemy DB URL 함수
-def resolve_database_url():
-    database_url = os.getenv(DB_URL_ENV_NAME, "").strip()
-    if database_url:
-        return database_url
-
-    host = os.getenv(DB_HOST_ENV_NAME, "localhost").strip()
-    port = os.getenv(DB_PORT_ENV_NAME, "5432").strip()
-    user = os.getenv(DB_USER_ENV_NAME, "").strip()
-    password = os.getenv(DB_PASSWORD_ENV_NAME, "").strip()
-    database = os.getenv(DB_NAME_ENV_NAME, "").strip()
-
-    if not user or not password or not database:
-        raise ValueError(
-            "PostgreSQL 연결 정보를 찾지 못했습니다. .env 파일에 "
-            "DATABASE_URL 또는 POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB "
-            "값을 설정해주세요."
-        )
-
-    quoted_password = quote_plus(password)
-    return f"postgresql+psycopg2://{user}:{quoted_password}@{host}:{port}/{database}"
+def resolve_database_url() -> str:
+    """기존 호출 호환을 위해 DB URL 해석 함수를 노출한다."""
+    return infrastructure_resolve_database_url()
 
 
 def create_db_engine():
-    database_url = resolve_database_url()
-    return create_engine(database_url)
+    """기존 호출 호환을 위해 공통 DB 엔진 팩토리를 노출한다."""
+    return infrastructure_create_db_engine()
 
 
 def get_env_path(env_file):
-    return get_backend_env_path(env_file)
-
-def normalize_key_columns(df, key_columns):
-    normalized_df = df.copy()
-    for col in key_columns:
-        if col in normalized_df.columns:
-            normalized_df[col] = normalized_df[col].fillna("__NULL__").astype(str)
-    return normalized_df
-
-
-def filter_new_rows(df, existing_df, key_columns):
-    if df.empty or existing_df.empty:
-        return df
-
-    candidate_df = normalize_key_columns(df[key_columns], key_columns)
-    existing_key_df = normalize_key_columns(
-        existing_df[key_columns],
-        key_columns,
-    ).drop_duplicates()
-
-    merged_df = candidate_df.merge(
-        existing_key_df,
-        on=key_columns,
-        how="left",
-        indicator=True,
-    )
-    new_row_mask = merged_df["_merge"] == "left_only"
-    return df.loc[new_row_mask].copy()
-
-
-def add_created_at_column(df, created_at):
-    updated_df = df.copy()
-    updated_df[CREATED_AT_COLUMN] = created_at
-    return updated_df
-
-
-def save_dataframe_to_postgres(df, engine, table_name, key_columns):
-    if df.empty:
-        logger.info("db_save_skipped table=%s reason=empty_dataframe", table_name)
-        return 0
-
-    inspector = inspect(engine)
-    if not inspector.has_table(table_name):
-        df.to_sql(table_name, engine, index=False, if_exists="append")
-        logger.info("db_table_created table=%s row_count=%s", table_name, len(df))
-        return len(df)
-
-    existing_query = text(
-        f"SELECT {', '.join(key_columns)} FROM {table_name}"
-    )
-    with engine.connect() as connection:
-        existing_df = pd.read_sql(existing_query, connection)
-
-    new_df = filter_new_rows(df, existing_df, key_columns)
-    if new_df.empty:
-        logger.info("db_save_skipped table=%s reason=no_new_rows", table_name)
-        return 0
-
-    new_df.to_sql(table_name, engine, index=False, if_exists="append")
-    logger.info("db_rows_appended table=%s row_count=%s", table_name, len(new_df))
-    return len(new_df)
-
-
-def save_outputs_to_database(sme_list_df, final_df, error_df):
-    engine = create_db_engine()
-
-    saved_counts = {
-        SME_LIST_TABLE_NAME: save_dataframe_to_postgres(
-            sme_list_df,
-            engine,
-            SME_LIST_TABLE_NAME,
-            ["corp_code"],
-        ),
-        FEATURES_TABLE_NAME: save_dataframe_to_postgres(
-            final_df,
-            engine,
-            FEATURES_TABLE_NAME,
-            ["corp_code", "stock_code", "year"],
-        ),
-        ERROR_LOG_TABLE_NAME: save_dataframe_to_postgres(
-            error_df,
-            engine,
-            ERROR_LOG_TABLE_NAME,
-            ["corp_code", "error_type", "message"],
-        ),
-    }
-    engine.dispose()
-    return saved_counts
+    """기존 호출 호환을 위해 백엔드 env 경로 해석 함수를 노출한다."""
+    return backend_env.get_backend_env_path(env_file)
 
 
 # 에러 로그 함수
@@ -675,43 +570,17 @@ def execute_dart_pipeline(
     year: int,
     sample_size: int | None = None,
     skip_db_save: bool = False,
-):
-    if dart is None:
-        raise ModuleNotFoundError("dart_fss가 설치되어 있지 않습니다.")
-
-    class DummyArgs:
-        api_key: str | None = None
-        env_file: str | None = None
-
-    api_key = resolve_api_key(DummyArgs())
-    dart.set_api_key(api_key=api_key)
-
-    _, sme_df = load_sme_candidates(sample_size=sample_size)
-
-    processed_records, error_logs, stats = run_collection(
-        sme_df=sme_df,
-        business_year=year,
-        report_code=DEFAULT_REPORT_CODE,
+) -> dict[str, Any]:
+    """기존 import 호환을 위한 서비스 래퍼."""
+    from backend.data.services.company_registry_pipeline import (
+        execute_dart_pipeline as execute_dart_pipeline_service,
     )
 
-    created_at = datetime.now().strftime("%Y-%m-%d")
-    final_df = build_final_dataframe(processed_records)
-    final_df = add_created_at_column(final_df, created_at)
-    sme_list_df = build_sme_list_dataframe(final_df)
-    error_df = pd.DataFrame(error_logs)
-
-    db_save_counts = {}
-    if not skip_db_save:
-        db_save_counts = save_outputs_to_database(sme_list_df, final_df, error_df)
-
-    return {
-        "status": "success",
-        "stats": stats,
-        "sme_count": len(sme_list_df),
-        "financial_data_count": len(final_df),
-        "db_save_counts": db_save_counts,
-        "source": "dart",
-    }
+    return execute_dart_pipeline_service(
+        year=year,
+        sample_size=sample_size,
+        skip_db_save=skip_db_save,
+    )
 
 
 def execute_news_pipeline(

@@ -8,7 +8,7 @@ FinAgent-SME 멀티 에이전트 공유 State 스키마.
         → (Risk Event / Multimodal Document Agent)
         → XAI / Decision Agent     → 최종 등급 산출
 
-모든 필드는 financial_tools.py / industry_tools.py 반환값과 1:1 대응합니다.
+모든 필드는 `backend.tools.financial` / `backend.tools.industry` 반환값과 1:1 대응합니다.
 """
 
 from __future__ import annotations
@@ -103,9 +103,8 @@ class RiskFilter(BaseModel):
 
 class FinancialResult(BaseModel):
     """
-    Financial Analyst Agent 최종 출력 (financial_prompts.py 출력 JSON 구조와 1:1 대응).
-    Orchestrator는 financial_agent.invoke() 결과의 마지막 AIMessage.content를
-    JSON 파싱 후 이 모델로 변환합니다.
+    Financial Analyst Agent 최종 출력 (`backend.tools.prompts.financial` 출력 구조 기준).
+    오케스트레이터는 `FinancialAnalystAgent.run()` 결과를 이 모델에 맞는 형태로 적재합니다.
     """
 
     ratios:         FinancialRatios
@@ -170,9 +169,8 @@ class MacroSignals(BaseModel):
 
 class IndustryResult(BaseModel):
     """
-    Industry Analyst Agent 최종 출력 (industry_prompts.py 출력 JSON 구조와 1:1 대응).
-    Orchestrator는 industry_agent.invoke() 결과의 마지막 AIMessage.content에서
-    ```json 코드블록을 제거 후 JSON 파싱하여 이 모델로 변환합니다.
+    Industry Analyst Agent 최종 출력 (`backend.tools.prompts.industry` 출력 구조 기준).
+    오케스트레이터는 `IndustryAnalystAgent.run()` 결과를 이 모델에 맞는 형태로 적재합니다.
     """
 
     corp_name:       str
@@ -249,7 +247,14 @@ def load_financial_result(state: CreditState, raw_json: dict) -> CreditState:
     Financial Agent 출력 JSON을 파싱해 CreditState에 적재한다.
 
     사용 예:
-        raw = json.loads(financial_agent.invoke(...)["messages"][-1].content)
+        raw = {
+            "ratios": {...},
+            "altman_z": {...},
+            "trend_analysis": {...},
+            "growth_ratios": {...},
+            "risk_filter": {...},
+            "summary_kor": "...",
+        }
         state = load_financial_result(state, raw)
     """
     fin = FinancialResult(
@@ -281,9 +286,19 @@ def load_industry_result(state: CreditState, raw_json: dict) -> CreditState:
     Industry Agent 출력 JSON을 파싱해 CreditState에 적재한다.
 
     사용 예:
-        raw_str = industry_agent.invoke(...)["messages"][-1].content
-        cleaned = raw_str.strip().removeprefix("```json").removesuffix("```").strip()
-        raw = json.loads(cleaned)
+        raw = {
+            "corp_name": "...",
+            "ksic_code": "...",
+            "sector_note": "...",
+            "industry_avg": {...},
+            "peer_comparison": {...},
+            "outlook_score": "...",
+            "outlook_source": "...",
+            "outlook_detail": {...},
+            "business_cycle": {...},
+            "macro_signals": {...},
+            "summary_kor": "...",
+        }
         state = load_industry_result(state, raw)
     """
     ind = IndustryResult(

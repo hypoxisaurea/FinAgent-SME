@@ -5,7 +5,7 @@ import logging
 from collections.abc import Sequence
 from typing import Any
 
-from backend.agents.company_registry import execute_dart_pipeline
+from backend.data.services.company_registry_pipeline import execute_dart_pipeline
 
 logger = logging.getLogger(__name__)
 

@@ -5,8 +5,8 @@ import logging
 from dataclasses import dataclass
 from typing import Any
 
-from backend.agents.base import Agent
-from backend.agents.contracts import (
+from backend.common.agent import Agent
+from backend.common.contracts import (
     build_agent_failure_output,
     build_agent_output,
     classify_agent_error,

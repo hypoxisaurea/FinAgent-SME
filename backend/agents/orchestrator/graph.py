@@ -4,10 +4,10 @@ import logging
 from dataclasses import asdict
 from typing import Any
 
-from backend.agents.base import Agent
 from backend.agents.orchestrator.results import summarize_steps
 from backend.agents.orchestrator.state import WorkflowState
 from backend.agents.orchestrator.step_runner import run_agent_step
+from backend.common.agent import Agent
 from langgraph.graph import END, START, StateGraph
 
 logger = logging.getLogger("backend.agents.orchestrator.orchestrator")

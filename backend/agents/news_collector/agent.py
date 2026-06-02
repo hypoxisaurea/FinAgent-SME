@@ -4,24 +4,24 @@ import logging
 from time import perf_counter
 from typing import Any
 
-from backend.agents.contracts import build_agent_output, elapsed_ms
-from backend.agents.news_collector.prompts import NEWS_COLLECTOR_PROMPT
-from backend.agents.news_collector.tools import (
+from backend.common.contracts import build_agent_output, elapsed_ms
+from backend.common.logging import request_id_context
+from backend.common.providers import (
+    NewsCollectionProvider,
+    ToolNewsCollectionProvider,
+)
+from backend.common.tool_runtime import (
+    execute_tool_step,
+    serialize_tool_runs,
+    summarize_tool_runs,
+)
+from backend.tools.news import (
     DEFAULT_LOOKBACK_DAYS,
     DEFAULT_MAX_ARTICLES,
     DEFAULT_SUMMARY_MODEL,
     execute_news_pipeline,
 )
-from backend.agents.providers import (
-    NewsCollectionProvider,
-    ToolNewsCollectionProvider,
-)
-from backend.agents.tool_runtime import (
-    execute_tool_step,
-    serialize_tool_runs,
-    summarize_tool_runs,
-)
-from backend.logging_config import request_id_context
+from backend.tools.prompts.news import NEWS_COLLECTOR_PROMPT
 
 logger = logging.getLogger(__name__)
 

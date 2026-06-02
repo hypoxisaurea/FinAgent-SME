@@ -37,14 +37,14 @@ if BACKEND_DIR not in sys.path:
 from backend.backend_env import load_backend_env
 load_backend_env(env_path=Path(BACKEND_DIR) / ".env")
 
-from backend.agents.financial_analyst.financial_tools import (
+from backend.tools.financial import (
     get_financial_statements,
     calc_financial_ratios,
     calc_altman_z_prime,
     trend_analysis,
     apply_risk_filters,
 )
-from backend.agents.industry_analyst.industry_tools import (
+from backend.tools.industry import (
     map_corp_to_ksic,
     get_industry_avg_ratios,
     get_industry_outlook,

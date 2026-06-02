@@ -62,15 +62,15 @@ class NewsCollectionProvider(Protocol):
 
 
 def _load_financial_tools() -> ModuleType:
-    return import_module("backend.agents.financial_analyst.financial_tools")
+    return import_module("backend.tools.financial")
 
 
 def _load_industry_tools() -> ModuleType:
-    return import_module("backend.agents.industry_analyst.industry_tools")
+    return import_module("backend.tools.industry")
 
 
 def _load_news_tools() -> ModuleType:
-    return import_module("backend.agents.news_collector.tools")
+    return import_module("backend.tools.news")
 
 
 class ToolFinancialDataProvider:

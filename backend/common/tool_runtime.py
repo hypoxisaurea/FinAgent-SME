@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass
 from time import perf_counter
 from typing import Any, Callable
 
-from backend.agents.contracts import (
+from backend.common.contracts import (
     AGENT_SKIPPED_STATUS,
     classify_agent_error,
     elapsed_ms,

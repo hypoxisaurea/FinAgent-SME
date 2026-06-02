@@ -40,7 +40,7 @@ tests/
 - `unit/test_collector_database_config.py`
 - `unit/test_logging_config.py`
 - `unit/test_opendartreader_shim.py`
-- `unit/test_sme_repository.py`
+- `unit/test_repositories.py`
 - `cli/test_scripts_cli.py`
 
 ### 수동 검증
@@ -60,7 +60,7 @@ tests/
 - 오케스트레이터/Agent 통합: `integration/test_workflow_orchestrator.py`, `integration/test_agent_tool_fallbacks.py`, `integration/test_final_pipeline.py`
 - 의사결정/리스크 단위 테스트: `unit/test_decision_handlers.py`, `unit/test_risk_event_handlers.py`
 - 배치/설정/인프라: `unit/test_build_db_script.py`, `unit/test_collector_database_config.py`, `unit/test_logging_config.py`
-- 어댑터/리포지토리: `unit/test_opendartreader_shim.py`, `unit/test_sme_repository.py`
+- 어댑터/리포지토리: `unit/test_opendartreader_shim.py`, `unit/test_repositories.py`
 - 공개 셸 스크립트: `cli/test_scripts_cli.py`
 
 실행:

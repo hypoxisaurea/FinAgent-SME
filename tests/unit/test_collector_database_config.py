@@ -2,7 +2,8 @@ from pathlib import Path
 
 import backend.backend_env as backend_env
 import pytest
-from backend.agents.company_registry.tools import get_env_path, resolve_database_url
+from backend.common import env as common_env
+from backend.data.db import get_env_path, resolve_database_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
@@ -46,8 +47,12 @@ def test_get_env_path_defaults_to_backend_env(tmp_path: Path, monkeypatch: pytes
     expected_path = tmp_path / "backend.env"
     expected_path.write_text("OPEN_DART_API_KEY=test\n", encoding="utf-8")
 
-    monkeypatch.setattr(backend_env, "DEFAULT_ENV_PATH", expected_path)
-    monkeypatch.setattr(backend_env, "LEGACY_ENV_PATH", PROJECT_ROOT / "backend" / "agents" / ".env")
+    monkeypatch.setattr(common_env, "DEFAULT_ENV_PATH", expected_path)
+    monkeypatch.setattr(
+        common_env,
+        "LEGACY_ENV_PATH",
+        PROJECT_ROOT / "backend" / "agents" / ".env",
+    )
 
     assert get_env_path(None) == expected_path
 

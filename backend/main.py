@@ -2,8 +2,8 @@ import logging
 from uuid import uuid4
 
 from backend.api.router import api_router
-from backend.config import settings
-from backend.logging_config import configure_logging, request_id_context
+from backend.common.logging import configure_logging, request_id_context
+from backend.common.settings import settings
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 

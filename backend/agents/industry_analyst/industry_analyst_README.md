@@ -31,10 +31,11 @@ KOSIS_API_KEY=...   # kosis.kr 에서 무료 발급
 
 ```
 industry_analyst/
-    __init__.py          # industry_agent 객체 export
-    industry_agent.py    # LangGraph ReAct 에이전트 생성
-    industry_prompts.py  # 에이전트 페르소나 및 출력 스키마 정의
-    industry_tools.py    # 도구 함수 5개
+    __init__.py          # IndustryAnalystAgent export
+    agent.py             # 오케스트레이터용 산업 분석 에이전트
+../tools/
+    industry.py          # 산업 분석 도구 함수 5개
+    prompts/industry.py  # 프롬프트 정의
     data/
         profit_ratio.csv      # 한국은행 기업경영분석 5.1.2 손익 지표
         asset_ratio.csv       # 한국은행 기업경영분석 5.1.3 자산/자본 지표
@@ -152,7 +153,7 @@ DART 회사개황에서 업종코드를 가져와 KSIC 코드로 변환합니다
 | F 건설업 | ±30% | 200% 이상도 정상 범위 |
 | G 도매·소매 | ±15% | 마진 낮고 회전 빠른 구조 |
 
-> 전체 18개 KSIC 업종에 대해 8개 지표별 허용범위가 `industry_tools.py`에 정의되어 있습니다.
+> 전체 18개 KSIC 업종에 대해 8개 지표별 허용범위가 `backend/tools/industry.py`에 정의되어 있습니다.
 
 **`sector_note`**: 업종별 주의사항 텍스트 (예: "수강료 선수금이 유동부채 증가 요인 → 유동비율 낮아도 실질 위험 낮을 수 있음")
 
@@ -305,12 +306,12 @@ load_dotenv()
 CORP_CODE = "01074862"
 YEAR      = 2024
 
-from agents.financial_analyst.financial_tools import (
+from backend.tools.financial import (
     calc_financial_ratios,
     get_financial_statements,
     trend_analysis,
 )
-from agents.industry_analyst.industry_tools import (
+from backend.tools.industry import (
     map_corp_to_ksic,
     get_industry_avg_ratios,
     get_industry_outlook,
@@ -466,35 +467,36 @@ except Exception as e:
 ### 테스트 코드
 
 ```bash
-cd /path/to/backend
-python -c "
-from dotenv import load_dotenv; load_dotenv()
-import json
-from agents.financial_analyst.financial_tools import (
-    get_financial_statements,
-    calc_financial_ratios,
-    trend_analysis,
-)
-from agents.industry_analyst.industry_agent import industry_agent
+cd /path/to/FinAgent-SME
+./.venv/bin/python - <<'PY'
+import asyncio
 
-fs = get_financial_statements.invoke({'corp_code': '01074862', 'year': 2024})
-ratios = calc_financial_ratios.invoke({'fs': fs})
-trend = trend_analysis.invoke({'corp_code': '01074862', 'years': [2022, 2023, 2024]})
+from backend.agents.industry_analyst import IndustryAnalystAgent
 
-company_ratios = {
-    'debt_ratio':          ratios['debt_ratio'],
-    'current_ratio':       ratios['current_ratio'],
-    'op_margin':           ratios['op_margin'],
-    'interest_coverage':   ratios['interest_coverage'],
-    'borrow_dep':          ratios['borrow_dep'],
-    'receivable_turnover': ratios['receivable_turnover'],
-    'asset_turnover':      ratios['asset_turnover'],
-    'sales_growth':        trend['yoy']['revenue_growth'][-1],
-}
 
-result = industry_agent.invoke({'messages': [{'role': 'user', 'content': f'corp_code 01074862, 2024년 산업 분석해줘. company_ratios: {json.dumps(company_ratios, ensure_ascii=False)}'}]})
-print(result['messages'][-1].content)
-"
+async def main():
+    agent = IndustryAnalystAgent()
+    result = await agent.run(
+        {
+            "company_name": "메가스터디교육(주)",
+            "corp_code": "01074862",
+            "target_year": 2024,
+            "financial_ratios": {
+                "debt_ratio": 0.8819,
+                "current_ratio": 0.5810,
+                "op_margin": 0.1312,
+                "interest_coverage": 22.5964,
+                "borrow_dep": 0.0153,
+                "receivable_turnover": 18.5877,
+                "asset_turnover": 1.0728,
+                "sales_growth": 0.0075,
+            },
+        }
+    )
+    print(result)
+
+asyncio.run(main())
+PY
 ```
 
 ### 테스트 결과
@@ -554,63 +556,62 @@ print(result['messages'][-1].content)
 
 ## 사용 방법
 
-### 1. 직접 호출 (산업평균만, company_ratios 없음)
+### 1. 직접 호출 (산업평균만, `financial_ratios` 없음)
 
 ```python
-from dotenv import load_dotenv
-load_dotenv()
+import asyncio
 
-from agents.industry_analyst.industry_agent import industry_agent
+from backend.agents.industry_analyst import IndustryAnalystAgent
 
-result = industry_agent.invoke({
-    "messages": [
-        {"role": "user", "content": "corp_code 01074862, 2024년 산업 분석해줘"}
-    ]
-})
-print(result["messages"][-1].content)
+
+async def main() -> None:
+    agent = IndustryAnalystAgent()
+    result = await agent.run(
+        {
+            "company_name": "메가스터디교육(주)",
+            "corp_code": "01074862",
+            "target_year": 2024,
+        }
+    )
+    print(result["industry_summary"])
+
+
+asyncio.run(main())
 ```
 
-### 2. Orchestrator 연동 (권장, peer_comparison 포함)
+### 2. Orchestrator 연동 (권장, `peer_comparison` 포함)
 
 ```python
-import json
-from agents.financial_analyst.financial_tools import (
-    get_financial_statements, calc_financial_ratios, trend_analysis,
+financial_result = await FinancialAnalystAgent().run(
+    {
+        "company_name": company_name,
+        "corp_code": corp_code,
+        "target_year": year,
+    }
 )
-from agents.industry_analyst.industry_agent import industry_agent
 
-# Financial Agent 결과에서 company_ratios 구성
-fs     = get_financial_statements.invoke({"corp_code": corp_code, "year": year})
-ratios = calc_financial_ratios.invoke({"fs": fs})
-trend  = trend_analysis.invoke({"corp_code": corp_code, "years": years})
+industry_result = await IndustryAnalystAgent().run(
+    {
+        "company_name": company_name,
+        "corp_code": corp_code,
+        "target_year": year,
+        "financial_ratios": financial_result["financial_ratios"],
+    }
+)
+```
 
-company_ratios = {
-    "debt_ratio":          ratios["debt_ratio"],
-    "current_ratio":       ratios["current_ratio"],
-    "op_margin":           ratios["op_margin"],
-    "interest_coverage":   ratios["interest_coverage"],
-    "borrow_dep":          ratios["borrow_dep"],
-    "receivable_turnover": ratios["receivable_turnover"],
-    "asset_turnover":      ratios["asset_turnover"],
-    "sales_growth":        trend["yoy"]["revenue_growth"][-1],
+### 3. 입력 형식
+
+```
+{
+  "company_name": "기업명",
+  "corp_code": "8자리코드",
+  "target_year": 2024,
+  "financial_ratios": {...}
 }
-
-result = industry_agent.invoke({
-    "messages": [{
-        "role": "user",
-        "content": f"corp_code {corp_code}, {year}년 산업 분석해줘. company_ratios: {json.dumps(company_ratios, ensure_ascii=False)}"
-    }]
-})
-industry_result = json.loads(result["messages"][-1].content.strip("```json\n").strip("```"))
 ```
 
-### 3. 메시지 형식
+- `financial_ratios`를 함께 전달하면 `peer_comparison`이 활성화됩니다.
+- `financial_ratios` 없이 호출하면 산업평균(`industry_avg`)만 반환됩니다.
 
-```
-"corp_code {8자리코드}, {연도}년 산업 분석해줘. company_ratios: {JSON 문자열}"
-```
-
-- `company_ratios`를 메시지에 포함하면 `peer_comparison`이 활성화됩니다.
-- `company_ratios` 없이 호출하면 산업평균(`industry_avg`)만 반환됩니다.
-
-> **주의**: 에이전트가 반환하는 최종 메시지는 ` ```json ``` ` 코드 블록으로 감싸진 JSON 문자열입니다. 파싱 시 코드 펜스를 제거 후 `json.loads()`를 사용하세요.
+> 오케스트레이터에서는 Financial Agent 결과를 그대로 `financial_ratios`로 넘겨 연결합니다.

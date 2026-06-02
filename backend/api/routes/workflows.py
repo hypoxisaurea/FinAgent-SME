@@ -2,7 +2,7 @@ import logging
 from typing import Any
 
 from backend.agents.orchestrator import run_credit_workflow
-from backend.logging_config import get_request_id
+from backend.common.logging import get_request_id
 from backend.schemas.credit import CreditAssessmentRequest
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
