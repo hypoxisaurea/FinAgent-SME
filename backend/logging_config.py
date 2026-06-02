@@ -72,6 +72,9 @@ def _configure_log_record_factory() -> None:
         logging.setLogRecordFactory(_request_id_log_record_factory)
 
 
+_configure_log_record_factory()
+
+
 def _has_request_id_filter(handler: logging.Handler) -> bool:
     return any(isinstance(filter_, RequestIdFilter) for filter_ in handler.filters)
 
