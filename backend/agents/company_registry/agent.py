@@ -5,8 +5,8 @@ from time import perf_counter
 from typing import Any
 
 from backend.agents.base import Agent
-from backend.agents.company_registry.tools import execute_dart_pipeline
 from backend.agents.contracts import build_agent_output, elapsed_ms
+from backend.services.company_registry_pipeline import execute_dart_pipeline
 
 logger = logging.getLogger(__name__)
 

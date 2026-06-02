@@ -1,0 +1,71 @@
+from __future__ import annotations
+
+import logging
+from datetime import datetime
+from typing import Any
+
+import pandas as pd
+from backend.agents.company_registry import tools as company_registry_tools
+from backend.repositories.company_registry_repository import (
+    add_created_at_column,
+    save_outputs_to_database,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class _PipelineArgs:
+    api_key: str | None = None
+    env_file: str | None = None
+
+
+def execute_dart_pipeline(
+    year: int,
+    sample_size: int | None = None,
+    skip_db_save: bool = False,
+) -> dict[str, Any]:
+    """DART 기반 기업 마스터/재무 피처 구축 use-case를 실행한다."""
+    if company_registry_tools.dart is None:
+        raise ModuleNotFoundError("dart_fss가 설치되어 있지 않습니다.")
+
+    api_key = company_registry_tools.resolve_api_key(_PipelineArgs())
+    company_registry_tools.dart.set_api_key(api_key=api_key)
+
+    _, sme_df = company_registry_tools.load_sme_candidates(sample_size=sample_size)
+
+    processed_records, error_logs, stats = company_registry_tools.run_collection(
+        sme_df=sme_df,
+        business_year=year,
+        report_code=company_registry_tools.DEFAULT_REPORT_CODE,
+    )
+
+    created_at = datetime.now().strftime("%Y-%m-%d")
+    final_df = company_registry_tools.build_final_dataframe(processed_records)
+    final_df = add_created_at_column(final_df, created_at)
+    sme_list_df = company_registry_tools.build_sme_list_dataframe(final_df)
+    error_df = pd.DataFrame(error_logs)
+
+    db_save_counts: dict[str, int] = {}
+    if not skip_db_save:
+        db_save_counts = save_outputs_to_database(sme_list_df, final_df, error_df)
+
+    result = {
+        "status": "success",
+        "stats": stats,
+        "sme_count": len(sme_list_df),
+        "financial_data_count": len(final_df),
+        "db_save_counts": db_save_counts,
+        "source": "dart",
+    }
+    logger.info(
+        (
+            "company_registry_pipeline_finished year=%s sample_size=%s "
+            "skip_db_save=%s sme_count=%s financial_data_count=%s"
+        ),
+        year,
+        sample_size,
+        skip_db_save,
+        result["sme_count"],
+        result["financial_data_count"],
+    )
+    return result

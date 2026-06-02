@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from backend.services import sme_repository
+from backend.repositories import company_master_repository
+from backend.repositories import db_access
+from backend.repositories import financial_feature_repository
 
 
 class _FakeResult:
@@ -67,14 +69,20 @@ def test_get_financial_rows_by_corp_code_queries_postgres_table(
         ]
     )
 
-    monkeypatch.setattr(sme_repository, "create_db_engine", lambda: fake_engine)
     monkeypatch.setattr(
-        sme_repository,
+        db_access,
+        "create_db_engine",
+        lambda: fake_engine,
+    )
+    monkeypatch.setattr(
+        db_access,
         "inspect",
-        lambda engine: _FakeInspector({sme_repository.FEATURES_TABLE_NAME: True}),
+        lambda engine: _FakeInspector(
+            {financial_feature_repository.FEATURES_TABLE_NAME: True}
+        ),
     )
 
-    rows = sme_repository.get_financial_rows_by_corp_code("123456")
+    rows = financial_feature_repository.get_financial_rows_by_corp_code("123456")
 
     assert rows == fake_engine.rows
     assert fake_engine.executed_queries[0][1] == {"corp_code": "00123456"}
@@ -87,15 +95,54 @@ def test_get_all_corp_codes_returns_empty_when_master_table_is_missing(
 ) -> None:
     fake_engine = _FakeEngine([])
 
-    monkeypatch.setattr(sme_repository, "create_db_engine", lambda: fake_engine)
     monkeypatch.setattr(
-        sme_repository,
+        db_access,
+        "create_db_engine",
+        lambda: fake_engine,
+    )
+    monkeypatch.setattr(
+        db_access,
         "inspect",
-        lambda engine: _FakeInspector({sme_repository.SME_LIST_TABLE_NAME: False}),
+        lambda engine: _FakeInspector(
+            {company_master_repository.SME_LIST_TABLE_NAME: False}
+        ),
     )
 
-    corp_codes = sme_repository.get_all_corp_codes()
+    corp_codes = company_master_repository.get_all_corp_codes()
 
     assert corp_codes == []
     assert fake_engine.executed_queries == []
     assert fake_engine.disposed is True
+
+
+def test_find_company_row_by_name_returns_first_match(monkeypatch) -> None:
+    fake_engine = _FakeEngine(
+        [
+            {
+                "corp_code": "00123456",
+                "corp_name": "테스트기업",
+            }
+        ]
+    )
+
+    monkeypatch.setattr(
+        db_access,
+        "create_db_engine",
+        lambda: fake_engine,
+    )
+    monkeypatch.setattr(
+        db_access,
+        "inspect",
+        lambda engine: _FakeInspector(
+            {company_master_repository.SME_LIST_TABLE_NAME: True}
+        ),
+    )
+
+    row = company_master_repository.find_company_row_by_name("테스트기업")
+
+    assert row == {
+        "corp_code": "00123456",
+        "corp_name": "테스트기업",
+    }
+    assert fake_engine.executed_queries[0][1] == {"company_name": "테스트기업"}
+    assert "WHERE corp_name = :company_name" in fake_engine.executed_queries[0][0]

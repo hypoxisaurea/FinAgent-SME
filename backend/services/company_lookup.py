@@ -3,8 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from backend.agents.company_registry.tools import SME_LIST_TABLE_NAME, create_db_engine
-from sqlalchemy import inspect, text
+from backend.repositories.company_master_repository import find_company_row_by_name
 
 logger = logging.getLogger(__name__)
 
@@ -33,34 +32,8 @@ def find_company_by_name(company_name: str) -> CompanyLookupResult | None:
     if not normalized_name:
         raise ValueError("company_name은 비어 있을 수 없습니다.")
 
-    engine = create_db_engine()
     try:
-        inspector = inspect(engine)
-        if not inspector.has_table(SME_LIST_TABLE_NAME):
-            raise RuntimeError(
-                f"기업 마스터 테이블이 존재하지 않습니다: {SME_LIST_TABLE_NAME}"
-            )
-
-        query = text(
-            f"""
-            SELECT corp_code, corp_name
-            FROM {SME_LIST_TABLE_NAME}
-            WHERE corp_name = :company_name
-            ORDER BY created_at DESC NULLS LAST, corp_code ASC
-            LIMIT 1
-            """
-        )
-
-        with engine.connect() as connection:
-            row = (
-                connection.execute(
-                    query,
-                    {"company_name": normalized_name},
-                )
-                .mappings()
-                .first()
-            )
-
+        row = find_company_row_by_name(normalized_name)
         if row is None:
             logger.info("company_lookup_not_found company_name=%s", normalized_name)
             return None
@@ -80,5 +53,3 @@ def find_company_by_name(company_name: str) -> CompanyLookupResult | None:
     except Exception as exc:  # noqa: BLE001
         logger.exception("company_lookup_failed company_name=%s", normalized_name)
         raise RuntimeError("기업 마스터 조회 중 오류가 발생했습니다.") from exc
-    finally:
-        engine.dispose()
