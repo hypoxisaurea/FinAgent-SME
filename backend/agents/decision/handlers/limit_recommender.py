@@ -14,7 +14,11 @@ from __future__ import annotations
 
 import logging
 
-from ..models import CreditGrade, DecisionResult, LimitRecommendationResult
+from backend.agents.decision.models import (
+    CreditGrade,
+    DecisionResult,
+    LimitRecommendationResult,
+)
 
 logger = logging.getLogger(__name__)
 

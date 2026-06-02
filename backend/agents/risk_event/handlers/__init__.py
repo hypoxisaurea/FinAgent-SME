@@ -1,10 +1,14 @@
-from .keyword_detector import detect_keywords
-from .sentiment_analyzer import analyze_sentiment
-from .disclosure_detector import detect_disclosure_anomalies
-from .legal_risk_detector import detect_legal_risks
-from .financial_anomaly_detector import detect_financial_anomalies
-from .severity_classifier import classify_severity
-from .timeline_builder import build_timeline
+from backend.agents.risk_event.handlers.disclosure_detector import (
+    detect_disclosure_anomalies,
+)
+from backend.agents.risk_event.handlers.financial_anomaly_detector import (
+    detect_financial_anomalies,
+)
+from backend.agents.risk_event.handlers.keyword_detector import detect_keywords
+from backend.agents.risk_event.handlers.legal_risk_detector import detect_legal_risks
+from backend.agents.risk_event.handlers.sentiment_analyzer import analyze_sentiment
+from backend.agents.risk_event.handlers.severity_classifier import classify_severity
+from backend.agents.risk_event.handlers.timeline_builder import build_timeline
 
 __all__ = [
     "detect_keywords",

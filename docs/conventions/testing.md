@@ -37,6 +37,12 @@
 ## 파일/네이밍 규칙
 
 - 테스트 위치: `tests/`
+- 권장 하위 폴더:
+  - `tests/unit/`
+  - `tests/integration/`
+  - `tests/api/`
+  - `tests/cli/`
+  - `tests/manual/`
 - 파일명: `test_<target>.py`
 - 함수명: `test_<condition>_<expected>`
 

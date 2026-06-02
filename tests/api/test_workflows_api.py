@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 
 
 def _load_modules() -> tuple[object, object]:
-    main_module = importlib.import_module("main")
-    workflows_module = importlib.import_module("api.routes.workflows")
+    main_module = importlib.import_module("backend.main")
+    workflows_module = importlib.import_module("backend.api.routes.workflows")
     return main_module, workflows_module
 
 
@@ -43,6 +43,7 @@ def test_credit_assessment_route_runs_orchestrator(
     assert payload["status"] == "success"
     assert payload["company_name"] == "FinAgent"
     assert payload["request_id"].startswith("req-")
+    assert response.headers["x-request-id"] == payload["request_id"]
 
 
 def test_orchestrator_route_runs_orchestrator(
@@ -68,6 +69,7 @@ def test_orchestrator_route_runs_orchestrator(
     assert payload["status"] == "success"
     assert payload["company_name"] == "FinAgent"
     assert payload["request_id"].startswith("req-")
+    assert response.headers["x-request-id"] == payload["request_id"]
 
 
 def test_orchestrator_route_logs_request_and_completion(
@@ -84,22 +86,23 @@ def test_orchestrator_route_logs_request_and_completion(
 
     monkeypatch.setattr(workflows, "run_credit_workflow", fake_run_credit_workflow)
 
-    with caplog.at_level(logging.INFO, logger="api.routes.workflows"):
+    with caplog.at_level(logging.INFO, logger="backend.api.routes.workflows"):
         response = client.post(
             "/api/v1/workflows/orchestrator",
             json={"company_name": "FinAgent"},
         )
 
     assert response.status_code == 200
+    request_ids = [record.request_id for record in caplog.records]
     messages = [record.message for record in caplog.records]
+    assert any(request_id.startswith("req-") for request_id in request_ids)
     assert any(
-        "credit_workflow_requested request_id=req-" in msg
+        "credit_workflow_requested company_name=FinAgent" in msg
         for msg in messages
     )
     assert any(
         (
-            "credit_workflow_completed request_id=req-" in msg
-            and "company_name=FinAgent status=success" in msg
+            "credit_workflow_completed company_name=FinAgent status=success" in msg
         )
         for msg in messages
     )
@@ -125,14 +128,13 @@ def test_orchestrator_route_returns_400_for_normalized_empty_company_name(
 
     assert response.status_code == 400
     assert response.json() == {
-        "detail": {
-            "code": "INVALID_INPUT",
-            "message": "입력값이 올바르지 않습니다.",
-            "detail": {"company_name": "   "},
-            "request_id": response.json()["detail"]["request_id"],
-        }
+        "code": "INVALID_INPUT",
+        "message": "입력값이 올바르지 않습니다.",
+        "detail": {"company_name": "   "},
+        "request_id": response.json()["request_id"],
     }
-    assert response.json()["detail"]["request_id"].startswith("req-")
+    assert response.json()["request_id"].startswith("req-")
+    assert response.headers["x-request-id"] == response.json()["request_id"]
 
 
 def test_orchestrator_route_returns_500_when_orchestrator_fails(
@@ -155,11 +157,10 @@ def test_orchestrator_route_returns_500_when_orchestrator_fails(
 
     assert response.status_code == 500
     assert response.json() == {
-        "detail": {
-            "code": "AGENT_EXECUTION_FAILED",
-            "message": "오케스트레이터 실행 중 오류가 발생했습니다.",
-            "detail": {"company_name": "FinAgent"},
-            "request_id": response.json()["detail"]["request_id"],
-        }
+        "code": "AGENT_EXECUTION_FAILED",
+        "message": "오케스트레이터 실행 중 오류가 발생했습니다.",
+        "detail": {"company_name": "FinAgent"},
+        "request_id": response.json()["request_id"],
     }
-    assert response.json()["detail"]["request_id"].startswith("req-")
+    assert response.json()["request_id"].startswith("req-")
+    assert response.headers["x-request-id"] == response.json()["request_id"]

@@ -1,11 +1,11 @@
 import logging
+from uuid import uuid4
 
-from fastapi import FastAPI
+from backend.api.router import api_router
+from backend.config import settings
+from backend.logging_config import configure_logging, request_id_context
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-
-from api.router import api_router
-from config import settings
-from logging_config import configure_logging
 
 configure_logging()
 
@@ -26,6 +26,21 @@ app.add_middleware(
 )
 
 app.include_router(api_router, prefix="/api")
+
+
+@app.middleware("http")
+async def bind_request_id_middleware(
+    request: Request,
+    call_next,
+) -> Response:
+    request_id = request.headers.get("x-request-id", "").strip() or f"req-{uuid4().hex[:12]}"
+    request.state.request_id = request_id
+
+    with request_id_context(request_id):
+        response = await call_next(request)
+
+    response.headers["X-Request-ID"] = request_id
+    return response
 
 
 @app.get("/")

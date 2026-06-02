@@ -13,22 +13,30 @@ from collections import Counter
 from datetime import date
 from typing import Any
 
-from langgraph.graph import END, StateGraph
-
-from .data.sme_loader import get_financial_rows
-from .handlers.disclosure_detector import detect_disclosure_anomalies
-from .handlers.financial_anomaly_detector import detect_financial_anomalies
-from .handlers.keyword_detector import detect_keywords
-from .handlers.legal_risk_detector import detect_legal_risks
-from .handlers.sentiment_analyzer import analyze_sentiment
-from .handlers.severity_classifier import classify_severity
-from .handlers.timeline_builder import build_timeline
-from .models import (
+from backend.agents.risk_event.data.sme_loader import get_financial_rows
+from backend.agents.risk_event.handlers.disclosure_detector import (
+    detect_disclosure_anomalies,
+)
+from backend.agents.risk_event.handlers.financial_anomaly_detector import (
+    detect_financial_anomalies,
+)
+from backend.agents.risk_event.handlers.keyword_detector import detect_keywords
+from backend.agents.risk_event.handlers.legal_risk_detector import detect_legal_risks
+from backend.agents.risk_event.handlers.sentiment_analyzer import analyze_sentiment
+from backend.agents.risk_event.handlers.severity_classifier import classify_severity
+from backend.agents.risk_event.handlers.timeline_builder import build_timeline
+from backend.agents.risk_event.models import (
+    DisclosureAnomalyResult,
+    FinancialAnomalyResult,
+    KeywordDetectionResult,
+    LegalRiskResult,
     RiskEvent,
     RiskEventResult,
+    SentimentAnalysisResult,
     SeverityClassifiedEvent,
     SeverityLevel,
 )
+from langgraph.graph import END, StateGraph
 
 logger = logging.getLogger(__name__)
 RiskEventState = dict[str, Any]
@@ -83,7 +91,15 @@ async def _parallel_handlers(state: RiskEventState) -> RiskEventState:
     )
 
     labels = ["keyword", "sentiment", "disclosure", "legal", "financial"]
-    handler_results = {}
+    handler_results: dict[
+        str,
+        KeywordDetectionResult
+        | SentimentAnalysisResult
+        | DisclosureAnomalyResult
+        | LegalRiskResult
+        | FinancialAnomalyResult
+        | None
+    ] = {}
     all_events: list[RiskEvent] = []
     errors: list[str] = []
 

@@ -8,8 +8,11 @@ from __future__ import annotations
 
 from datetime import date
 
-from ..models import (
-    EventSource, EventType, KeywordDetectionResult, RiskEvent,
+from backend.agents.risk_event.models import (
+    EventSource,
+    EventType,
+    KeywordDetectionResult,
+    RiskEvent,
 )
 
 # ─── 키워드 사전 ──────────────────────────────────────────────────────────────

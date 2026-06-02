@@ -10,7 +10,12 @@ import logging
 import math
 from datetime import date
 
-from ..models import EventSource, EventType, FinancialAnomalyResult, RiskEvent
+from backend.agents.risk_event.models import (
+    EventSource,
+    EventType,
+    FinancialAnomalyResult,
+    RiskEvent,
+)
 
 logger = logging.getLogger(__name__)
 

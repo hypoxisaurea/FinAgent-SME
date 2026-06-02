@@ -8,10 +8,10 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from services.sme_repository import (
+from backend.services.sme_repository import (
     get_all_corp_codes as get_all_corp_codes_from_db,
 )
-from services.sme_repository import (
+from backend.services.sme_repository import (
     get_company_info_by_corp_code,
     get_financial_rows_by_corp_code,
     search_company_infos_by_name,

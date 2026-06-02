@@ -1,6 +1,5 @@
+from backend.backend_env import get_backend_env_path
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-from backend_env import get_backend_env_path
 
 
 class Settings(BaseSettings):

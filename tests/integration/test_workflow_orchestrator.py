@@ -4,8 +4,8 @@ import asyncio
 import logging
 from typing import Any
 
-from agents.base import Agent
-from agents.orchestrator.orchestrator import WorkflowOrchestrator
+from backend.agents.base import Agent
+from backend.agents.orchestrator.orchestrator import WorkflowOrchestrator
 
 
 class _FakeAgent(Agent):
@@ -230,27 +230,28 @@ def test_orchestrator_logs_agent_progress(caplog: Any) -> None:
         sequential_agents=[decision],
     )
 
-    with caplog.at_level(logging.INFO, logger="agents.orchestrator.orchestrator"):
+    with caplog.at_level(logging.INFO, logger="backend.agents.orchestrator.orchestrator"):
         result = asyncio.run(orchestrator.run({"company_name": "테스트기업"}))
 
     assert result["status"] == "success"
     _assert_common_step_contract(result["steps"])
     messages = [record.message for record in caplog.records]
+    request_ids = [record.request_id for record in caplog.records]
+    assert any(request_id == "-" for request_id in request_ids)
     assert any(
-        "workflow_started request_id=None company_name=테스트기업" in msg
+        "workflow_started company_name=테스트기업" in msg
         for msg in messages
     )
     assert any(
         (
-            "workflow_agent_started request_id=None company_name=테스트기업 "
-            "agent_name=company_resolver"
+            "workflow_agent_started company_name=테스트기업 agent_name=company_resolver"
         )
         in msg
         for msg in messages
     )
     assert any(
         (
-            "workflow_agent_completed request_id=None company_name=테스트기업 "
+            "workflow_agent_completed company_name=테스트기업 "
             "agent_name=news_collector"
         )
         in msg
@@ -258,16 +259,14 @@ def test_orchestrator_logs_agent_progress(caplog: Any) -> None:
     )
     assert any(
         (
-            "workflow_progress request_id=None company_name=테스트기업 "
-            "completed_steps=3"
+            "workflow_progress company_name=테스트기업 completed_steps=3"
         )
         in msg
         for msg in messages
     )
     assert any(
         (
-            "workflow_finished request_id=None company_name=테스트기업 "
-            "status=success"
+            "workflow_finished company_name=테스트기업 status=success"
         )
         in msg
         for msg in messages

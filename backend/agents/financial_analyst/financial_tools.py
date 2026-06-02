@@ -1,53 +1,46 @@
 import logging
-import os
 
 import pandas as pd
-import requests
+from backend.backend_env import load_backend_env
+from backend.integrations import dart_client
 from langchain_core.tools import tool
-
-from backend_env import load_backend_env
 
 load_backend_env()
 
 logger = logging.getLogger(__name__)
-
-try:
-    from opendartreader import OpenDartReader
-except ModuleNotFoundError:
-    OpenDartReader = None
+OpenDartReader = dart_client.OpenDartReader
 
 
 def _get_dart():
-    if OpenDartReader is None:
-        raise ModuleNotFoundError("opendartreader가 설치되어 있지 않습니다.")
-    api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
-    if not api_key:
-        raise ValueError("환경변수 OPEN_DART_API_KEY가 설정되지 않았습니다.")
-    dart = OpenDartReader(api_key)
-    return dart
+    return dart_client.get_dart_client()
 
 
 def _fetch_audit_opinion(corp_code: str, year: int) -> tuple[str | None, bool]:
     """DART 회계감사인의 명칭 및 감사의견 API로 감사의견과 외감 여부를 반환한다."""
-    api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
+    api_key = dart_client.get_dart_api_key(required=False)
     if not api_key:
         logger.warning("OPEN_DART_API_KEY 미설정 - 감사의견 조회 생략")
         return None, False
 
-    url = "https://opendart.fss.or.kr/api/accnutAdtorNmNdAdtOpinion.json"
     params = {
-        "crtfc_key": api_key,
         "corp_code": corp_code,
         "bsns_year": str(year),
         "reprt_code": "11011",
     }
 
     try:
-        resp = requests.get(url, params=params, timeout=5)
-        resp.raise_for_status()
-        data = resp.json()
-    except requests.RequestException as e:
-        logger.warning("감사의견 API 호출 실패 corp_code=%s year=%s: %s", corp_code, year, e)
+        data = dart_client.get_dart_json(
+            "accnutAdtorNmNdAdtOpinion.json",
+            params=params,
+            timeout=5,
+        )
+    except ConnectionError as exc:
+        logger.warning(
+            "감사의견 API 호출 실패 corp_code=%s year=%s: %s",
+            corp_code,
+            year,
+            exc,
+        )
         return None, False
 
     if data.get("status") != "000":
@@ -66,9 +59,8 @@ def _fetch_audit_opinion(corp_code: str, year: int) -> tuple[str | None, bool]:
         items[0],
     )
 
-    opinion = target.get("adt_opinion", "").strip()
-    if opinion in ("", "-"):
-        opinion = None
+    opinion_text = target.get("adt_opinion", "").strip()
+    opinion: str | None = opinion_text if opinion_text not in ("", "-") else None
 
     return opinion, True
 
@@ -76,28 +68,32 @@ def _fetch_audit_opinion(corp_code: str, year: int) -> tuple[str | None, bool]:
 def _normalize_accounts(fs: pd.DataFrame) -> dict:
     """DART finstate_all 결과에서 필요한 계정과목만 추출."""
 
-    def _get(account_nm: str, sj_div: str = None, account_id: str = None) -> float | None:
-            df = fs
-            if sj_div:
-                df = fs[fs["sj_div"] == sj_div]
-                
-            # 1. 표준 계정코드(account_id)가 들어오면 최우선으로 정확히 저격
-            if account_id:
-                row = df[df["account_id"].str.strip() == account_id]
-            else:
-                row = pd.DataFrame()
-                
-            # 2. 코드로 못 찾았거나 없을 경우, 모든 종류의 공백(\xa0 포함)을 제거하고 텍스트 매칭
-            if row.empty:
-                clean_nm = account_nm.replace(" ", "")
-                row = df[df["account_nm"].str.replace(r"\s+", "", regex=True) == clean_nm]
-                
-            if row.empty:
-                return None
-            val = row.iloc[0]["thstrm_amount"]
-            if pd.isna(val) or val == "":
-                return None
-            return float(str(val).replace(",", ""))
+    def _get(
+        account_nm: str,
+        sj_div: str | None = None,
+        account_id: str | None = None,
+    ) -> float | None:
+        df = fs
+        if sj_div:
+            df = fs[fs["sj_div"] == sj_div]
+
+        # 1. 표준 계정코드(account_id)가 들어오면 최우선으로 정확히 저격
+        if account_id:
+            row = df[df["account_id"].str.strip() == account_id]
+        else:
+            row = pd.DataFrame()
+
+        # 2. 코드로 못 찾았거나 없을 경우, 모든 종류의 공백(\xa0 포함)을 제거하고 텍스트 매칭
+        if row.empty:
+            clean_nm = account_nm.replace(" ", "")
+            row = df[df["account_nm"].str.replace(r"\s+", "", regex=True) == clean_nm]
+
+        if row.empty:
+            return None
+        val = row.iloc[0]["thstrm_amount"]
+        if pd.isna(val) or val == "":
+            return None
+        return float(str(val).replace(",", ""))
 
     is_div = "IS" if not fs[fs["sj_div"] == "IS"].empty else "CIS"
 
@@ -310,6 +306,7 @@ def trend_analysis(corp_code: str, years: list[int]) -> dict:
     """
     dart = _get_dart()
     history = []
+    flags = []
 
     for year in sorted(years):
         fs_raw = dart.finstate_all(corp_code, year)
@@ -337,7 +334,6 @@ def trend_analysis(corp_code: str, years: list[int]) -> dict:
             "ocf":           fs["영업현금흐름"],
         })
 
-    flags = []
     yoy = {
         "debt_ratio":    [],
         "op_margin":     [],
@@ -429,11 +425,27 @@ def apply_risk_filters(fs: dict, history: list[dict]) -> dict:
     재무제표 없는 기업은 get_financial_statements에서 ValueError로 차단됨.
     """
     # 등급 순서 (낮은 인덱스 = 더 강한 제약)
-    GRADE_ORDER = ["CCC", "B", "B+", "BB-", "BB", "BB+", "BBB-", "BBB", "BBB+",
-                   "A-", "A", "A+", "AA-", "AA", "AA+", "AAA"]
+    grade_order = [
+        "CCC",
+        "B",
+        "B+",
+        "BB-",
+        "BB",
+        "BB+",
+        "BBB-",
+        "BBB",
+        "BBB+",
+        "A-",
+        "A",
+        "A+",
+        "AA-",
+        "AA",
+        "AA+",
+        "AAA",
+    ]
     
     # 발동된 필터들의 등급 상한 결정
-    FILTER_CAP = {
+    filter_cap = {
         "완전자본잠식":           "CCC",
         "자기자본비율_10%이하":    "CCC",
         "감사의견_부적정또는거절":  "CCC",
@@ -508,8 +520,8 @@ def apply_risk_filters(fs: dict, history: list[dict]) -> dict:
     # 가장 강한 제약(낮은 등급) 선택
     grade_cap = None
     for f in triggered:
-        cap = FILTER_CAP[f]
-        if grade_cap is None or GRADE_ORDER.index(cap) < GRADE_ORDER.index(grade_cap):
+        cap = filter_cap[f]
+        if grade_cap is None or grade_order.index(cap) < grade_order.index(grade_cap):
             grade_cap = cap
 
     return {

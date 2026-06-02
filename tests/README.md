@@ -6,26 +6,47 @@
 - 외부 API 확인처럼 수동 실행이 필요한 파일은 `manual_*.py`
 - 공통 테스트 부트스트랩은 `tests/conftest.py`
 
+## 디렉터리 구조
+
+```text
+tests/
+├── api/          # FastAPI 계약 테스트
+├── cli/          # 공개 스크립트/CLI 테스트
+├── integration/  # 오케스트레이터/다중 Agent 통합 테스트
+├── manual/       # 수동 검증 스크립트와 결과 문서
+├── unit/         # 핸들러/유틸/리포지토리 단위 테스트
+├── conftest.py
+└── run_all_tests.sh
+```
+
+## 캐시 관리
+
+- `pytest` 캐시는 루트 `.cache/pytest/`에 저장합니다.
+- 테스트 실행 스크립트는 `PYTHONDONTWRITEBYTECODE=1`로 실행되어 `__pycache__` 생성을 최소화합니다.
+- Git에는 `.cache/`, `.pytest_cache/`, `__pycache__/`를 포함한 테스트 캐시를 커밋하지 않습니다.
+- 남은 테스트 캐시를 정리하려면 `./tests/clean_test_cache.sh`를 실행합니다.
+
 ## 현재 파일 구성
 
 ### 자동화 테스트
 
-- `test_workflows_api.py`
-- `test_workflow_orchestrator.py`
-- `test_decision_handlers.py`
-- `test_risk_event_handlers.py`
-- `test_final_pipeline.py`
-- `test_build_db_script.py`
-- `test_collector_database_config.py`
-- `test_logging_config.py`
-- `test_opendartreader_shim.py`
-- `test_sme_repository.py`
-- `test_scripts_cli.py`
+- `api/test_workflows_api.py`
+- `integration/test_workflow_orchestrator.py`
+- `integration/test_agent_tool_fallbacks.py`
+- `integration/test_final_pipeline.py`
+- `unit/test_decision_handlers.py`
+- `unit/test_risk_event_handlers.py`
+- `unit/test_build_db_script.py`
+- `unit/test_collector_database_config.py`
+- `unit/test_logging_config.py`
+- `unit/test_opendartreader_shim.py`
+- `unit/test_sme_repository.py`
+- `cli/test_scripts_cli.py`
 
 ### 수동 검증
 
-- `manual_financial_industry_agents_tools.py`
-- `manual_results_financial_industry_tools.md`
+- `manual/manual_financial_industry_agents_tools.py`
+- `manual/manual_results_financial_industry_tools.md`
 
 ### 실행 스크립트
 
@@ -35,13 +56,12 @@
 
 자동화 테스트는 기능별로 분리되어 있습니다.
 
-- API 계약: `test_workflows_api.py`
-- 오케스트레이터 흐름: `test_workflow_orchestrator.py`
-- 의사결정/리스크 핸들러: `test_decision_handlers.py`, `test_risk_event_handlers.py`
-- 통합 시나리오: `test_final_pipeline.py`
-- 배치/설정/인프라: `test_build_db_script.py`, `test_collector_database_config.py`, `test_logging_config.py`
-- 어댑터/리포지토리: `test_opendartreader_shim.py`, `test_sme_repository.py`
-- 공개 셸 스크립트: `test_scripts_cli.py`
+- API 계약: `api/test_workflows_api.py`
+- 오케스트레이터/Agent 통합: `integration/test_workflow_orchestrator.py`, `integration/test_agent_tool_fallbacks.py`, `integration/test_final_pipeline.py`
+- 의사결정/리스크 단위 테스트: `unit/test_decision_handlers.py`, `unit/test_risk_event_handlers.py`
+- 배치/설정/인프라: `unit/test_build_db_script.py`, `unit/test_collector_database_config.py`, `unit/test_logging_config.py`
+- 어댑터/리포지토리: `unit/test_opendartreader_shim.py`, `unit/test_sme_repository.py`
+- 공개 셸 스크립트: `cli/test_scripts_cli.py`
 
 실행:
 
@@ -52,12 +72,12 @@
 전체 실행:
 
 ```bash
-.venv/bin/pytest tests/
+.venv/bin/pytest -o cache_dir=.cache/pytest tests/
 ```
 
 ## 수동 검증 스크립트
 
-### `manual_financial_industry_agents_tools.py`
+### `manual/manual_financial_industry_agents_tools.py`
 
 - 재무/산업 분석 도구를 실제 API 데이터로 확인하는 스크립트
 - `pytest` 스타일의 결정론적 단위 테스트라기보다, 로컬 수동 점검용에 가깝습니다.
@@ -68,10 +88,10 @@
 
 ```bash
 ./tests/run_all_tests.sh --with-manual
-.venv/bin/python tests/manual_financial_industry_agents_tools.py
+.venv/bin/python tests/manual/manual_financial_industry_agents_tools.py
 ```
 
-### `manual_results_financial_industry_tools.md`
+### `manual/manual_results_financial_industry_tools.md`
 
 - 위 수동 스크립트 실행 결과 예시를 정리한 문서
 
@@ -86,7 +106,8 @@
 
 ```bash
 ./tests/run_all_tests.sh
-.venv/bin/pytest tests/
+./tests/clean_test_cache.sh
+.venv/bin/pytest -o cache_dir=.cache/pytest tests/
 .venv/bin/ruff check backend tests
 ```
 

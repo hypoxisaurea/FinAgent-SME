@@ -1,4 +1,5 @@
 import sys
+
 sys.path.insert(0, r"C:\2026\FinAgent-SME")
 
 from backend.agents.risk_event.handlers.keyword_detector import detect_keywords

@@ -7,8 +7,11 @@ from __future__ import annotations
 
 from datetime import date
 
-from ..models import (
-    EventSource, EventType, LegalRiskResult, RiskEvent,
+from backend.agents.risk_event.models import (
+    EventSource,
+    EventType,
+    LegalRiskResult,
+    RiskEvent,
 )
 
 # ─── 법적 리스크 키워드 ───────────────────────────────────────────────────────

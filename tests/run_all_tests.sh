@@ -5,9 +5,12 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+export PYTHONDONTWRITEBYTECODE=1
+
 PYTEST_BIN="$PROJECT_ROOT/.venv/bin/pytest"
 PYTHON_BIN="$PROJECT_ROOT/.venv/bin/python"
-MANUAL_SCRIPT="$PROJECT_ROOT/tests/manual_financial_industry_agents_tools.py"
+MANUAL_SCRIPT="$PROJECT_ROOT/tests/manual/manual_financial_industry_agents_tools.py"
+CLEAN_SCRIPT="$PROJECT_ROOT/tests/clean_test_cache.sh"
 
 if [[ ! -x "$PYTEST_BIN" ]]; then
   PYTEST_BIN="pytest"
@@ -49,9 +52,11 @@ esac
 cd "$PROJECT_ROOT"
 
 echo "[1/2] Running automated pytest suite"
-"$PYTEST_BIN" tests
+"$PYTEST_BIN" -o cache_dir=.cache/pytest tests
 
 if [[ "$run_manual" == true ]]; then
   echo "[2/2] Running manual external-API validation script"
   "$PYTHON_BIN" "$MANUAL_SCRIPT"
 fi
+
+"$CLEAN_SCRIPT"

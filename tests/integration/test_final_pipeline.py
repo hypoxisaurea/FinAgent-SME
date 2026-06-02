@@ -1,7 +1,7 @@
 """
 최종 통합 테스트: Risk Event + Decision Agent 전체 파이프라인
-위치: backend/tests/test_final_pipeline.py
-실행: python -m pytest backend/tests/test_final_pipeline.py -v
+위치: tests/integration/test_final_pipeline.py
+실행: python -m pytest tests/integration/test_final_pipeline.py -v
 """
 
 from __future__ import annotations

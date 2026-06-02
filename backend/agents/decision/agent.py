@@ -11,15 +11,14 @@ import logging
 from time import perf_counter
 from typing import Any
 
-from agents.contracts import (
+from backend.agents.contracts import (
     AGENT_FAILED_STATUS,
     AGENT_PARTIAL_STATUS,
     AGENT_SUCCESS_STATUS,
     build_agent_output,
     elapsed_ms,
 )
-
-from .graph import run_decision_agent
+from backend.agents.decision.graph import run_decision_agent
 
 logger = logging.getLogger(__name__)
 

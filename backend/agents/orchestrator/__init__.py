@@ -1,4 +1,8 @@
-from .orchestrator import WorkflowOrchestrator, create_credit_workflow, run_credit_workflow
+from backend.agents.orchestrator.orchestrator import (
+    WorkflowOrchestrator,
+    create_credit_workflow,
+    run_credit_workflow,
+)
 
 __all__ = [
     "WorkflowOrchestrator",

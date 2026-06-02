@@ -1,11 +1,11 @@
 import logging
 from typing import Any
-from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, status
-
-from agents.orchestrator import run_credit_workflow
-from schemas.credit import CreditAssessmentRequest
+from backend.agents.orchestrator import run_credit_workflow
+from backend.logging_config import get_request_id
+from backend.schemas.credit import CreditAssessmentRequest
+from fastapi import APIRouter, status
+from fastapi.responses import JSONResponse
 
 router = APIRouter(prefix="/v1/workflows", tags=["workflows"])
 logger = logging.getLogger(__name__)
@@ -24,11 +24,10 @@ async def credit_assessment_orchestrator(
 
 
 async def _execute_credit_workflow(body: CreditAssessmentRequest) -> dict[str, Any]:
-    request_id = f"req-{uuid4().hex[:12]}"
+    request_id = get_request_id()
     try:
         logger.info(
-            "credit_workflow_requested request_id=%s company_name=%s",
-            request_id,
+            "credit_workflow_requested company_name=%s",
             body.company_name,
         )
         result = await run_credit_workflow(
@@ -38,10 +37,8 @@ async def _execute_credit_workflow(body: CreditAssessmentRequest) -> dict[str, A
         result.setdefault("request_id", request_id)
         logger.info(
             (
-                "credit_workflow_completed request_id=%s company_name=%s "
-                "status=%s step_count=%s"
+                "credit_workflow_completed company_name=%s status=%s step_count=%s"
             ),
-            request_id,
             body.company_name,
             result.get("status"),
             len(result.get("steps", [])),
@@ -49,32 +46,30 @@ async def _execute_credit_workflow(body: CreditAssessmentRequest) -> dict[str, A
         return result
     except ValueError as exc:
         logger.info(
-            "credit_workflow_invalid_input request_id=%s company_name=%s error=%s",
-            request_id,
+            "credit_workflow_invalid_input company_name=%s error=%s",
             body.company_name,
             exc,
         )
-        raise HTTPException(
+        return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail={
+            content={
                 "code": "INVALID_INPUT",
                 "message": "입력값이 올바르지 않습니다.",
                 "detail": {"company_name": body.company_name},
                 "request_id": request_id,
             },
-        ) from exc
-    except Exception as exc:  # noqa: BLE001 - API 계층에서 오케스트레이터 오류 매핑
+        )
+    except Exception:  # noqa: BLE001 - API 계층에서 오케스트레이터 오류 매핑
         logger.exception(
-            "credit_workflow_execution_failed request_id=%s company_name=%s",
-            request_id,
+            "credit_workflow_execution_failed company_name=%s",
             body.company_name,
         )
-        raise HTTPException(
+        return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
+            content={
                 "code": "AGENT_EXECUTION_FAILED",
                 "message": "오케스트레이터 실행 중 오류가 발생했습니다.",
                 "detail": {"company_name": body.company_name},
                 "request_id": request_id,
             },
-        ) from exc
+        )

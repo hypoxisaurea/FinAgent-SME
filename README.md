@@ -29,7 +29,7 @@ FinAgent-SME/
 
 ## 요구사항
 
-- Python 3.11+
+- Python 3.13+
 - Docker Desktop 또는 `docker compose`
 - OpenDART, OpenAI, ECOS, KOSIS 사용 시 해당 API 키
 
@@ -142,7 +142,7 @@ DB가 이미 떠 있는 상태에서 앱 서버만 실행하려면 아래 명령
 ./scripts/setup-env.sh
 ./scripts/setup-db.sh up
 ./scripts/setup-db.sh build --year 2024 --sample-size 10
-cd backend && ../.venv/bin/python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+./.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 cd frontend && ../.venv/bin/python -m streamlit run main.py --server.address 0.0.0.0 --server.port 8501
 ```
 
@@ -172,5 +172,8 @@ cd frontend && ../.venv/bin/python -m streamlit run main.py --server.address 0.0
 
 ```bash
 .venv/bin/pytest tests/
+.venv/bin/pytest tests/ --cov=backend --cov-report=term-missing --cov-fail-under=40
 .venv/bin/ruff check backend frontend tests
 ```
+
+GitHub Actions CI(`.github/workflows/ci.yml`)에서도 PR/Push마다 `ruff`와 coverage gate 포함 `pytest`를 자동 실행합니다.

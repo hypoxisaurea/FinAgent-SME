@@ -140,9 +140,9 @@ stack_resolve_venv_python_path() {
 
 
 stack_create_venv() {
-    if stack_command_exists python3.11; then
-        stack_log "Creating virtual environment with python3.11"
-        python3.11 -m venv "$STACK_VENV_DIR"
+    if stack_command_exists python3.13; then
+        stack_log "Creating virtual environment with python3.13"
+        python3.13 -m venv "$STACK_VENV_DIR"
         return
     fi
 
@@ -158,9 +158,9 @@ stack_create_venv() {
         return
     fi
 
-    if stack_command_exists py && py -3.11 -c "import sys" >/dev/null 2>&1; then
-        stack_log "Creating virtual environment with py -3.11"
-        py -3.11 -m venv "$STACK_VENV_DIR"
+    if stack_command_exists py && py -3.13 -c "import sys" >/dev/null 2>&1; then
+        stack_log "Creating virtual environment with py -3.13"
+        py -3.13 -m venv "$STACK_VENV_DIR"
         return
     fi
 
@@ -170,7 +170,7 @@ stack_create_venv() {
         return
     fi
 
-    stack_fail "Python 3.11+ is required."
+    stack_fail "Python 3.13+ is required."
 }
 
 
@@ -348,7 +348,7 @@ stack_start_backend() {
         "$STACK_BACKEND_LOG_FILE" \
         "$STACK_BACKEND_DIR" \
         "http://$STACK_BACKEND_HOST:$STACK_BACKEND_PORT" \
-        uvicorn main:app --host "$STACK_BACKEND_HOST" --port "$STACK_BACKEND_PORT"
+        uvicorn backend.main:app --app-dir .. --host "$STACK_BACKEND_HOST" --port "$STACK_BACKEND_PORT"
 }
 
 

@@ -9,8 +9,11 @@
 
 from __future__ import annotations
 
-from ..models import (
-    EventType, RiskEvent, SeverityClassifiedEvent, SeverityLevel,
+from backend.agents.risk_event.models import (
+    EventType,
+    RiskEvent,
+    SeverityClassifiedEvent,
+    SeverityLevel,
 )
 
 # ─── 이벤트 타입별 기본 심각도 ────────────────────────────────────────────────

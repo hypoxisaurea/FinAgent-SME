@@ -1,18 +1,16 @@
-from backend_env import load_backend_env
-
-load_backend_env()
-
+from backend.agents.industry_analyst.industry_prompts import INDUSTRY_PROMPT
+from backend.agents.industry_analyst.industry_tools import (
+    get_business_cycle,
+    get_industry_avg_ratios,
+    get_industry_outlook,
+    get_macro_indicators,
+    map_corp_to_ksic,
+)
+from backend.backend_env import load_backend_env
 from langchain_openai import ChatOpenAI
 from langgraph.prebuilt import create_react_agent
 
-from .industry_prompts import INDUSTRY_PROMPT
-from .industry_tools import (
-    map_corp_to_ksic,
-    get_industry_avg_ratios,
-    get_industry_outlook,
-    get_business_cycle,
-    get_macro_indicators,
-)
+load_backend_env()
 
 llm = ChatOpenAI(model="gpt-4.1-nano")
 

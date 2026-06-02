@@ -1,9 +1,11 @@
-from agents.multimodal_document.agent import MultiModalDocumentAgent
-from agents.multimodal_document.dart import (
+from backend.agents.multimodal_document.agent import MultiModalDocumentAgent
+from backend.agents.multimodal_document.dart import (
     fetch_opendart_list_records as fetch_opendart_list,
+)
+from backend.agents.multimodal_document.dart import (
     resolve_api_key,
 )
-from agents.multimodal_document.processor import (
+from backend.agents.multimodal_document.processor import (
     extract_pdf_chart_images,
     extract_pdf_text,
 )

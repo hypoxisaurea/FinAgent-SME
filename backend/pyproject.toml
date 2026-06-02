@@ -2,7 +2,10 @@
 
 [tool.ruff]
 line-length = 88
-target-version = "py311"
+target-version = "py313"
+extend-exclude = [
+    "backend/agents/risk_event/test.py",
+]
 
 [tool.ruff.lint]
 select = [
@@ -10,9 +13,11 @@ select = [
     "F",   # pyflakes (미사용 변수 등)
     "I",   # isort (import 정렬)
     "N",   # 네이밍 규칙
+    "TID", # flake8-tidy-imports (import hygiene)
 ]
-ignore = []
+ignore = [
+    "E501",  # 프롬프트/설명 문자열 중심 파일은 줄바꿈보다 원문 보존이 중요
+]
 
-# 절대 import만 허용 (상대 import 금지)
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "all"

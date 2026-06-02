@@ -6,6 +6,7 @@ import os
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
+from backend.backend_env import load_backend_env
 from openai import (
     APIConnectionError,
     APIStatusError,
@@ -19,8 +20,6 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
-
-from backend_env import load_backend_env
 
 load_backend_env()
 
