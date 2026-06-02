@@ -6,7 +6,7 @@ import os
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
-from backend.backend_env import load_backend_env
+from backend.common.env import load_backend_env
 from openai import (
     APIConnectionError,
     APIStatusError,

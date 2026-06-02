@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 import pandas as pd
-from backend.infrastructure.db import (
+from backend.data.db import (
     CREATED_AT_COLUMN,
     ERROR_LOG_TABLE_NAME,
     FEATURES_TABLE_NAME,

@@ -3,16 +3,16 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from backend.repositories.company_master_repository import (
+from backend.data.repositories.company_master import (
     get_all_corp_codes as get_all_corp_codes_from_repository,
 )
-from backend.repositories.company_master_repository import (
+from backend.data.repositories.company_master import (
     get_company_info_by_corp_code as get_company_info_by_corp_code_from_repository,
 )
-from backend.repositories.company_master_repository import (
+from backend.data.repositories.company_master import (
     search_company_infos_by_name as search_company_infos_by_name_from_repository,
 )
-from backend.repositories.financial_feature_repository import (
+from backend.data.repositories.financial_feature import (
     get_financial_rows_by_corp_code as get_financial_rows_by_corp_code_from_repository,
 )
 

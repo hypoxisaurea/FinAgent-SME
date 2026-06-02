@@ -4,9 +4,9 @@ import logging
 from time import perf_counter
 from typing import Any
 
-from backend.agents.base import Agent
-from backend.agents.contracts import build_agent_output, elapsed_ms
-from backend.services.company_lookup import find_company_by_name
+from backend.common.agent import Agent
+from backend.common.contracts import build_agent_output, elapsed_ms
+from backend.data.services.company_lookup import find_company_by_name
 
 logger = logging.getLogger(__name__)
 

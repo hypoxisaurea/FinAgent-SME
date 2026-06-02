@@ -10,8 +10,8 @@ from typing import Any
 from urllib.parse import quote_plus
 
 import requests
-from backend.agents.news_collector.prompts import NEWS_SUMMARY_PROMPT_TEMPLATE
-from backend.backend_env import load_backend_env
+from backend.common.env import load_backend_env
+from backend.tools.prompts.news import NEWS_SUMMARY_PROMPT_TEMPLATE
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from openai import OpenAI

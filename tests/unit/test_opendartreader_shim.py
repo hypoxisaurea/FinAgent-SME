@@ -6,9 +6,8 @@ from pathlib import Path
 import pandas as pd
 
 import backend.opendartreader as opendartreader_shim
-from backend.agents.financial_analyst import financial_tools
-from backend.agents.industry_analyst import industry_tools
 from backend.opendartreader import OpenDartReader
+from backend.tools import financial, industry
 
 
 def test_opendartreader_shim_exposes_vendor_reader() -> None:
@@ -16,8 +15,8 @@ def test_opendartreader_shim_exposes_vendor_reader() -> None:
 
 
 def test_agent_tools_use_opendartreader_shim() -> None:
-    assert financial_tools.OpenDartReader is OpenDartReader
-    assert industry_tools.OpenDartReader is OpenDartReader
+    assert financial.OpenDartReader is OpenDartReader
+    assert industry.OpenDartReader is OpenDartReader
 
 
 def test_opendartreader_shim_redirects_cache_outside_backend(

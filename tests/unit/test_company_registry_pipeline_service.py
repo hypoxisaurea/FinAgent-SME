@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from backend.services import company_registry_pipeline
+from backend.data.services import company_registry_pipeline
 
 
 class _FakeDart:

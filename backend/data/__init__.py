@@ -1,4 +1,4 @@
-from backend.infrastructure.db import (
+from backend.data.db import (
     CREATED_AT_COLUMN,
     DB_HOST_ENV_NAME,
     DB_NAME_ENV_NAME,

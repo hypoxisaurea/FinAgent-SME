@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from urllib.parse import quote_plus
 
-from backend.backend_env import get_backend_env_path
+from backend.common.env import get_backend_env_path
 from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 

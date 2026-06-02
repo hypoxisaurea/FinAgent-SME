@@ -5,11 +5,11 @@ from datetime import datetime
 from typing import Any
 
 import pandas as pd
-from backend.agents.company_registry import tools as company_registry_tools
-from backend.repositories.company_registry_repository import (
+from backend.data.repositories.company_registry import (
     add_created_at_column,
     save_outputs_to_database,
 )
+from backend.tools import company_registry as company_registry_tools
 
 logger = logging.getLogger(__name__)
 

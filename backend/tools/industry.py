@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 
 import pandas as pd
-from backend.backend_env import load_backend_env
+from backend.common.env import load_backend_env
 from backend.integrations import dart_client, economic_data_client
 from langchain_core.tools import tool
 
@@ -15,7 +15,7 @@ OpenDartReader = dart_client.OpenDartReader
 # ---------------------------------------------------------------------------
 # CSV 파일 경로
 # ---------------------------------------------------------------------------
-DATA_DIR     = Path(__file__).parent / "data"
+DATA_DIR     = Path(__file__).resolve().parents[1] / "agents" / "industry_analyst" / "data"
 PROFIT_CSV   = DATA_DIR / "profit_ratio.csv"     # 한국은행 손익지표
 ASSET_CSV    = DATA_DIR / "asset_ratio.csv"      # 한국은행 자산/자본지표
 ACTIVITY_CSV = DATA_DIR / "activity_ratio.csv"   # 한국은행 활동성지표

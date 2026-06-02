@@ -14,9 +14,9 @@
 
 ## 폴더 구성
 
-- [agent.py](/Users/suminkang/Desktop/2026/pocat/official_git/FinAgent-SME/backend/agents/news_collector/agent.py): 오케스트레이터용 에이전트 진입점
-- [tools.py](/Users/suminkang/Desktop/2026/pocat/official_git/FinAgent-SME/backend/agents/news_collector/tools.py): DB, 크롤링, 본문 추출, 요약, 적재 로직
-- [prompts.py](/Users/suminkang/Desktop/2026/pocat/official_git/FinAgent-SME/backend/agents/news_collector/prompts.py): LLM 요약 프롬프트
+- [agent.py](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/backend/agents/news_collector/agent.py): 오케스트레이터용 에이전트 진입점
+- [news.py](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/backend/tools/news.py): DB, 크롤링, 본문 추출, 요약, 적재 로직
+- [prompts/news.py](/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/backend/tools/prompts/news.py): LLM 요약 프롬프트
 
 ## 입력과 출력
 
@@ -109,7 +109,7 @@ OPEN_AI_API_KEY=...
 프로젝트 루트에서:
 
 ```bash
-.venv/bin/python -c "import sys; sys.path.insert(0, 'backend'); from agents.news_collector import NewsCollectorAgent; print(NewsCollectorAgent.name)"
+./.venv/bin/python -c "from backend.agents.news_collector import NewsCollectorAgent; print(NewsCollectorAgent.name)"
 ```
 
 정상이라면 `news_collector`가 출력됩니다.
@@ -127,10 +127,10 @@ OPEN_AI_API_KEY=...
 실제 DB와 API 키가 준비되어 있다면:
 
 ```bash
-cd backend
-../.venv/bin/python - <<'PY'
+cd /path/to/FinAgent-SME
+./.venv/bin/python - <<'PY'
 import asyncio
-from agents.news_collector import NewsCollectorAgent
+from backend.agents.news_collector import NewsCollectorAgent
 
 async def main():
     agent = NewsCollectorAgent()
@@ -167,11 +167,11 @@ LIMIT 20;
 ### 5. Risk Event 직접 연동 확인
 
 ```bash
-cd backend
-../.venv/bin/python - <<'PY'
+cd /path/to/FinAgent-SME
+./.venv/bin/python - <<'PY'
 import asyncio
-from agents.news_collector import NewsCollectorAgent
-from agents.risk_event import RiskEventAgent
+from backend.agents.news_collector import NewsCollectorAgent
+from backend.agents.risk_event import RiskEventAgent
 
 async def main():
     news_agent = NewsCollectorAgent()

@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 
-from backend.repositories.company_master_repository import find_company_row_by_name
+from backend.data.repositories.company_master import find_company_row_by_name
 
 logger = logging.getLogger(__name__)
 

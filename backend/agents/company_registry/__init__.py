@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from backend.infrastructure.db import (
+from backend.data.db import (
     CREATED_AT_COLUMN,
     ERROR_LOG_TABLE_NAME,
     FEATURES_TABLE_NAME,
@@ -40,7 +40,9 @@ def __getattr__(name: str) -> Any:
         return exports[name]
 
     if name == "execute_dart_pipeline":
-        from backend.services.company_registry_pipeline import execute_dart_pipeline
+        from backend.data.services.company_registry_pipeline import (
+            execute_dart_pipeline,
+        )
 
         return execute_dart_pipeline
 

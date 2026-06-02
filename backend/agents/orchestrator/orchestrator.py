@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from backend.agents.base import Agent
 from backend.agents.company_resolver import CompanyResolverAgent
 from backend.agents.decision import DecisionAgent
 from backend.agents.financial_analyst import FinancialAnalystAgent
@@ -15,7 +14,8 @@ from backend.agents.orchestrator.results import build_result, summarize_steps
 from backend.agents.orchestrator.state import WorkflowState
 from backend.agents.report import ReportAgent
 from backend.agents.risk_event import RiskEventAgent
-from backend.logging_config import request_id_context
+from backend.common.agent import Agent
+from backend.common.logging import request_id_context
 
 logger = logging.getLogger(__name__)
 

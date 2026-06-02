@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from backend.infrastructure.db import SME_LIST_TABLE_NAME
-from backend.repositories.db_access import fetch_rows
+from backend.data.db import SME_LIST_TABLE_NAME
+from backend.data.repositories.db_access import fetch_rows
 
 logger = logging.getLogger(__name__)
 

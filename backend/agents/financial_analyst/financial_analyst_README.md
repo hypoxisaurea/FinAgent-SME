@@ -25,10 +25,11 @@ DART_API_KEY=...   # opendart.fss.or.kr 에서 무료 발급
 
 ```
 financial_analyst/
-    __init__.py          # financial_agent 객체 export
-    financial_agent.py   # LangGraph ReAct 에이전트 생성
-    financial_prompts.py # 에이전트 페르소나 및 출력 스키마 정의
-    financial_tools.py   # 도구 함수 5개
+    __init__.py          # FinancialAnalystAgent export
+    agent.py             # 오케스트레이터용 재무 분석 에이전트
+../tools/
+    financial.py         # 재무 분석 도구 함수 5개
+    prompts/financial.py # 프롬프트 정의
 ```
 
 ---
@@ -279,7 +280,7 @@ CORP_CODE = "01074862"
 YEAR      = 2024
 YEARS     = [2022, 2023, 2024]
 
-from agents.financial_analyst.financial_tools import (
+from backend.tools.financial import (
     get_financial_statements,
     calc_financial_ratios,
     calc_altman_z_prime,
@@ -442,13 +443,24 @@ reprt_code='11011', fs_div='CFS' (사업보고서, 연결제무제표)'
 ### 테스트 코드
 
 ```bash
-cd /path/to/backend
-python -c "
-from dotenv import load_dotenv; load_dotenv()
-from agents.financial_analyst.financial_agent import financial_agent
-result = financial_agent.invoke({'messages': [{'role': 'user', 'content': 'corp_code 01074862, 2022·2023·2024년 재무 분석해줘'}]})
-print(result['messages'][-1].content)
-"
+cd /path/to/FinAgent-SME
+./.venv/bin/python - <<'PY'
+import asyncio
+from backend.agents.financial_analyst import FinancialAnalystAgent
+
+async def main():
+    agent = FinancialAnalystAgent()
+    result = await agent.run(
+        {
+            "company_name": "메가스터디교육(주)",
+            "corp_code": "01074862",
+            "target_year": 2024,
+        }
+    )
+    print(result)
+
+asyncio.run(main())
+PY
 ```
 
 ### 테스트 결과
@@ -540,37 +552,52 @@ print(result['messages'][-1].content)
 ### 1. 직접 호출 (단독 실행)
 
 ```python
-from dotenv import load_dotenv
-load_dotenv()
+import asyncio
 
-from agents.financial_analyst.financial_agent import financial_agent
+from backend.agents.financial_analyst import FinancialAnalystAgent
 
-result = financial_agent.invoke({
-    "messages": [
-        {"role": "user", "content": "corp_code 01074862, 2022·2023·2024년 재무 분석해줘"}
-    ]
-})
-print(result["messages"][-1].content)
+
+async def main() -> None:
+    agent = FinancialAnalystAgent()
+    result = await agent.run(
+        {
+            "company_name": "메가스터디교육(주)",
+            "corp_code": "01074862",
+            "target_year": 2024,
+        }
+    )
+    print(result["financial_ratios"])
+
+
+asyncio.run(main())
 ```
 
-### 2. 메시지 형식
+### 2. 입력 형식
 
 ```
-"corp_code {8자리코드}, {연도1}·{연도2}·{연도3}년 재무 분석해줘"
+{
+  "company_name": "기업명",
+  "corp_code": "8자리코드",
+  "target_year": 2024
+}
 ```
 
 - `corp_code`: DART 8자리 고유번호 (opendart.fss.or.kr 조회)
-- `years`: 분석 연도 리스트 (권장 3개년, 추세 분석에 필요)
-- 가장 최신 연도 기준으로 비율 계산 및 Altman Z' 산출
-- `trend_analysis`는 전달된 전체 연도에 대해 YoY 분석 수행
+- `target_year`: 최신 분석 연도
+- 내부적으로 `target_year - 2`부터 `target_year`까지 3개년 추세를 분석합니다.
 
 ### 3. Orchestrator 연동
 
 ```python
-# Financial Agent 결과에서 ratios 추출 → Industry Agent로 전달
-financial_result = json.loads(result["messages"][-1].content)
-company_ratios = financial_result["ratios"]
-sales_growth   = financial_result["trend_analysis"]["yoy"]["revenue_growth"][-1]
+result = await FinancialAnalystAgent().run(
+    {
+        "company_name": company_name,
+        "corp_code": corp_code,
+        "target_year": year,
+    }
+)
+company_ratios = result["financial_ratios"]
+sales_growth = result["financial_trend"]["yoy"]["revenue_growth"][-1]
 ```
 
-> **주의**: 에이전트가 반환하는 최종 메시지는 JSON 문자열입니다. `json.loads()`로 파싱 후 사용하세요.
+> 오케스트레이터는 `financial_ratios`, `financial_trend`, `grade_cap` 같은 평탄화된 필드를 바로 다음 단계에 전달합니다.

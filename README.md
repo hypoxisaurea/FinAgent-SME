@@ -27,6 +27,14 @@ FinAgent-SME/
 └── requirements.txt
 ```
 
+`backend/`는 현재 역할 기준으로 단순하게 묶여 있습니다.
+
+- `common/`: env, settings, logging, 공통 agent/runtime 유틸
+- `agents/`: 워크플로우별 agent 엔트리포인트
+- `tools/`: 재무/산업/뉴스/기업구축 도구와 프롬프트
+- `data/`: DB 연결, repository, service 계층
+- `api/`, `integrations/`, `schemas/`, `scripts/`: API/외부연동/계약/실행 진입점
+
 ## 요구사항
 
 - Python 3.13+

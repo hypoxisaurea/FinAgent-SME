@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from backend.infrastructure.db import create_db_engine
+from backend.data.db import create_db_engine
 from sqlalchemy import inspect, text
 
 

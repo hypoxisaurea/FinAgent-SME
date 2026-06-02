@@ -79,28 +79,48 @@ cd backend
 ```text
 backend/
 ├── main.py
-├── config.py
-├── backend_env.py
 ├── docker-compose.yml
-├── api/
-│   ├── router.py
-│   └── routes/
-├── schemas/
-├── utils/
-└── agents/
-    ├── base.py
-    ├── company_registry/
-    ├── company_resolver/
-    ├── news_collector/
-    ├── multimodal_document/
-    ├── orchestrator/
-    ├── financial_analyst/
-    ├── industry_analyst/
-    ├── report/
-    └── risk_event/
+├── api/              # FastAPI 라우터
+├── common/           # env, settings, logging, 공통 agent/runtime 유틸
+├── agents/           # Agent 엔트리포인트와 워크플로우별 패키지
+├── tools/            # 재무/산업/뉴스/기업구축 tool 및 prompts
+├── data/             # DB 연결, repository, service 계층
+├── integrations/     # 외부 API 클라이언트
+├── schemas/          # FastAPI/Pydantic 계약
+├── scripts/          # 배치/CLI 엔트리포인트
 ```
 
 ## 주요 모듈
+
+### `common/`
+
+- `env.py`: `.env` 경로 해석과 로드
+- `settings.py`: 애플리케이션 설정
+- `logging.py`: request_id 기반 구조화 로깅
+- `agent.py`: Agent 프로토콜
+- `contracts.py`: 공통 상태/에러/메타데이터 계약
+- `providers.py`: tool adapter/provider 계약
+- `tool_runtime.py`: agent 내부 tool 실행/폴백 유틸
+- `opendartreader.py`: OpenDartReader shim
+
+### `agents/`
+
+- 실제 에이전트 엔트리포인트와 도메인 워크플로우 패키지
+- 하위의 `tools.py`, `prompts.py` 등은 호환용 래퍼이며 실제 구현은 상위 `tools/`를 우선 사용
+
+### `tools/`
+
+- `financial.py`: 재무 분석 도구
+- `industry.py`: 산업/거시 분석 도구
+- `news.py`: 뉴스 수집 파이프라인
+- `company_registry.py`: 기업 마스터/재무 구축용 저수준 처리
+- `prompts/`: LLM 프롬프트 정의
+
+### `data/`
+
+- `db.py`: DB 연결과 테이블 상수
+- `repositories/`: DB 조회/저장 책임
+- `services/`: 기업 조회, 배치 orchestration 같은 use-case 계층
 
 ### `main.py`
 
@@ -131,7 +151,7 @@ backend/
 
 - 기업 마스터(`sme_list`) 및 재무 피처 DB 구축 담당
 - DART 기반 배치 수집 파이프라인 보관
-- 조회용 DB 유틸도 이 영역 기준으로 사용
+- agent는 `data/services`를 사용하고, 저수준 처리만 `tools/company_registry.py`에 둠
 
 ### `agents/news_collector/`
 

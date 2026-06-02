@@ -6,12 +6,12 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any, Callable
 
-from backend.agents.base import Agent
-from backend.agents.contracts import build_agent_output, elapsed_ms
 from backend.agents.multimodal_document.processor import (
     extract_pdf_chart_images,
     extract_pdf_text,
 )
+from backend.common.agent import Agent
+from backend.common.contracts import build_agent_output, elapsed_ms
 
 logger = logging.getLogger(__name__)
 

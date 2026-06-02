@@ -5,23 +5,21 @@ from datetime import datetime
 from typing import Any
 
 import pandas as pd
-from backend.infrastructure.db import (
+from backend import backend_env
+from backend.data.db import (
     CREATED_AT_COLUMN,
 )
-from backend.infrastructure.db import (
+from backend.data.db import (
     create_db_engine as infrastructure_create_db_engine,
 )
-from backend.infrastructure.db import (
-    get_env_path as infrastructure_get_env_path,
-)
-from backend.infrastructure.db import (
+from backend.data.db import (
     resolve_database_url as infrastructure_resolve_database_url,
 )
-from backend.integrations.dart_client import resolve_dart_api_key
-from backend.repositories.company_registry_repository import (
+from backend.data.repositories.company_registry import (
     add_created_at_column,
     filter_new_rows,
 )
+from backend.integrations.dart_client import resolve_dart_api_key
 from tqdm.auto import tqdm
 
 try:
@@ -77,7 +75,7 @@ def create_db_engine():
 
 def get_env_path(env_file):
     """기존 호출 호환을 위해 백엔드 env 경로 해석 함수를 노출한다."""
-    return infrastructure_get_env_path(env_file)
+    return backend_env.get_backend_env_path(env_file)
 
 
 # 에러 로그 함수
@@ -574,7 +572,7 @@ def execute_dart_pipeline(
     skip_db_save: bool = False,
 ) -> dict[str, Any]:
     """기존 import 호환을 위한 서비스 래퍼."""
-    from backend.services.company_registry_pipeline import (
+    from backend.data.services.company_registry_pipeline import (
         execute_dart_pipeline as execute_dart_pipeline_service,
     )
 

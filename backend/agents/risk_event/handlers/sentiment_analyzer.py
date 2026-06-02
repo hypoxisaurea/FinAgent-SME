@@ -16,7 +16,7 @@ from backend.agents.risk_event.models import (
     SentimentAnalysisResult,
     SentimentLabel,
 )
-from backend.utils.api_client import call_openai, get_client, parse_json_response
+from backend.common.api_client import call_openai, get_client, parse_json_response
 
 logger = logging.getLogger(__name__)
 
