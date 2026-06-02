@@ -6,12 +6,9 @@ from typing import Any
 
 from backend.agents.base import Agent
 from backend.agents.contracts import build_agent_output, elapsed_ms
-from backend.agents.industry_analyst.industry_tools import (
-    get_business_cycle,
-    get_industry_avg_ratios,
-    get_industry_outlook,
-    get_macro_indicators,
-    map_corp_to_ksic,
+from backend.agents.providers import (
+    IndustryDataProvider,
+    ToolIndustryDataProvider,
 )
 from backend.agents.tool_runtime import (
     execute_tool_step,
@@ -27,6 +24,9 @@ class IndustryAnalystAgent(Agent):
     """오케스트레이터에서 직접 호출하는 산업 분석 에이전트."""
 
     name = "industry_analyst"
+
+    def __init__(self, provider: IndustryDataProvider | None = None) -> None:
+        self._provider = provider or ToolIndustryDataProvider()
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """업종 매핑, 산업 평균, 업황, 거시 신호를 분석한다."""
@@ -46,7 +46,7 @@ class IndustryAnalystAgent(Agent):
                 tool_name="map_corp_to_ksic",
                 request_id=request_id,
                 company_name=company_name,
-                runner=lambda: map_corp_to_ksic.invoke({"corp_code": corp_code}),
+                runner=lambda: self._provider.map_corp_to_ksic(corp_code),
                 fallback_factory=lambda: _default_company_info(company_name),
                 validate_dict=True,
             )
@@ -60,12 +60,10 @@ class IndustryAnalystAgent(Agent):
                 tool_name="get_industry_avg_ratios",
                 request_id=request_id,
                 company_name=company_name,
-                runner=lambda: get_industry_avg_ratios.invoke(
-                    {
-                        "ksic_code": ksic_code,
-                        "year": target_year,
-                        "company_ratios": company_ratios,
-                    }
+                runner=lambda: self._provider.get_industry_avg_ratios(
+                    ksic_code,
+                    target_year,
+                    company_ratios,
                 ),
                 fallback_factory=lambda: _default_industry_summary(
                     ksic_code,
@@ -80,7 +78,7 @@ class IndustryAnalystAgent(Agent):
                 tool_name="get_industry_outlook",
                 request_id=request_id,
                 company_name=company_name,
-                runner=lambda: get_industry_outlook.invoke({"ksic_code": ksic_code}),
+                runner=lambda: self._provider.get_industry_outlook(ksic_code),
                 fallback_factory=lambda: _default_industry_outlook(ksic_code),
                 validate_dict=True,
             )
@@ -91,7 +89,7 @@ class IndustryAnalystAgent(Agent):
                 tool_name="get_business_cycle",
                 request_id=request_id,
                 company_name=company_name,
-                runner=lambda: get_business_cycle.invoke({}),
+                runner=self._provider.get_business_cycle,
                 fallback_factory=_default_business_cycle,
                 validate_dict=True,
             )
@@ -102,7 +100,7 @@ class IndustryAnalystAgent(Agent):
                 tool_name="get_macro_indicators",
                 request_id=request_id,
                 company_name=company_name,
-                runner=lambda: get_macro_indicators.invoke({"ksic_code": ksic_code}),
+                runner=lambda: self._provider.get_macro_indicators(ksic_code),
                 fallback_factory=lambda: _default_macro_indicators(ksic_code),
                 validate_dict=True,
             )

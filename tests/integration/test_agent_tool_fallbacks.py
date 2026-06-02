@@ -1,50 +1,68 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 
-import backend.agents.financial_analyst.agent as financial_agent_module
-import backend.agents.industry_analyst.agent as industry_agent_module
-import backend.agents.news_collector.agent as news_agent_module
 from backend.agents.financial_analyst.agent import FinancialAnalystAgent
 from backend.agents.industry_analyst.agent import IndustryAnalystAgent
 from backend.agents.news_collector.agent import NewsCollectorAgent
 
 
-class _DummyTool:
-    def __init__(self, invoke):
-        self.invoke = invoke
-
-
-def test_financial_agent_returns_partial_when_tool_fails(
-    monkeypatch,
-) -> None:
-    def _raise_financials(_: dict[str, object]) -> dict[str, object]:
+class _FakeFinancialProvider:
+    def get_financial_statements(self, corp_code: str, year: int) -> dict[str, Any]:
         raise RuntimeError("financial api down")
 
-    monkeypatch.setattr(
-        financial_agent_module,
-        "get_financial_statements",
-        _DummyTool(_raise_financials),
-    )
-    monkeypatch.setattr(
-        financial_agent_module,
-        "trend_analysis",
-        _DummyTool(lambda _: {"history": [], "flags": [], "yoy": {}}),
-    )
-    monkeypatch.setattr(
-        financial_agent_module,
-        "apply_risk_filters",
-        _DummyTool(
-            lambda _: {
-                "grade_cap": None,
-                "triggered_filters": [],
-                "filter_detail": {},
-            }
-        ),
-    )
+    def calc_financial_ratios(self, fs: dict[str, Any]) -> dict[str, Any]:
+        return {}
 
+    def calc_altman_z_prime(self, fs: dict[str, Any]) -> dict[str, Any]:
+        return {}
+
+    def trend_analysis(self, corp_code: str, years: list[int]) -> dict[str, Any]:
+        return {"history": [], "flags": [], "yoy": {}}
+
+    def apply_risk_filters(
+        self,
+        fs: dict[str, Any],
+        history: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        return {
+            "grade_cap": None,
+            "triggered_filters": [],
+            "filter_detail": {},
+        }
+
+
+class _FakeIndustryProvider:
+    def map_corp_to_ksic(self, corp_code: str) -> dict[str, Any]:
+        return {"corp_name": "테스트기업", "ksic_code": "C 제조업"}
+
+    def get_industry_avg_ratios(
+        self,
+        ksic_code: str,
+        year: int,
+        company_ratios: Any,
+    ) -> dict[str, Any]:
+        return {"peer_comparison": {"gap": 1.2}}
+
+    def get_industry_outlook(self, ksic_code: str) -> dict[str, Any]:
+        return {"outlook_score": "High"}
+
+    def get_business_cycle(self) -> dict[str, Any]:
+        return {"phase": "확장"}
+
+    def get_macro_indicators(self, ksic_code: str) -> dict[str, Any]:
+        raise RuntimeError("macro api down")
+
+
+class _FakeNewsProvider:
+    def execute_news_pipeline(self, **_: Any) -> dict[str, Any]:
+        raise RuntimeError("news pipeline failed")
+
+
+def test_financial_agent_returns_partial_when_tool_fails() -> None:
     result = asyncio.run(
-        FinancialAnalystAgent().run(
+        FinancialAnalystAgent(provider=_FakeFinancialProvider()).run(
             {
                 "company_name": "테스트기업",
                 "corp_code": "00123456",
@@ -68,41 +86,9 @@ def test_financial_agent_returns_partial_when_tool_fails(
     )
 
 
-def test_industry_agent_returns_partial_when_macro_tool_fails(
-    monkeypatch,
-) -> None:
-    monkeypatch.setattr(
-        industry_agent_module,
-        "map_corp_to_ksic",
-        _DummyTool(lambda _: {"corp_name": "테스트기업", "ksic_code": "C 제조업"}),
-    )
-    monkeypatch.setattr(
-        industry_agent_module,
-        "get_industry_avg_ratios",
-        _DummyTool(lambda _: {"peer_comparison": {"gap": 1.2}}),
-    )
-    monkeypatch.setattr(
-        industry_agent_module,
-        "get_industry_outlook",
-        _DummyTool(lambda _: {"outlook_score": "High"}),
-    )
-    monkeypatch.setattr(
-        industry_agent_module,
-        "get_business_cycle",
-        _DummyTool(lambda _: {"phase": "확장"}),
-    )
-
-    def _raise_macro(_: dict[str, object]) -> dict[str, object]:
-        raise RuntimeError("macro api down")
-
-    monkeypatch.setattr(
-        industry_agent_module,
-        "get_macro_indicators",
-        _DummyTool(_raise_macro),
-    )
-
+def test_industry_agent_returns_partial_when_macro_tool_fails() -> None:
     result = asyncio.run(
-        IndustryAnalystAgent().run(
+        IndustryAnalystAgent(provider=_FakeIndustryProvider()).run(
             {
                 "company_name": "테스트기업",
                 "corp_code": "00123456",
@@ -122,16 +108,9 @@ def test_industry_agent_returns_partial_when_macro_tool_fails(
     )
 
 
-def test_news_collector_returns_partial_when_pipeline_raises(
-    monkeypatch,
-) -> None:
-    def _raise_pipeline(**_: object) -> dict[str, object]:
-        raise RuntimeError("news pipeline failed")
-
-    monkeypatch.setattr(news_agent_module, "execute_news_pipeline", _raise_pipeline)
-
+def test_news_collector_returns_partial_when_pipeline_raises() -> None:
     result = asyncio.run(
-        NewsCollectorAgent().run(
+        NewsCollectorAgent(provider=_FakeNewsProvider()).run(
             {
                 "company_name": "테스트기업",
                 "request_id": "req-test-news",

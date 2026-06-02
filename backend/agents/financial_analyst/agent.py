@@ -6,12 +6,9 @@ from typing import Any
 
 from backend.agents.base import Agent
 from backend.agents.contracts import build_agent_output, elapsed_ms
-from backend.agents.financial_analyst.financial_tools import (
-    apply_risk_filters,
-    calc_altman_z_prime,
-    calc_financial_ratios,
-    get_financial_statements,
-    trend_analysis,
+from backend.agents.providers import (
+    FinancialDataProvider,
+    ToolFinancialDataProvider,
 )
 from backend.agents.tool_runtime import (
     build_skipped_tool_result,
@@ -28,6 +25,9 @@ class FinancialAnalystAgent(Agent):
     """오케스트레이터에서 직접 호출하는 재무 분석 에이전트."""
 
     name = "financial_analyst"
+
+    def __init__(self, provider: FinancialDataProvider | None = None) -> None:
+        self._provider = provider or ToolFinancialDataProvider()
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """재무제표, 비율, 추세, 등급 상한을 계산한다."""
@@ -49,8 +49,9 @@ class FinancialAnalystAgent(Agent):
                 tool_name="get_financial_statements",
                 request_id=request_id,
                 company_name=company_name,
-                runner=lambda: get_financial_statements.invoke(
-                    {"corp_code": corp_code, "year": target_year}
+                runner=lambda: self._provider.get_financial_statements(
+                    corp_code,
+                    target_year,
                 ),
                 fallback_factory=lambda: {},
                 validate_dict=True,
@@ -64,7 +65,7 @@ class FinancialAnalystAgent(Agent):
                     tool_name="calc_financial_ratios",
                     request_id=request_id,
                     company_name=company_name,
-                    runner=lambda: calc_financial_ratios.invoke({"fs": fs}),
+                    runner=lambda: self._provider.calc_financial_ratios(fs),
                     fallback_factory=lambda: {},
                     validate_dict=True,
                 )
@@ -74,7 +75,7 @@ class FinancialAnalystAgent(Agent):
                     tool_name="calc_altman_z_prime",
                     request_id=request_id,
                     company_name=company_name,
-                    runner=lambda: calc_altman_z_prime.invoke({"fs": fs}),
+                    runner=lambda: self._provider.calc_altman_z_prime(fs),
                     fallback_factory=lambda: _default_altman_z(),
                     validate_dict=True,
                 )
@@ -97,9 +98,7 @@ class FinancialAnalystAgent(Agent):
                 tool_name="trend_analysis",
                 request_id=request_id,
                 company_name=company_name,
-                runner=lambda: trend_analysis.invoke(
-                    {"corp_code": corp_code, "years": years}
-                ),
+                runner=lambda: self._provider.trend_analysis(corp_code, years),
                 fallback_factory=lambda: _default_financial_trend(),
                 validate_dict=True,
             )
@@ -111,8 +110,9 @@ class FinancialAnalystAgent(Agent):
                 tool_name="apply_risk_filters",
                 request_id=request_id,
                 company_name=company_name,
-                runner=lambda: apply_risk_filters.invoke(
-                    {"fs": fs, "history": trend.get("history", [])}
+                runner=lambda: self._provider.apply_risk_filters(
+                    fs,
+                    trend.get("history", []),
                 ),
                 fallback_factory=lambda: _default_risk_filters(),
                 validate_dict=True,

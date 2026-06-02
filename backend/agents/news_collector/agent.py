@@ -12,6 +12,10 @@ from backend.agents.news_collector.tools import (
     DEFAULT_SUMMARY_MODEL,
     execute_news_pipeline,
 )
+from backend.agents.providers import (
+    NewsCollectionProvider,
+    ToolNewsCollectionProvider,
+)
 from backend.agents.tool_runtime import (
     execute_tool_step,
     serialize_tool_runs,
@@ -26,6 +30,9 @@ class NewsCollectorAgent:
     """대상 기업 뉴스 수집 전용 에이전트."""
 
     name = "news_collector"
+
+    def __init__(self, provider: NewsCollectionProvider | None = None) -> None:
+        self._provider = provider or ToolNewsCollectionProvider()
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """대상 기업 뉴스 수집 파이프라인을 실행한다."""
@@ -59,7 +66,7 @@ class NewsCollectorAgent:
                 tool_name="execute_news_pipeline",
                 request_id=request_id,
                 company_name=company_name,
-                runner=lambda: execute_news_pipeline(
+                runner=lambda: self._provider.execute_news_pipeline(
                     database_url=database_url,
                     lookback_days=lookback_days,
                     max_articles=max_articles,
