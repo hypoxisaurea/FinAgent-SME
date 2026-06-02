@@ -43,6 +43,7 @@ def test_credit_assessment_route_runs_orchestrator(
     assert payload["status"] == "success"
     assert payload["company_name"] == "FinAgent"
     assert payload["request_id"].startswith("req-")
+    assert response.headers["x-request-id"] == payload["request_id"]
 
 
 def test_orchestrator_route_runs_orchestrator(
@@ -68,6 +69,7 @@ def test_orchestrator_route_runs_orchestrator(
     assert payload["status"] == "success"
     assert payload["company_name"] == "FinAgent"
     assert payload["request_id"].startswith("req-")
+    assert response.headers["x-request-id"] == payload["request_id"]
 
 
 def test_orchestrator_route_logs_request_and_completion(
@@ -91,15 +93,16 @@ def test_orchestrator_route_logs_request_and_completion(
         )
 
     assert response.status_code == 200
+    request_ids = [record.request_id for record in caplog.records]
     messages = [record.message for record in caplog.records]
+    assert any(request_id.startswith("req-") for request_id in request_ids)
     assert any(
-        "credit_workflow_requested request_id=req-" in msg
+        "credit_workflow_requested company_name=FinAgent" in msg
         for msg in messages
     )
     assert any(
         (
-            "credit_workflow_completed request_id=req-" in msg
-            and "company_name=FinAgent status=success" in msg
+            "credit_workflow_completed company_name=FinAgent status=success" in msg
         )
         for msg in messages
     )
@@ -131,6 +134,7 @@ def test_orchestrator_route_returns_400_for_normalized_empty_company_name(
         "request_id": response.json()["request_id"],
     }
     assert response.json()["request_id"].startswith("req-")
+    assert response.headers["x-request-id"] == response.json()["request_id"]
 
 
 def test_orchestrator_route_returns_500_when_orchestrator_fails(
@@ -159,3 +163,4 @@ def test_orchestrator_route_returns_500_when_orchestrator_fails(
         "request_id": response.json()["request_id"],
     }
     assert response.json()["request_id"].startswith("req-")
+    assert response.headers["x-request-id"] == response.json()["request_id"]

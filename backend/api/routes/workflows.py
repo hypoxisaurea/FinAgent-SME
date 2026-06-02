@@ -1,8 +1,8 @@
 import logging
 from typing import Any
-from uuid import uuid4
 
 from backend.agents.orchestrator import run_credit_workflow
+from backend.logging_config import get_request_id
 from backend.schemas.credit import CreditAssessmentRequest
 from fastapi import APIRouter, status
 from fastapi.responses import JSONResponse
@@ -24,11 +24,10 @@ async def credit_assessment_orchestrator(
 
 
 async def _execute_credit_workflow(body: CreditAssessmentRequest) -> dict[str, Any]:
-    request_id = f"req-{uuid4().hex[:12]}"
+    request_id = get_request_id()
     try:
         logger.info(
-            "credit_workflow_requested request_id=%s company_name=%s",
-            request_id,
+            "credit_workflow_requested company_name=%s",
             body.company_name,
         )
         result = await run_credit_workflow(
@@ -38,10 +37,8 @@ async def _execute_credit_workflow(body: CreditAssessmentRequest) -> dict[str, A
         result.setdefault("request_id", request_id)
         logger.info(
             (
-                "credit_workflow_completed request_id=%s company_name=%s "
-                "status=%s step_count=%s"
+                "credit_workflow_completed company_name=%s status=%s step_count=%s"
             ),
-            request_id,
             body.company_name,
             result.get("status"),
             len(result.get("steps", [])),
@@ -49,8 +46,7 @@ async def _execute_credit_workflow(body: CreditAssessmentRequest) -> dict[str, A
         return result
     except ValueError as exc:
         logger.info(
-            "credit_workflow_invalid_input request_id=%s company_name=%s error=%s",
-            request_id,
+            "credit_workflow_invalid_input company_name=%s error=%s",
             body.company_name,
             exc,
         )
@@ -65,8 +61,7 @@ async def _execute_credit_workflow(body: CreditAssessmentRequest) -> dict[str, A
         )
     except Exception:  # noqa: BLE001 - API 계층에서 오케스트레이터 오류 매핑
         logger.exception(
-            "credit_workflow_execution_failed request_id=%s company_name=%s",
-            request_id,
+            "credit_workflow_execution_failed company_name=%s",
             body.company_name,
         )
         return JSONResponse(

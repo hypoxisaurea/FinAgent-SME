@@ -38,8 +38,7 @@ def execute_tool_step(
     """Agent 내부 tool 호출을 공통 규약으로 실행한다."""
     started_at = perf_counter()
     logger.info(
-        "agent_tool_started request_id=%s company_name=%s agent_name=%s tool_name=%s",
-        request_id,
+        "agent_tool_started company_name=%s agent_name=%s tool_name=%s",
         company_name,
         agent_name,
         tool_name,
@@ -60,10 +59,9 @@ def execute_tool_step(
         )
         logger.info(
             (
-                "agent_tool_completed request_id=%s company_name=%s "
-                "agent_name=%s tool_name=%s latency_ms=%s"
+                "agent_tool_completed company_name=%s agent_name=%s "
+                "tool_name=%s latency_ms=%s"
             ),
-            request_id,
             company_name,
             agent_name,
             tool_name,
@@ -75,10 +73,9 @@ def execute_tool_step(
         if fallback_factory is None:
             logger.exception(
                 (
-                    "agent_tool_failed request_id=%s company_name=%s "
-                    "agent_name=%s tool_name=%s error_code=%s"
+                    "agent_tool_failed company_name=%s agent_name=%s "
+                    "tool_name=%s error_code=%s"
                 ),
-                request_id,
                 company_name,
                 agent_name,
                 tool_name,
@@ -97,10 +94,9 @@ def execute_tool_step(
         )
         logger.warning(
             (
-                "agent_tool_fallback request_id=%s company_name=%s "
-                "agent_name=%s tool_name=%s error_code=%s latency_ms=%s error=%s"
+                "agent_tool_fallback company_name=%s agent_name=%s "
+                "tool_name=%s error_code=%s latency_ms=%s error=%s"
             ),
-            request_id,
             company_name,
             agent_name,
             tool_name,

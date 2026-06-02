@@ -27,6 +27,7 @@ from backend.agents.multimodal_document import MultiModalDocumentAgent
 from backend.agents.news_collector import NewsCollectorAgent
 from backend.agents.report import ReportAgent
 from backend.agents.risk_event import RiskEventAgent
+from backend.logging_config import request_id_context
 from langgraph.graph import END, START, StateGraph
 
 logger = logging.getLogger(__name__)
@@ -99,42 +100,40 @@ class WorkflowOrchestrator:
             seen_names.add(agent.name)
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
-        request_id = payload.get("request_id")
-        logger.info(
-            (
-                "workflow_started request_id=%s company_name=%s continue_on_error=%s "
-                "resolver_agent=%s parallel_agents=%s sequential_agents=%s"
-            ),
-            request_id,
-            payload.get("company_name"),
-            self._continue_on_error,
-            getattr(self._resolver_agent, "name", None),
-            [agent.name for agent in self._parallel_agents],
-            [agent.name for agent in self._sequential_agents],
-        )
-        initial_state: WorkflowState = {
-            "context": dict(payload),
-            "steps": [],
-        }
-        final_state = await self._graph.ainvoke(initial_state)
-        result = _build_result(final_state)
-        step_summary = _summarize_steps(result["steps"])
-        logger.info(
-            (
-                "workflow_finished request_id=%s company_name=%s status=%s "
-                "step_count=%s success_steps=%s partial_steps=%s "
-                "failed_steps=%s fallback_steps=%s"
-            ),
-            request_id,
-            payload.get("company_name"),
-            result["status"],
-            len(result["steps"]),
-            step_summary["success"],
-            step_summary["partial"],
-            step_summary["failed"],
-            step_summary["fallback"],
-        )
-        return result
+        with request_id_context(payload.get("request_id")):
+            logger.info(
+                (
+                    "workflow_started company_name=%s continue_on_error=%s "
+                    "resolver_agent=%s parallel_agents=%s sequential_agents=%s"
+                ),
+                payload.get("company_name"),
+                self._continue_on_error,
+                getattr(self._resolver_agent, "name", None),
+                [agent.name for agent in self._parallel_agents],
+                [agent.name for agent in self._sequential_agents],
+            )
+            initial_state: WorkflowState = {
+                "context": dict(payload),
+                "steps": [],
+            }
+            final_state = await self._graph.ainvoke(initial_state)
+            result = _build_result(final_state)
+            step_summary = _summarize_steps(result["steps"])
+            logger.info(
+                (
+                    "workflow_finished company_name=%s status=%s "
+                    "step_count=%s success_steps=%s partial_steps=%s "
+                    "failed_steps=%s fallback_steps=%s"
+                ),
+                payload.get("company_name"),
+                result["status"],
+                len(result["steps"]),
+                step_summary["success"],
+                step_summary["partial"],
+                step_summary["failed"],
+                step_summary["fallback"],
+            )
+            return result
 
     def _build_graph(self) -> Any:
         builder = StateGraph(WorkflowState)
@@ -175,8 +174,7 @@ class WorkflowOrchestrator:
                 return {}
 
             logger.info(
-                "workflow_agent_started request_id=%s company_name=%s agent_name=%s",
-                context.get("request_id"),
+                "workflow_agent_started company_name=%s agent_name=%s",
                 context.get("company_name"),
                 agent.name,
             )
@@ -186,11 +184,10 @@ class WorkflowOrchestrator:
             if step.ok:
                 logger.info(
                     (
-                        "workflow_agent_completed request_id=%s company_name=%s "
-                        "agent_name=%s status=%s fallback_used=%s "
+                        "workflow_agent_completed company_name=%s agent_name=%s "
+                        "status=%s fallback_used=%s "
                         "latency_ms=%s output_keys=%s"
                     ),
-                    context.get("request_id"),
                     context.get("company_name"),
                     agent.name,
                     step.status,
@@ -203,11 +200,10 @@ class WorkflowOrchestrator:
             elif not self._continue_on_error:
                 logger.warning(
                     (
-                        "workflow_agent_failed request_id=%s company_name=%s "
-                        "agent_name=%s status=%s error_code=%s "
+                        "workflow_agent_failed company_name=%s agent_name=%s "
+                        "status=%s error_code=%s "
                         "continue_on_error=%s error=%s"
                     ),
-                    context.get("request_id"),
                     context.get("company_name"),
                     agent.name,
                     step.status,
@@ -219,11 +215,10 @@ class WorkflowOrchestrator:
             else:
                 logger.warning(
                     (
-                        "workflow_agent_failed request_id=%s company_name=%s "
-                        "agent_name=%s status=%s error_code=%s "
+                        "workflow_agent_failed company_name=%s agent_name=%s "
+                        "status=%s error_code=%s "
                         "continue_on_error=%s error=%s"
                     ),
-                    context.get("request_id"),
                     context.get("company_name"),
                     agent.name,
                     step.status,
@@ -236,11 +231,10 @@ class WorkflowOrchestrator:
             progress_summary = _summarize_steps(progress_steps)
             logger.info(
                 (
-                    "workflow_progress request_id=%s company_name=%s "
-                    "completed_steps=%s success_steps=%s partial_steps=%s "
+                    "workflow_progress company_name=%s completed_steps=%s "
+                    "success_steps=%s partial_steps=%s "
                     "failed_steps=%s fallback_steps=%s last_agent=%s last_status=%s"
                 ),
-                context.get("request_id"),
                 context.get("company_name"),
                 len(progress_steps),
                 progress_summary["success"],
@@ -477,11 +471,10 @@ async def _run_agent_step(agent: Agent, context: dict[str, Any]) -> StepResult:
     retry_backoff_seconds = resolve_agent_retry_backoff_seconds(context, agent_name)
     logger.info(
         (
-            "workflow_agent_execution_config request_id=%s company_name=%s "
-            "agent_name=%s timeout_seconds=%s retry_attempts=%s "
+            "workflow_agent_execution_config company_name=%s agent_name=%s "
+            "timeout_seconds=%s retry_attempts=%s "
             "retry_backoff_seconds=%s"
         ),
-        context.get("request_id"),
         context.get("company_name"),
         agent_name,
         timeout_seconds,
@@ -525,11 +518,10 @@ async def _run_agent_step(agent: Agent, context: dict[str, Any]) -> StepResult:
             if attempt < retry_attempts and should_retry_agent_error(exc):
                 logger.warning(
                     (
-                        "workflow_agent_retry request_id=%s company_name=%s "
-                        "agent_name=%s attempt=%s max_attempts=%s "
+                        "workflow_agent_retry company_name=%s agent_name=%s "
+                        "attempt=%s max_attempts=%s "
                         "error_code=%s error=%s"
                     ),
-                    context.get("request_id"),
                     context.get("company_name"),
                     agent_name,
                     attempt,
