@@ -2,19 +2,14 @@ import argparse
 import csv
 import io
 import logging
-import os
 import re
 import zipfile
 from pathlib import Path
 
-import requests
-from backend.backend_env import get_backend_env_path, load_backend_env
+from backend.integrations import dart_client
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
-
-DART_LIST_URL = "https://opendart.fss.or.kr/api/list.json"
-DART_DOCUMENT_URL = "https://opendart.fss.or.kr/api/document.xml"
 
 DEFAULT_BGN_DE = "20240101"
 DEFAULT_END_DE = "20241231"
@@ -25,19 +20,9 @@ def safe_filename(name):
 
 
 def resolve_api_key(args=None, env_path=None):
-    if args is not None and getattr(args, "api_key", None):
-        return args.api_key.strip()
-
-    load_backend_env(override=True, env_path=env_path)
-    api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
-    if api_key:
-        return api_key
-
-    candidate_path = get_backend_env_path(env_path)
-
-    raise ValueError(
-        "OPEN_DART_API_KEY가 없습니다. "
-        f"{candidate_path} 또는 환경 변수에 값을 설정해주세요."
+    return dart_client.resolve_dart_api_key(
+        getattr(args, "api_key", None) if args is not None else None,
+        env_path=env_path,
     )
 
 
@@ -94,25 +79,13 @@ def fetch_opendart_list_records(
     page_count=100,
     timeout=30,
 ):
-    params = {
-        "crtfc_key": api_key,
-        "corp_code": corp_code,
-        "bgn_de": bgn_de,
-        "end_de": end_de,
-        "page_count": page_count,
-    }
-
-    response = requests.get(DART_LIST_URL, params=params, timeout=timeout)
-    response.raise_for_status()
-
-    data = response.json()
-
-    if data.get("status") != "000":
-        raise ValueError(
-            f"DART 공시 목록 조회 실패: {data.get('message')}"
-        )
-
-    return data.get("list", [])
+    return dart_client.fetch_dart_list_records(
+        corp_code=corp_code,
+        bgn_de=bgn_de,
+        end_de=end_de,
+        page_count=page_count,
+        timeout=timeout,
+    )
 
 
 def select_target_report(reports):
@@ -153,15 +126,10 @@ def get_latest_rcept_no(
 
 
 def fetch_document_zip(api_key, rcept_no, timeout=30):
-    params = {
-        "crtfc_key": api_key,
-        "rcept_no": rcept_no,
-    }
-
-    response = requests.get(DART_DOCUMENT_URL, params=params, timeout=timeout)
-    response.raise_for_status()
-
-    return response.content
+    return dart_client.fetch_dart_document_zip(
+        rcept_no=rcept_no,
+        timeout=timeout,
+    )
 
 
 def extract_xml_from_zip(zip_content, rcept_no=None):

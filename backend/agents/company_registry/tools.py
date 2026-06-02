@@ -6,7 +6,8 @@ from datetime import datetime
 from urllib.parse import quote_plus
 
 import pandas as pd
-from backend.backend_env import get_backend_env_path, load_backend_env
+from backend.backend_env import get_backend_env_path
+from backend.integrations.dart_client import resolve_dart_api_key
 from sqlalchemy import create_engine, inspect, text
 from tqdm.auto import tqdm
 
@@ -46,7 +47,6 @@ REVENUE_NAMES = [
     "Revenue",
 ]
 
-ENV_API_KEY_NAME = "OPEN_DART_API_KEY"
 DB_URL_ENV_NAME = "DATABASE_URL"
 DB_HOST_ENV_NAME = "POSTGRES_HOST"
 DB_PORT_ENV_NAME = "POSTGRES_PORT"
@@ -61,20 +61,7 @@ CREATED_AT_COLUMN = "created_at"
 
 # API key 호출 함수
 def resolve_api_key(args):
-    env_path = get_env_path(args.env_file)
-    load_backend_env(override=True, env_path=env_path)
-
-    if args.api_key and args.api_key.strip():
-        return args.api_key.strip()
-
-    api_key = os.getenv(ENV_API_KEY_NAME, "").strip()
-    if not api_key:
-        raise ValueError(
-            f"API 키를 찾지 못했습니다. {env_path} 파일에 "
-            f"{ENV_API_KEY_NAME}=YOUR_DART_API_KEY 형식으로 저장하거나 "
-            "--api-key 옵션을 사용해주세요."
-        )
-    return api_key
+    return resolve_dart_api_key(args.api_key, env_path=get_env_path(args.env_file))
 
 
 # SQLAlchemy DB URL 함수

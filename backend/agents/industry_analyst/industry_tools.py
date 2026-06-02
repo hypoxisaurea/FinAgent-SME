@@ -1,23 +1,16 @@
 import logging
-import os
 import re
 from pathlib import Path
 
 import pandas as pd
-import requests
 from backend.backend_env import load_backend_env
+from backend.integrations import dart_client, economic_data_client
 from langchain_core.tools import tool
 
 load_backend_env()
 
 logger = logging.getLogger(__name__)
-
-try:
-    from backend.opendartreader import OpenDartReader
-except ModuleNotFoundError:
-    OpenDartReader = None
-
-ECOS_BASE = "https://ecos.bok.or.kr/api"
+OpenDartReader = dart_client.OpenDartReader
 
 # ---------------------------------------------------------------------------
 # CSV 파일 경로
@@ -388,25 +381,7 @@ _INDUTY_TO_KSIC = {
 # 내부 헬퍼
 # ===========================================================================
 def _get_dart():
-    if OpenDartReader is None:
-        raise ModuleNotFoundError("opendartreader가 설치되어 있지 않습니다.")
-    api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
-    if not api_key:
-        raise ValueError("환경변수 OPEN_DART_API_KEY가 설정되지 않았습니다.")
-    return OpenDartReader(api_key)
-
-
-def _ecos_get(stat_code: str, item_code: str, period: str) -> list[dict]:
-    api_key = os.environ.get("ECOS_API_KEY")
-    if not api_key:
-        raise ValueError("환경변수 ECOS_API_KEY가 설정되지 않았습니다.")
-    url = (
-        f"{ECOS_BASE}/StatisticSearch/{api_key}/json/kr/1/100"
-        f"/{stat_code}/A/{period}/{period}/{item_code}"
-    )
-    res = requests.get(url, timeout=10)
-    res.raise_for_status()
-    return res.json().get("StatisticSearch", {}).get("row", [])
+    return dart_client.get_dart_client()
 
 
 def _read_csv_val(csv_path: Path, account_nm: str,
@@ -461,53 +436,6 @@ def _score_from_yoy(prod_yoy: float | None) -> str:
         return "Medium"
     return "High"
 
-
-def _kosis_param_query(tbl_id: str, itm_id: str = "ALL",
-                       obj_l1: str = "ALL", count: int = 13) -> list[dict]:
-    """KOSIS Param API 공통 쿼리."""
-    api_key = os.environ.get("KOSIS_API_KEY")
-    if not api_key:
-        return []
-    url = "https://kosis.kr/openapi/Param/statisticsParameterData.do"
-    params = {
-        "method": "getList", "apiKey": api_key,
-        "itmId": itm_id, "objL1": obj_l1,
-        "format": "json", "jsonVD": "Y",
-        "prdSe": "M", "newEstPrdCnt": str(count),
-        "orgId": "101", "tblId": tbl_id,
-    }
-    try:
-        res = requests.get(url, params=params, timeout=10)
-        data = res.json()
-        return data if isinstance(data, list) else []
-    except Exception as e:
-        logger.warning(f"KOSIS API 호출 실패 (tbl_id={tbl_id}): {e}")
-        return []
-
-
-def _extract_yoy_from_rows(rows: list[dict], name_keyword: str,
-                            itm_keyword: str = "불변") -> float | None:
-    """KOSIS 응답 rows에서 업종명·항목명 키워드로 필터 후 YoY 계산."""
-    vals: list[tuple[str, float]] = []
-    for row in rows:
-        c1_nm  = str(row.get("C1_NM") or row.get("C1_OBJ_NM") or "")
-        itm_nm = str(row.get("ITM_NM")    or row.get("ITM_ID") or "")
-        prd    = str(row.get("PRD_DE")    or "")
-        if name_keyword not in c1_nm:
-            continue
-        if itm_keyword and itm_keyword not in itm_nm:
-            continue
-        try:
-            dt = float(row.get("DT") or 0)
-            if dt > 0 and prd:
-                vals.append((prd, dt))
-        except (ValueError, TypeError):
-            continue
-    vals.sort(key=lambda x: x[0])
-    if len(vals) < 13:
-        return None
-    prev, curr = vals[-13][1], vals[-1][1]
-    return (curr - prev) / prev if prev != 0 else None
 
 
 def _read_agri_yoy() -> float | None:
@@ -678,7 +606,10 @@ def get_industry_outlook(ksic_code: str) -> dict:
     """
     # ── ① KOSIS 광공업: B 광업 + C 제조업 ─────────────────────────────────
     if ksic_code.startswith("B ") or ksic_code.startswith("C "):
-        rows = _kosis_param_query("DT_1F02011", itm_id="T10 T11 T12")
+        rows = economic_data_client.fetch_kosis_parameter_data(
+            "DT_1F02011",
+            itm_id="T10 T11 T12",
+        )
         if not rows:
             return {"outlook_score": "Medium", "source": "KOSIS 광공업(오류-중립)"}
 
@@ -718,11 +649,19 @@ def get_industry_outlook(ksic_code: str) -> dict:
     # ── ② KOSIS 서비스업: E G H I J L M N P R S ────────────────────────────
     if ksic_code in _KSIC_TO_KOSIS_SVC_KW:
         keyword = _KSIC_TO_KOSIS_SVC_KW[ksic_code]
-        rows    = _kosis_param_query("DT_1KC2020")
-        prod_yoy = _extract_yoy_from_rows(rows, keyword, itm_keyword="불변")
+        rows = economic_data_client.fetch_kosis_parameter_data("DT_1KC2020")
+        prod_yoy = economic_data_client.extract_kosis_yoy_from_rows(
+            rows,
+            keyword,
+            itm_keyword="불변",
+        )
         if prod_yoy is None:
             # 불변지수 없을 시 항목 무관하게 재시도
-            prod_yoy = _extract_yoy_from_rows(rows, keyword, itm_keyword="")
+            prod_yoy = economic_data_client.extract_kosis_yoy_from_rows(
+                rows,
+                keyword,
+                itm_keyword="",
+            )
         return {
             "production_index_yoy": round(prod_yoy, 4) if prod_yoy is not None else None,
             "inventory_index_yoy":  None,
@@ -735,8 +674,12 @@ def get_industry_outlook(ksic_code: str) -> dict:
     # ── ③ KOSIS 전산업생산지수: F 건설업 ──────────────────────────────────
     # tblId: KOSIS 홈페이지 전산업생산지수 > OPENAPI 버튼에서 확인
     if ksic_code == "F 건설업":
-        rows     = _kosis_param_query("DT_1KE10041")
-        prod_yoy = _extract_yoy_from_rows(rows, "건설업", itm_keyword="")
+        rows = economic_data_client.fetch_kosis_parameter_data("DT_1KE10041")
+        prod_yoy = economic_data_client.extract_kosis_yoy_from_rows(
+            rows,
+            "건설업",
+            itm_keyword="",
+        )
         return {
             "production_index_yoy": round(prod_yoy, 4) if prod_yoy is not None else None,
             "inventory_index_yoy":  None,
@@ -779,25 +722,30 @@ def get_business_cycle() -> dict:
     - 둔화: 동행↑ + 선행↓  (정점 근접)
     - 수축: 동행↓ + 선행↓
     """
-    api_key = os.environ.get("ECOS_API_KEY")
-    if not api_key:
-        raise ValueError("환경변수 ECOS_API_KEY가 설정되지 않았습니다.")
-
     from datetime import date
     end = date.today().strftime("%Y%m")
     start = str(int(end[:4]) - 2) + end[4:]  # 2년치 확보
-    
-    def _fetch(item_code: str) -> list[float]:
-        url = (
-            f"{ECOS_BASE}/StatisticSearch/{api_key}/json/kr/1/24"
-            f"/901Y067/M/{start}/{end}/{item_code}"
-        )
-        res = requests.get(url, timeout=10)
-        rows = res.json().get("StatisticSearch", {}).get("row", [])
-        return [float(r["DATA_VALUE"]) for r in rows if r.get("DATA_VALUE")]
 
-    leading    = _fetch("I16A")
-    coincident = _fetch("I16B")
+    leading = economic_data_client.extract_ecos_float_series(
+        economic_data_client.fetch_ecos_statistic_rows(
+            "901Y067",
+            "M",
+            start,
+            end,
+            "I16A",
+            end_row=24,
+        )
+    )
+    coincident = economic_data_client.extract_ecos_float_series(
+        economic_data_client.fetch_ecos_statistic_rows(
+            "901Y067",
+            "M",
+            start,
+            end,
+            "I16B",
+            end_row=24,
+        )
+    )
 
     def _trend(vals: list[float]) -> str:
         if len(vals) < 6:
@@ -830,18 +778,27 @@ def get_macro_indicators(ksic_code: str = "") -> dict:
     """한국은행 ECOS에서 기준금리·원달러환율 최근치 조회.
     ksic_code 전달 시 업종별 환율 영향 해석 포함.
     """
-    api_key = os.environ.get("ECOS_API_KEY")
-    if not api_key:
-        raise ValueError("환경변수 ECOS_API_KEY가 설정되지 않았습니다.")
-
     from datetime import date, timedelta
 
     # ── 기준금리 (연간) ─────────────────────────────────────────
     current_year = str(date.today().year)
-    rate_rows = _ecos_get("722Y001", "0101000", current_year)
+    rate_rows = economic_data_client.fetch_ecos_statistic_rows(
+        "722Y001",
+        "A",
+        current_year,
+        current_year,
+        "0101000",
+    )
     # 당해년도 데이터 없으면 전년도로 fallback
     if not rate_rows:
-        rate_rows = _ecos_get("722Y001", "0101000", str(date.today().year - 1))
+        previous_year = str(date.today().year - 1)
+        rate_rows = economic_data_client.fetch_ecos_statistic_rows(
+            "722Y001",
+            "A",
+            previous_year,
+            previous_year,
+            "0101000",
+        )
     base_rate = float(rate_rows[-1]["DATA_VALUE"]) if rate_rows else None
     trend = "stable"
     if len(rate_rows) >= 2:
@@ -852,12 +809,14 @@ def get_macro_indicators(ksic_code: str = "") -> dict:
     today      = date.today()
     end_date   = today.strftime("%Y%m%d")
     start_date = (today - timedelta(days=30)).strftime("%Y%m%d")
-    url = (
-        f"{ECOS_BASE}/StatisticSearch/{api_key}/json/kr/1/5"
-        f"/731Y001/D/{start_date}/{end_date}/0000001"
+    fx_rows = economic_data_client.fetch_ecos_statistic_rows(
+        "731Y001",
+        "D",
+        start_date,
+        end_date,
+        "0000001",
+        end_row=5,
     )
-    res = requests.get(url, timeout=10)
-    fx_rows = res.json().get("StatisticSearch", {}).get("row", [])
     usd_krw = float(fx_rows[-1]["DATA_VALUE"]) if fx_rows else None
 
     result: dict = {"base_rate": base_rate, "usd_krw": usd_krw, "rate_trend": trend}

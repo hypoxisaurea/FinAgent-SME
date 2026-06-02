@@ -1,52 +1,46 @@
 import logging
-import os
 
 import pandas as pd
-import requests
 from backend.backend_env import load_backend_env
+from backend.integrations import dart_client
 from langchain_core.tools import tool
 
 load_backend_env()
 
 logger = logging.getLogger(__name__)
-
-try:
-    from backend.opendartreader import OpenDartReader
-except ModuleNotFoundError:
-    OpenDartReader = None
+OpenDartReader = dart_client.OpenDartReader
 
 
 def _get_dart():
-    if OpenDartReader is None:
-        raise ModuleNotFoundError("opendartreader가 설치되어 있지 않습니다.")
-    api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
-    if not api_key:
-        raise ValueError("환경변수 OPEN_DART_API_KEY가 설정되지 않았습니다.")
-    dart = OpenDartReader(api_key)
-    return dart
+    return dart_client.get_dart_client()
 
 
 def _fetch_audit_opinion(corp_code: str, year: int) -> tuple[str | None, bool]:
     """DART 회계감사인의 명칭 및 감사의견 API로 감사의견과 외감 여부를 반환한다."""
-    api_key = os.getenv("OPEN_DART_API_KEY", "").strip()
+    api_key = dart_client.get_dart_api_key(required=False)
     if not api_key:
         logger.warning("OPEN_DART_API_KEY 미설정 - 감사의견 조회 생략")
         return None, False
 
-    url = "https://opendart.fss.or.kr/api/accnutAdtorNmNdAdtOpinion.json"
     params = {
-        "crtfc_key": api_key,
         "corp_code": corp_code,
         "bsns_year": str(year),
         "reprt_code": "11011",
     }
 
     try:
-        resp = requests.get(url, params=params, timeout=5)
-        resp.raise_for_status()
-        data = resp.json()
-    except requests.RequestException as e:
-        logger.warning("감사의견 API 호출 실패 corp_code=%s year=%s: %s", corp_code, year, e)
+        data = dart_client.get_dart_json(
+            "accnutAdtorNmNdAdtOpinion.json",
+            params=params,
+            timeout=5,
+        )
+    except ConnectionError as exc:
+        logger.warning(
+            "감사의견 API 호출 실패 corp_code=%s year=%s: %s",
+            corp_code,
+            year,
+            exc,
+        )
         return None, False
 
     if data.get("status") != "000":
