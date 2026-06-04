@@ -514,7 +514,7 @@ stack_build_database() {
     stack_start_database
     venv_python="$(stack_resolve_venv_python_path)"
     stack_log "Running company registry build pipeline"
-    PYTHONPATH="$STACK_BACKEND_DIR" \
+    PYTHONPATH="$PROJECT_ROOT" \
         "$venv_python" "$STACK_BACKEND_DIR/scripts/build_db.py" "$@"
 }
 
