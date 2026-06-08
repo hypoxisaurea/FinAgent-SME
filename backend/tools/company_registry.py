@@ -5,12 +5,14 @@ from datetime import datetime
 from typing import Any
 
 import pandas as pd
-from tqdm.auto import tqdm
-
 from backend import backend_env
 from backend.data.db import (
     CREATED_AT_COLUMN,
+)
+from backend.data.db import (
     create_db_engine as infrastructure_create_db_engine,
+)
+from backend.data.db import (
     resolve_database_url as infrastructure_resolve_database_url,
 )
 from backend.data.repositories.company_registry import (
@@ -18,6 +20,7 @@ from backend.data.repositories.company_registry import (
     filter_new_rows,
 )
 from backend.integrations.dart_client import get_dart_json, resolve_dart_api_key
+from tqdm.auto import tqdm
 
 try:
     import dart_fss as dart
