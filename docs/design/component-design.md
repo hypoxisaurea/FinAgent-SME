@@ -47,6 +47,7 @@ flowchart LR
 | Agent | `RiskEventAgent` | 뉴스/공시/법적/재무 이상 징후 통합 |
 | Agent | `DecisionAgent` | 신용등급, 승인 판단, 한도 추천, 설명 생성 |
 | Agent | `ReportAgent` | 최종 리포트 생성 |
+| Agent | `ValidationAgent` | 최종 결과 검증 및 Langfuse score 기록 |
 | Agent | `MultiModalDocumentAgent` | PDF/문서 분석 |
 | Domain Service | `company_lookup`, `company_registry_pipeline` | 유스케이스 수준 데이터 처리 |
 | Repository | `company_master`, `financial_feature`, `company_registry` | DB 조회/저장 |
@@ -71,7 +72,7 @@ flowchart LR
 | Resolver | `CompanyResolverAgent` 실행 후 대상 기업 여부 판별 |
 | 병렬 시작 | `news_collector`, `financial_analyst`, 선택적 `multimodal_document` |
 | 의존 노드 | `risk_event`는 `news_collector` 이후, `industry_analyst`는 `financial_analyst` 이후 |
-| 순차 종료 | `decision` -> `report` |
+| 순차 종료 | `decision` -> `report` -> `validation` |
 
 ## 5. Sub-Agent 설계
 
@@ -121,6 +122,13 @@ flowchart LR
 - 출력: 최종 `report`
 - 실패 정책: explanation 부족 시 summary/recommendation fallback
 
+### 5.8 ValidationAgent
+
+- 입력: `decision`, `credit_grade`, `recommended_limit`, `report`
+- 출력: `validation_result`
+- 검증 항목: 결과 계약, 리포트 정합성, 거절 시 한도 규칙
+- 관측성: Langfuse trace score 기록
+
 ## 6. 데이터 계층 설계
 
 | 계층 | 책임 |
@@ -136,6 +144,7 @@ flowchart LR
 | 구조화 로깅 | API, Orchestrator, Agent, Tool | 운영 추적, request_id 연동 |
 | Langfuse Trace | Workflow 루트 | 요청 단위 실행 흐름 추적 |
 | Langfuse Observation | Agent/Tool/LLM 호출 | 병목, fallback, generation 분석 |
+| Langfuse Score | Validation Agent | 품질 지표(`validation_pass_rate` 등) 기록 |
 | `steps` 메타데이터 | 최종 응답 | 단계별 상태와 fallback 근거 노출 |
 
 ## 8. 배포/실행 구성

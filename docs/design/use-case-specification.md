@@ -27,7 +27,8 @@
 | UC-03 | 병렬 분석 수행 | Supervisor | 뉴스, 재무, 산업, 리스크, 문서 분석을 분산 수행한다 |
 | UC-04 | 심사 판단 생성 | Supervisor | 분석 결과를 종합해 승인/검토/거절을 산출한다 |
 | UC-05 | 최종 리포트 제공 | 심사 담당자 | 심사 근거와 권고안을 읽을 수 있는 리포트를 확인한다 |
-| UC-06 | 데이터 구축 배치 실행 | 운영자/개발자 | 기업 마스터 및 재무 피처 DB를 구축한다 |
+| UC-06 | 결과 검증 및 품질 점수 기록 | Supervisor | 최종 결과를 검증하고 Langfuse score를 기록한다 |
+| UC-07 | 데이터 구축 배치 실행 | 운영자/개발자 | 기업 마스터 및 재무 피처 DB를 구축한다 |
 
 ## 4. 유스케이스 상세
 
@@ -50,7 +51,8 @@
 6. Supervisor가 분석 결과를 병합한다.
 7. Decision Agent가 신용등급, 승인 여부, 추천 한도를 계산한다.
 8. Report Agent가 최종 리포트를 생성한다.
-9. API가 `status`, `decision`, `report`, `steps`, `context`를 반환한다.
+9. ValidationAgent가 결과 계약과 정합성을 검증하고 Langfuse score를 기록한다.
+10. API가 `status`, `decision`, `report`, `steps`, `context`를 반환한다.
 
 #### 대체 흐름
 
@@ -123,7 +125,24 @@
 - 설명 생성 결과가 없으면 fallback summary/recommendation을 생성한다.
 - 리포트는 `company_name`, `corp_code`, `decision`, `credit_grade`, `recommended_limit`를 포함해야 한다.
 
-### UC-06 데이터 구축 배치 실행
+### UC-06 결과 검증 및 품질 점수 기록
+
+| 항목 | 내용 |
+| --- | --- |
+| 목적 | 최종 심사 결과의 계약/정합성을 점검하고 품질 점수를 남긴다 |
+| 주체 | `ValidationAgent` |
+| 입력 | `decision`, `credit_grade`, `recommended_limit`, `report` |
+| 출력 | `validation_result`, Langfuse score |
+
+#### 검증 규칙
+
+- `decision`은 `approve/review/reject` 중 하나여야 한다.
+- `report.company_name`, `report.decision`, `report.credit_grade`는 상위 결과와 일치해야 한다.
+- `report.summary`, `report.recommendation`은 비어 있지 않아야 한다.
+- `decision=reject`인 경우 `recommended_limit=0`이어야 한다.
+- 검증 결과는 `validation_pass_rate`, `workflow_contract_valid`, `failed_check_count` score로 Langfuse trace에 기록한다.
+
+### UC-07 데이터 구축 배치 실행
 
 | 항목 | 내용 |
 | --- | --- |

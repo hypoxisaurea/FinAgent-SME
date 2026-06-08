@@ -14,6 +14,7 @@ from backend.agents.orchestrator.results import build_result, summarize_steps
 from backend.agents.orchestrator.state import WorkflowState
 from backend.agents.report import ReportAgent
 from backend.agents.risk_event import RiskEventAgent
+from backend.agents.validation import ValidationAgent
 from backend.common.agent import Agent
 from backend.common.langfuse import (
     propagate_trace_attributes,
@@ -233,4 +234,5 @@ def _build_sequential_agents() -> list[Agent]:
     return [
         DecisionAgent(),
         ReportAgent(),
+        ValidationAgent(),
     ]

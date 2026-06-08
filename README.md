@@ -10,7 +10,7 @@ FinAgent-SME는 중소기업 대상 B2B 거래 리스크 심사를 지원하는 
 - 현재 오케스트레이터 흐름:
   - `CompanyResolverAgent`로 대상 기업 여부 판별
   - 병렬 분석: `NewsCollectorAgent`, `FinancialAnalystAgent`, `IndustryAnalystAgent`, `RiskEventAgent`
-  - 후속 단계: `DecisionAgent`, `ReportAgent`
+  - 후속 단계: `DecisionAgent`, `ReportAgent`, `ValidationAgent`
   - 선택 단계: `pdf_path`가 있을 때 `MultiModalDocumentAgent`
 
 기업 마스터/재무 DB 구축용 배치 에이전트는 `company_registry`, 런타임 뉴스 수집은 `news_collector`로 분리되어 있습니다.

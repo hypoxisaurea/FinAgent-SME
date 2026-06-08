@@ -103,6 +103,26 @@ def shutdown_langfuse() -> None:
     client.shutdown()
 
 
+def score_current_trace(
+    *,
+    name: str,
+    value: float | str | int,
+    data_type: str,
+    comment: str | None = None,
+) -> None:
+    """현재 trace에 score를 기록한다. Langfuse 비활성화 시 no-op."""
+    client = get_langfuse_client()
+    if client is None:
+        return
+
+    client.score_current_trace(
+        name=name,
+        value=value,
+        data_type=data_type,
+        comment=comment,
+    )
+
+
 @contextmanager
 def propagate_trace_attributes(
     *,

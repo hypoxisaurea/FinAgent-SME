@@ -21,6 +21,7 @@ sequenceDiagram
     participant DOC as MultiModalDocumentAgent
     participant DEC as DecisionAgent
     participant REP as ReportAgent
+    participant VAL as ValidationAgent
     participant DB as PostgreSQL
     participant EXT as External APIs/LLM
     participant LF as Langfuse
@@ -73,6 +74,10 @@ sequenceDiagram
 
         SUP->>REP: run(decision context)
         REP-->>SUP: report
+
+        SUP->>VAL: run(final context)
+        VAL->>LF: validation scores 기록
+        VAL-->>SUP: validation_result
 
         SUP->>LF: trace 종료, output 기록
         SUP-->>API: success/partial 결과

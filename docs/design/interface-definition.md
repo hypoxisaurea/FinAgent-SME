@@ -187,3 +187,4 @@ class Agent(Protocol):
 | `FINANCIAL_TOOL_FALLBACK` | 재무 도구 fallback 발생 | workflow `partial` |
 | `INDUSTRY_TOOL_FALLBACK` | 산업 도구 fallback 발생 | workflow `partial` |
 | `DECISION_DEGRADED` | 설명 생성 등 일부 판단 degraded | workflow `partial` |
+| `VALIDATION_WARNING` | 최종 결과 정합성 검증 경고 | workflow `partial` |
