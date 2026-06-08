@@ -35,6 +35,15 @@ FinAgent-SME/
 - `data/`: DB 연결, repository, service 계층
 - `api/`, `integrations/`, `schemas/`, `scripts/`: API/외부연동/계약/실행 진입점
 
+## 설계 문서
+
+- 워크플로우 기준 문서: `docs/domain/workflows.md`
+- 유스케이스 명세서: `docs/design/use-case-specification.md`
+- 컴포넌트 설계서: `docs/design/component-design.md`
+- 인터페이스 정의서: `docs/design/interface-definition.md`
+- 시퀀스 다이어그램: `docs/design/sequence-diagram.md`
+- ERD: `docs/design/erd.md`
+
 ## 요구사항
 
 - Python 3.13+
