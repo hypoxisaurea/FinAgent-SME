@@ -59,6 +59,7 @@ class RiskEventAgent:
             news_data=payload.get("news_data", []),
             disclosure_data=payload.get("disclosure_data", []),
             court_data=payload.get("court_data", []),
+            request_id=payload.get("request_id"),
         )
         logger.info(
             (

@@ -58,6 +58,7 @@ class NewsCollectionProvider(Protocol):
         company_name: Any,
         corp_name: Any,
         stock_code: Any,
+        request_id: Any,
     ) -> dict[str, Any]: ...
 
 
@@ -158,6 +159,7 @@ class ToolNewsCollectionProvider:
         company_name: Any,
         corp_name: Any,
         stock_code: Any,
+        request_id: Any,
     ) -> dict[str, Any]:
         news_tools = _load_news_tools()
         return news_tools.execute_news_pipeline(
@@ -171,4 +173,5 @@ class ToolNewsCollectionProvider:
             company_name=company_name,
             corp_name=corp_name,
             stock_code=stock_code,
+            request_id=request_id,
         )

@@ -69,6 +69,15 @@ async def generate_explanation(
                 system=_SYSTEM_PROMPT,
                 max_tokens=1000,
                 response_format={"type": "json_object"},
+                observation_name="decision.explanation",
+                request_id=context.get("request_id"),
+                tags=["decision", "explanation"],
+                metadata={
+                    "agent_name": "decision",
+                    "company_name": company_name,
+                    "decision": decision.value,
+                    "grade": grade_result.grade.value,
+                },
             )
         parsed = parse_json_response(raw)
         if not isinstance(parsed, dict):

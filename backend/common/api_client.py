@@ -7,11 +7,14 @@ from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator
 
 from backend.common.env import load_backend_env
+from backend.common.langfuse import (
+    build_openai_trace_kwargs,
+    get_async_openai_class,
+)
 from openai import (
     APIConnectionError,
     APIStatusError,
     APITimeoutError,
-    AsyncOpenAI,
     RateLimitError,
 )
 from tenacity import (
@@ -54,8 +57,9 @@ def get_api_key() -> str:
 
 
 @asynccontextmanager
-async def get_client(timeout: int = 60) -> AsyncGenerator[AsyncOpenAI, None]:
-    client = AsyncOpenAI(
+async def get_client(timeout: int = 60) -> AsyncGenerator[Any, None]:
+    client_class = get_async_openai_class()
+    client = client_class(
         api_key=get_api_key(),
         timeout=timeout,
         max_retries=0,
@@ -78,11 +82,15 @@ openai_retry = retry(
 
 @openai_retry
 async def call_openai(
-    client: AsyncOpenAI,
+    client: Any,
     messages: list[dict[str, Any]],
     system: str,
     max_tokens: int = 1000,
     response_format: dict[str, str] | None = None,
+    observation_name: str | None = None,
+    request_id: str | None = None,
+    tags: list[str] | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> str:
     request_messages = [{"role": "system", "content": system}, *messages]
     payload: dict[str, Any] = {
@@ -91,6 +99,14 @@ async def call_openai(
         "max_tokens": max_tokens,
         "temperature": 0,
     }
+    payload.update(
+        build_openai_trace_kwargs(
+            name=observation_name,
+            session_id=request_id,
+            tags=tags,
+            metadata=metadata,
+        )
+    )
     if response_format is not None:
         payload["response_format"] = response_format
 

@@ -1,7 +1,9 @@
 import logging
+from contextlib import asynccontextmanager
 from uuid import uuid4
 
 from backend.api.router import api_router
+from backend.common.langfuse import shutdown_langfuse
 from backend.common.logging import configure_logging, request_id_context
 from backend.common.settings import settings
 from fastapi import FastAPI, Request, Response
@@ -11,10 +13,20 @@ configure_logging()
 
 logger = logging.getLogger(__name__)
 
+
+@asynccontextmanager
+async def app_lifespan(_: FastAPI):
+    try:
+        yield
+    finally:
+        shutdown_langfuse()
+
+
 app = FastAPI(
     title="FinAgent-SME API",
     description="FinAgent-SME B2B 거래 리스크 심사 Multi-Agent System 백엔드",
     version="0.1.0",
+    lifespan=app_lifespan,
 )
 
 app.add_middleware(

@@ -77,6 +77,7 @@ class NewsCollectorAgent:
                     company_name=payload.get("company_name"),
                     corp_name=payload.get("corp_name"),
                     stock_code=payload.get("stock_code"),
+                    request_id=request_id,
                 ),
                 fallback_factory=_default_news_result,
                 validate_dict=True,
@@ -141,6 +142,7 @@ def news_collection_node(state: dict[str, Any]) -> dict[str, Any]:
         company_name=state.get("company_name"),
         corp_name=state.get("corp_name"),
         stock_code=state.get("stock_code"),
+        request_id=state.get("request_id"),
     )
     return {
         "news_data": pipeline_result.get("collected_news_data", []),

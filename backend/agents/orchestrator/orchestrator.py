@@ -15,6 +15,10 @@ from backend.agents.orchestrator.state import WorkflowState
 from backend.agents.report import ReportAgent
 from backend.agents.risk_event import RiskEventAgent
 from backend.common.agent import Agent
+from backend.common.langfuse import (
+    propagate_trace_attributes,
+    start_as_current_observation,
+)
 from backend.common.logging import request_id_context
 
 logger = logging.getLogger(__name__)
@@ -56,39 +60,76 @@ class WorkflowOrchestrator:
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         with request_id_context(payload.get("request_id")):
-            logger.info(
-                (
-                    "workflow_started company_name=%s continue_on_error=%s "
-                    "resolver_agent=%s parallel_agents=%s sequential_agents=%s"
-                ),
-                payload.get("company_name"),
-                self._continue_on_error,
-                getattr(self._resolver_agent, "name", None),
-                [agent.name for agent in self._parallel_agents],
-                [agent.name for agent in self._sequential_agents],
-            )
-            initial_state: WorkflowState = {
-                "context": dict(payload),
-                "steps": [],
-            }
-            final_state = await self._graph.ainvoke(initial_state)
-            result = build_result(final_state)
-            step_summary = summarize_steps(result["steps"])
-            logger.info(
-                (
-                    "workflow_finished company_name=%s status=%s "
-                    "step_count=%s success_steps=%s partial_steps=%s "
-                    "failed_steps=%s fallback_steps=%s"
-                ),
-                payload.get("company_name"),
-                result["status"],
-                len(result["steps"]),
-                step_summary["success"],
-                step_summary["partial"],
-                step_summary["failed"],
-                step_summary["fallback"],
-            )
-            return result
+            with start_as_current_observation(
+                name="credit_workflow",
+                as_type="chain",
+                input={"company_name": payload.get("company_name")},
+                metadata={
+                    "request_id": payload.get("request_id"),
+                    "company_name": payload.get("company_name"),
+                    "continue_on_error": self._continue_on_error,
+                },
+            ) as observation:
+                with propagate_trace_attributes(
+                    session_id=payload.get("request_id"),
+                    tags=["credit_assessment", "orchestrator"],
+                    metadata={
+                        "feature": "credit_assessment",
+                        "request_id": payload.get("request_id"),
+                        "company_name": payload.get("company_name"),
+                        "continue_on_error": self._continue_on_error,
+                        "resolver_agent": getattr(self._resolver_agent, "name", None),
+                        "parallel_agents": [
+                            agent.name for agent in self._parallel_agents
+                        ],
+                        "sequential_agents": [
+                            agent.name for agent in self._sequential_agents
+                        ],
+                    },
+                ):
+                    logger.info(
+                        (
+                            "workflow_started company_name=%s continue_on_error=%s "
+                            "resolver_agent=%s parallel_agents=%s sequential_agents=%s"
+                        ),
+                        payload.get("company_name"),
+                        self._continue_on_error,
+                        getattr(self._resolver_agent, "name", None),
+                        [agent.name for agent in self._parallel_agents],
+                        [agent.name for agent in self._sequential_agents],
+                    )
+                    initial_state: WorkflowState = {
+                        "context": dict(payload),
+                        "steps": [],
+                    }
+                    final_state = await self._graph.ainvoke(initial_state)
+                    result = build_result(final_state)
+                    step_summary = summarize_steps(result["steps"])
+                    observation.update(
+                        output={
+                            "status": result["status"],
+                            "step_count": len(result["steps"]),
+                            "success_steps": step_summary["success"],
+                            "partial_steps": step_summary["partial"],
+                            "failed_steps": step_summary["failed"],
+                            "fallback_steps": step_summary["fallback"],
+                        }
+                    )
+                    logger.info(
+                        (
+                            "workflow_finished company_name=%s status=%s "
+                            "step_count=%s success_steps=%s partial_steps=%s "
+                            "failed_steps=%s fallback_steps=%s"
+                        ),
+                        payload.get("company_name"),
+                        result["status"],
+                        len(result["steps"]),
+                        step_summary["success"],
+                        step_summary["partial"],
+                        step_summary["failed"],
+                        step_summary["fallback"],
+                    )
+                    return result
 
     def _build_graph(self) -> Any:
         return WorkflowGraphBuilder(
