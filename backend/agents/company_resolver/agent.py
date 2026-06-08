@@ -47,15 +47,16 @@ class CompanyResolverAgent(Agent):
             result.corp_name,
         )
         return build_agent_output(
-            {
-                "company_found": True,
-                "corp_code": result.corp_code,
-                "corp_name": result.corp_name,
-                "company_resolution": {
-                    "matched": True,
-                    "query": company_name,
+                {
+                    "company_found": True,
                     "corp_code": result.corp_code,
                     "corp_name": result.corp_name,
+                    "company_profile": result.company_profile,
+                    "company_resolution": {
+                        "matched": True,
+                        "query": company_name,
+                        "corp_code": result.corp_code,
+                        "corp_name": result.corp_name,
                 },
             },
             latency_ms=elapsed_ms(started_at),

@@ -43,20 +43,36 @@ def execute_dart_pipeline(
     final_df = company_registry_tools.build_final_dataframe(processed_records)
     final_df = add_created_at_column(final_df, created_at)
     sme_list_df = company_registry_tools.build_sme_list_dataframe(final_df)
+    company_profile_df, profile_errors, profile_stats = (
+        company_registry_tools.build_company_profile_dataframe(sme_list_df)
+    )
+    company_profile_df = add_created_at_column(company_profile_df, created_at)
     error_df = pd.DataFrame(error_logs)
+    if profile_errors:
+        error_df = pd.concat(
+            [error_df, pd.DataFrame(profile_errors)],
+            ignore_index=True,
+        )
 
     db_save_counts: dict[str, int] = {}
     if not skip_db_save:
-        db_save_counts = save_outputs_to_database(sme_list_df, final_df, error_df)
+        db_save_counts = save_outputs_to_database(
+            sme_list_df,
+            company_profile_df,
+            final_df,
+            error_df,
+        )
 
     result = {
         "status": "success",
         "stats": stats,
         "sme_count": len(sme_list_df),
         "financial_data_count": len(final_df),
+        "company_profile_count": len(company_profile_df),
         "db_save_counts": db_save_counts,
         "source": "dart",
     }
+    result["stats"].update(profile_stats)
     logger.info(
         (
             "company_registry_pipeline_finished year=%s sample_size=%s "

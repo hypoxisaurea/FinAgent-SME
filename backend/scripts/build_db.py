@@ -56,10 +56,11 @@ def run_build_db(args: argparse.Namespace) -> dict[str, Any]:
     logger.info(
         (
             "build_db_finished status=%s sme_count=%s "
-            "financial_data_count=%s db_save_counts=%s"
+            "company_profile_count=%s financial_data_count=%s db_save_counts=%s"
         ),
         result.get("status"),
         result.get("sme_count"),
+        result.get("company_profile_count"),
         result.get("financial_data_count"),
         result.get("db_save_counts"),
     )

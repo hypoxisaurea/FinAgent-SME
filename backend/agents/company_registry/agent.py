@@ -75,6 +75,7 @@ def dart_collection_node(state: dict[str, Any]) -> dict[str, Any]:
         "dart_result": {
             "status": pipeline_result.get("status", "success"),
             "sme_count": pipeline_result.get("sme_count", 0),
+            "company_profile_count": pipeline_result.get("company_profile_count", 0),
             "financial_data_count": pipeline_result.get("financial_data_count", 0),
             "stats": pipeline_result.get("stats", {}),
             "db_save_counts": pipeline_result.get("db_save_counts", {}),

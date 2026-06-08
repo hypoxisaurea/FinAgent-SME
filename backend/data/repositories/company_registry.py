@@ -4,6 +4,7 @@ import logging
 
 import pandas as pd
 from backend.data.db import (
+    COMPANY_PROFILE_TABLE_NAME,
     CREATED_AT_COLUMN,
     ERROR_LOG_TABLE_NAME,
     FEATURES_TABLE_NAME,
@@ -60,6 +61,33 @@ def add_created_at_column(df: pd.DataFrame, created_at: str) -> pd.DataFrame:
     return updated_df
 
 
+def ensure_table_columns(
+    df: pd.DataFrame,
+    engine: Engine,
+    table_name: str,
+) -> None:
+    """기존 테이블에 DataFrame 신규 컬럼이 없으면 nullable 컬럼으로 추가한다."""
+    inspector = inspect(engine)
+    existing_columns = {
+        column["name"]
+        for column in inspector.get_columns(table_name)
+    }
+    missing_columns = [
+        column
+        for column in df.columns
+        if column not in existing_columns
+    ]
+    if not missing_columns:
+        return
+
+    with engine.begin() as connection:
+        for column in missing_columns:
+            connection.execute(
+                text(f'ALTER TABLE {table_name} ADD COLUMN "{column}" TEXT')
+            )
+            logger.info("db_column_added table=%s column=%s", table_name, column)
+
+
 def save_dataframe_to_postgres(
     df: pd.DataFrame,
     engine: Engine,
@@ -77,6 +105,8 @@ def save_dataframe_to_postgres(
         logger.info("db_table_created table=%s row_count=%s", table_name, len(df))
         return len(df)
 
+    ensure_table_columns(df, engine, table_name)
+
     existing_query = text(f"SELECT {', '.join(key_columns)} FROM {table_name}")
     with engine.connect() as connection:
         existing_df = pd.read_sql(existing_query, connection)
@@ -93,10 +123,11 @@ def save_dataframe_to_postgres(
 
 def save_outputs_to_database(
     sme_list_df: pd.DataFrame,
+    company_profile_df: pd.DataFrame,
     final_df: pd.DataFrame,
     error_df: pd.DataFrame,
 ) -> dict[str, int]:
-    """기업 마스터, 재무 피처, 에러 로그를 공통 DB에 저장한다."""
+    """기업 마스터, 기업개황, 재무 피처, 에러 로그를 공통 DB에 저장한다."""
     engine = create_db_engine()
     try:
         return {
@@ -104,6 +135,12 @@ def save_outputs_to_database(
                 sme_list_df,
                 engine,
                 SME_LIST_TABLE_NAME,
+                ["corp_code"],
+            ),
+            COMPANY_PROFILE_TABLE_NAME: save_dataframe_to_postgres(
+                company_profile_df,
+                engine,
+                COMPANY_PROFILE_TABLE_NAME,
                 ["corp_code"],
             ),
             FEATURES_TABLE_NAME: save_dataframe_to_postgres(

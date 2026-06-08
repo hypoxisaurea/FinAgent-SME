@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from backend.data.db import (
+    COMPANY_PROFILE_TABLE_NAME,
     CREATED_AT_COLUMN,
     ERROR_LOG_TABLE_NAME,
     FEATURES_TABLE_NAME,
@@ -14,6 +15,7 @@ from backend.data.db import (
 
 __all__ = [
     "CompanyRegistryBuilderAgent",
+    "COMPANY_PROFILE_TABLE_NAME",
     "CREATED_AT_COLUMN",
     "ERROR_LOG_TABLE_NAME",
     "FEATURES_TABLE_NAME",

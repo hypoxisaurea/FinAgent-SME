@@ -1,4 +1,5 @@
 from backend.data.db import (
+    COMPANY_PROFILE_TABLE_NAME,
     CREATED_AT_COLUMN,
     DB_HOST_ENV_NAME,
     DB_NAME_ENV_NAME,
@@ -16,6 +17,7 @@ from backend.data.db import (
 
 __all__ = [
     "CREATED_AT_COLUMN",
+    "COMPANY_PROFILE_TABLE_NAME",
     "DB_HOST_ENV_NAME",
     "DB_NAME_ENV_NAME",
     "DB_PASSWORD_ENV_NAME",

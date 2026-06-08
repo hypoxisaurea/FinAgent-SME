@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from backend.data.db import SME_LIST_TABLE_NAME
+from backend.data.db import COMPANY_PROFILE_TABLE_NAME, SME_LIST_TABLE_NAME
 from backend.data.repositories.db_access import fetch_rows
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ def find_company_row_by_name(company_name: str) -> dict[str, Any] | None:
     rows = fetch_rows(
         logger=logger,
         query=f"""
-            SELECT corp_code, corp_name
+            SELECT *
             FROM {SME_LIST_TABLE_NAME}
             WHERE corp_name = :company_name
             ORDER BY created_at DESC NULLS LAST, corp_code ASC
@@ -35,7 +35,10 @@ def find_company_row_by_name(company_name: str) -> dict[str, Any] | None:
             f"기업 마스터 테이블이 존재하지 않습니다: {SME_LIST_TABLE_NAME}"
         ),
     )
-    return rows[0] if rows else None
+    if not rows:
+        return None
+    row = rows[0]
+    return _merge_company_profile(row)
 
 
 def get_company_info_by_corp_code(corp_code: str) -> dict[str, Any] | None:
@@ -44,13 +47,7 @@ def get_company_info_by_corp_code(corp_code: str) -> dict[str, Any] | None:
     rows = fetch_rows(
         logger=logger,
         query=f"""
-            SELECT
-                LPAD(CAST(corp_code AS TEXT), 8, '0') AS corp_code,
-                corp_name,
-                CAST(stock_code AS TEXT) AS stock_code,
-                avg_revenue_last_3y,
-                total_assets,
-                created_at
+            SELECT *
             FROM {SME_LIST_TABLE_NAME}
             WHERE LPAD(CAST(corp_code AS TEXT), 8, '0') = :corp_code
             ORDER BY created_at DESC NULLS LAST
@@ -60,7 +57,10 @@ def get_company_info_by_corp_code(corp_code: str) -> dict[str, Any] | None:
         table_name=SME_LIST_TABLE_NAME,
         error_message=f"{SME_LIST_TABLE_NAME} 테이블 조회 중 오류가 발생했습니다.",
     )
-    return rows[0] if rows else None
+    if not rows:
+        return None
+    row = rows[0]
+    return _merge_company_profile(row)
 
 
 def search_company_infos_by_name(keyword: str) -> list[dict[str, Any]]:
@@ -69,16 +69,10 @@ def search_company_infos_by_name(keyword: str) -> list[dict[str, Any]]:
     if not normalized_keyword:
         return []
 
-    return fetch_rows(
+    rows = fetch_rows(
         logger=logger,
         query=f"""
-            SELECT DISTINCT
-                LPAD(CAST(corp_code AS TEXT), 8, '0') AS corp_code,
-                corp_name,
-                CAST(stock_code AS TEXT) AS stock_code,
-                avg_revenue_last_3y,
-                total_assets,
-                created_at
+            SELECT DISTINCT *
             FROM {SME_LIST_TABLE_NAME}
             WHERE corp_name ILIKE :keyword
             ORDER BY corp_name ASC, corp_code ASC
@@ -87,6 +81,7 @@ def search_company_infos_by_name(keyword: str) -> list[dict[str, Any]]:
         table_name=SME_LIST_TABLE_NAME,
         error_message=f"{SME_LIST_TABLE_NAME} 테이블 조회 중 오류가 발생했습니다.",
     )
+    return [_merge_company_profile(row) for row in rows]
 
 
 def get_all_corp_codes() -> list[str]:
@@ -103,3 +98,30 @@ def get_all_corp_codes() -> list[str]:
         error_message=f"{SME_LIST_TABLE_NAME} 테이블 조회 중 오류가 발생했습니다.",
     )
     return [str(row["corp_code"]) for row in rows]
+
+
+def _merge_company_profile(base_row: dict[str, Any]) -> dict[str, Any]:
+    corp_code = str(base_row["corp_code"]).zfill(8)
+    profile_rows = fetch_rows(
+        logger=logger,
+        query=f"""
+            SELECT *
+            FROM {COMPANY_PROFILE_TABLE_NAME}
+            WHERE LPAD(CAST(corp_code AS TEXT), 8, '0') = :corp_code
+            ORDER BY created_at DESC NULLS LAST
+            LIMIT 1
+        """,
+        params={"corp_code": corp_code},
+        table_name=COMPANY_PROFILE_TABLE_NAME,
+        error_message=f"{COMPANY_PROFILE_TABLE_NAME} 테이블 조회 중 오류가 발생했습니다.",
+    )
+    if not profile_rows:
+        return base_row
+
+    merged = dict(base_row)
+    for key, value in profile_rows[0].items():
+        if key == "corp_code":
+            continue
+        if value is not None and str(value).strip():
+            merged[key] = value
+    return merged

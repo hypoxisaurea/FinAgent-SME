@@ -19,6 +19,7 @@ from backend.data.repositories.company_registry import (
     add_created_at_column,
     filter_new_rows,
 )
+from backend.integrations.dart_client import get_dart_json
 from backend.integrations.dart_client import resolve_dart_api_key
 from tqdm.auto import tqdm
 
@@ -48,6 +49,20 @@ TARGET_ACCOUNTS = [
     "당기순이익(손실)",
     "부채총계",
     "자본총계",
+]
+
+COMPANY_PROFILE_COLUMNS = [
+    "corp_cls",
+    "stock_name",
+    "ceo_name",
+    "address",
+    "homepage_url",
+    "ir_url",
+    "phone_number",
+    "fax_number",
+    "industry_code",
+    "established_date",
+    "settlement_month",
 ]
 
 # 매출액 유사 단어 묶기
@@ -139,6 +154,98 @@ def convert_amount_columns(filtered_df, amount_cols):
     for col in amount_cols:
         converted_df[col] = to_numeric_series(converted_df[col]).to_numpy()
     return converted_df
+
+
+def normalize_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def normalize_established_date(value: Any) -> str | None:
+    text = normalize_text(value)
+    if text is None:
+        return None
+    digits = "".join(ch for ch in text if ch.isdigit())
+    if len(digits) != 8:
+        return text
+    try:
+        return datetime.strptime(digits, "%Y%m%d").date().isoformat()
+    except ValueError:
+        return text
+
+
+def fetch_company_profile(corp_code: str) -> dict[str, Any]:
+    payload = get_dart_json(
+        "company.json",
+        params={"corp_code": str(corp_code).zfill(8)},
+        timeout=10,
+    )
+    if payload.get("status") != "000":
+        raise ValueError(f"기업개황 조회 실패: {payload.get('message')}")
+
+    return {
+        "corp_code": str(payload.get("corp_code") or corp_code).zfill(8),
+        "corp_cls": normalize_text(payload.get("corp_cls")),
+        "stock_name": normalize_text(payload.get("stock_name")),
+        "stock_code": normalize_text(payload.get("stock_code")),
+        "ceo_name": normalize_text(payload.get("ceo_nm")),
+        "address": normalize_text(payload.get("adres")),
+        "homepage_url": normalize_text(payload.get("hm_url")),
+        "ir_url": normalize_text(payload.get("ir_url")),
+        "phone_number": normalize_text(payload.get("phn_no")),
+        "fax_number": normalize_text(payload.get("fax_no")),
+        "industry_code": normalize_text(payload.get("induty_code")),
+        "established_date": normalize_established_date(payload.get("est_dt")),
+        "settlement_month": normalize_text(payload.get("acc_mt")),
+    }
+
+
+def build_company_profile_dataframe(
+    sme_list_df: pd.DataFrame,
+) -> tuple[pd.DataFrame, list[dict[str, Any]], dict[str, int]]:
+    columns = ["corp_code", *COMPANY_PROFILE_COLUMNS]
+    if sme_list_df.empty:
+        return pd.DataFrame(columns=columns), [], {
+            "profile_success_count": 0,
+            "profile_error_count": 0,
+        }
+
+    profile_records: list[dict[str, Any]] = []
+    error_logs: list[dict[str, Any]] = []
+    unique_companies = (
+        sme_list_df[["corp_code", "corp_name"]]
+        .drop_duplicates(subset=["corp_code"])
+        .reset_index(drop=True)
+    )
+
+    for _, row in tqdm(
+        unique_companies.iterrows(),
+        total=len(unique_companies),
+        desc="기업개황 수집",
+    ):
+        corp_code = str(row["corp_code"]).zfill(8)
+        corp_name = row.get("corp_name")
+        try:
+            profile_records.append(fetch_company_profile(corp_code))
+        except Exception as exc:  # noqa: BLE001
+            add_error_log(
+                error_logs,
+                corp_code=corp_code,
+                corp_name=corp_name,
+                error_type="COMPANY_PROFILE_ERROR",
+                message=str(exc),
+            )
+
+    return (
+        pd.DataFrame(profile_records, columns=columns),
+        error_logs,
+        {
+            "profile_success_count": len(profile_records),
+            "profile_error_count": len(error_logs),
+        },
+    )
 
 
 # 연결제무제표 사용 함수

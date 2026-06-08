@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import Any
 
 from backend.data.repositories.company_master import find_company_row_by_name
 
@@ -14,6 +15,41 @@ class CompanyLookupResult:
 
     corp_code: str
     corp_name: str
+    company_profile: dict[str, Any]
+
+
+PROFILE_FIELD_MAP = {
+    "stock_code": "stock_code",
+    "corp_cls": "corp_cls",
+    "stock_name": "stock_name",
+    "ceo_name": "ceo_name",
+    "address": "address",
+    "homepage_url": "homepage_url",
+    "ir_url": "ir_url",
+    "phone_number": "phone_number",
+    "fax_number": "fax_number",
+    "industry_code": "industry_code",
+    "established_date": "established_date",
+    "settlement_month": "settlement_month",
+}
+
+
+def build_company_profile(row: dict[str, Any]) -> dict[str, Any]:
+    """기업 마스터 row에서 리포트용 기업개황 프로필을 생성한다."""
+    has_profile_fields = any(
+        row.get(source_key) is not None and str(row.get(source_key)).strip()
+        for source_key in PROFILE_FIELD_MAP.values()
+    )
+    profile = {
+        "corp_code": str(row["corp_code"]).zfill(8),
+        "corp_name": str(row["corp_name"]),
+        "source": "company_profiles" if has_profile_fields else "sme_list",
+    }
+    for target_key, source_key in PROFILE_FIELD_MAP.items():
+        value = row.get(source_key)
+        if value is not None and str(value).strip():
+            profile[target_key] = str(value).strip()
+    return profile
 
 
 def find_company_by_name(company_name: str) -> CompanyLookupResult | None:
@@ -47,6 +83,7 @@ def find_company_by_name(company_name: str) -> CompanyLookupResult | None:
         return CompanyLookupResult(
             corp_code=str(row["corp_code"]).zfill(8),
             corp_name=str(row["corp_name"]),
+            company_profile=build_company_profile(row),
         )
     except RuntimeError:
         raise
