@@ -8,8 +8,8 @@ from backend.common.agent import Agent
 from backend.common.contracts import build_agent_output, elapsed_ms
 from backend.common.logging import request_id_context
 from backend.common.providers import (
+    DatabaseFinancialDataProvider,
     FinancialDataProvider,
-    ToolFinancialDataProvider,
 )
 from backend.common.tool_runtime import (
     build_skipped_tool_result,
@@ -27,7 +27,7 @@ class FinancialAnalystAgent(Agent):
     name = "financial_analyst"
 
     def __init__(self, provider: FinancialDataProvider | None = None) -> None:
-        self._provider = provider or ToolFinancialDataProvider()
+        self._provider = provider or DatabaseFinancialDataProvider()
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """재무제표, 비율, 추세, 등급 상한을 계산한다."""
@@ -132,11 +132,16 @@ class FinancialAnalystAgent(Agent):
                 len(tool_errors),
             )
 
+            company_ratios = dict(ratios)
+            company_ratios["sales_growth"] = trend.get("growth_ratios", {}).get(
+                "revenue_growth"
+            )
+
             return build_agent_output(
                 {
                     "financial_statements": fs,
                     "financial_ratios": ratios,
-                    "company_ratios": ratios,
+                    "company_ratios": company_ratios,
                     "altman_z": altman_z,
                     "financial_trend": trend,
                     "financial_flags": trend.get("flags", []),
@@ -145,6 +150,7 @@ class FinancialAnalystAgent(Agent):
                     "total_assets": fs.get("총자산"),
                     "total_assets_statement": fs.get("총자산"),
                     "revenue": fs.get("매출액"),
+                    "avg_revenue_last_3y": fs.get("avg_revenue_last_3y"),
                     "operating_income": fs.get("영업이익"),
                     "net_income": fs.get("당기순이익"),
                     "financial_summary": {

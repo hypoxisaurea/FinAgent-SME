@@ -9,6 +9,7 @@ from backend.data.db import (
     ERROR_LOG_TABLE_NAME,
     FEATURES_TABLE_NAME,
     SME_LIST_TABLE_NAME,
+    STATEMENT_DETAILS_TABLE_NAME,
     create_db_engine,
 )
 from sqlalchemy import inspect, text
@@ -125,9 +126,10 @@ def save_outputs_to_database(
     sme_list_df: pd.DataFrame,
     company_profile_df: pd.DataFrame,
     final_df: pd.DataFrame,
+    statement_detail_df: pd.DataFrame,
     error_df: pd.DataFrame,
 ) -> dict[str, int]:
-    """기업 마스터, 기업개황, 재무 피처, 에러 로그를 공통 DB에 저장한다."""
+    """기업 마스터, 기업개황, 요약/상세 재무, 에러 로그를 공통 DB에 저장한다."""
     engine = create_db_engine()
     try:
         return {
@@ -147,6 +149,12 @@ def save_outputs_to_database(
                 final_df,
                 engine,
                 FEATURES_TABLE_NAME,
+                ["corp_code", "stock_code", "year"],
+            ),
+            STATEMENT_DETAILS_TABLE_NAME: save_dataframe_to_postgres(
+                statement_detail_df,
+                engine,
+                STATEMENT_DETAILS_TABLE_NAME,
                 ["corp_code", "stock_code", "year"],
             ),
             ERROR_LOG_TABLE_NAME: save_dataframe_to_postgres(

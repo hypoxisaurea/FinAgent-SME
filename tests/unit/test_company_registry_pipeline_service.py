@@ -16,6 +16,7 @@ class _FakeDart:
 def test_execute_dart_pipeline_builds_and_saves_outputs(monkeypatch) -> None:
     fake_dart = _FakeDart()
     final_df = pd.DataFrame([{"corp_code": "001", "revenue": 1000}])
+    statement_detail_df = pd.DataFrame([{"corp_code": "001", "current_assets": 500}])
     sme_list_df = pd.DataFrame([{"corp_code": "001"}])
     profile_df = pd.DataFrame([{"corp_code": "001", "ceo_name": "대표자"}])
     captured: dict[str, object] = {}
@@ -36,6 +37,7 @@ def test_execute_dart_pipeline_builds_and_saves_outputs(monkeypatch) -> None:
         "run_collection",
         lambda *, sme_df, business_year, report_code: (
             [{"corp_code": "001", "amount": 1000}],
+            [{"corp_code": "001", "current_assets": 500}],
             [{"error_type": "NONE"}],
             {"success_count": 1},
         ),
@@ -44,6 +46,11 @@ def test_execute_dart_pipeline_builds_and_saves_outputs(monkeypatch) -> None:
         company_registry_pipeline.company_registry_tools,
         "build_final_dataframe",
         lambda processed_records: final_df,
+    )
+    monkeypatch.setattr(
+        company_registry_pipeline.company_registry_tools,
+        "build_statement_detail_dataframe",
+        lambda statement_records: statement_detail_df,
     )
     monkeypatch.setattr(
         company_registry_pipeline,
@@ -65,13 +72,19 @@ def test_execute_dart_pipeline_builds_and_saves_outputs(monkeypatch) -> None:
         sme_list_input: pd.DataFrame,
         company_profile_input: pd.DataFrame,
         final_input: pd.DataFrame,
+        statement_detail_input: pd.DataFrame,
         error_input: pd.DataFrame,
     ) -> dict[str, int]:
         captured["sme_list_df"] = sme_list_input
         captured["company_profile_df"] = company_profile_input
         captured["final_df"] = final_input
+        captured["statement_detail_df"] = statement_detail_input
         captured["error_df"] = error_input
-        return {"sme_list": 1, "company_profiles": 1}
+        return {
+            "sme_list": 1,
+            "company_profiles": 1,
+            "financial_statement_details": 1,
+        }
 
     monkeypatch.setattr(
         company_registry_pipeline,
@@ -89,11 +102,17 @@ def test_execute_dart_pipeline_builds_and_saves_outputs(monkeypatch) -> None:
     assert result["status"] == "success"
     assert result["sme_count"] == 1
     assert result["financial_data_count"] == 1
+    assert result["financial_statement_detail_count"] == 1
     assert result["company_profile_count"] == 1
-    assert result["db_save_counts"] == {"sme_list": 1, "company_profiles": 1}
+    assert result["db_save_counts"] == {
+        "sme_list": 1,
+        "company_profiles": 1,
+        "financial_statement_details": 1,
+    }
     assert list(captured["sme_list_df"]["corp_code"]) == ["001"]
     assert list(captured["company_profile_df"]["ceo_name"]) == ["대표자"]
     assert "created_at" in captured["final_df"].columns
+    assert "created_at" in captured["statement_detail_df"].columns
     assert "created_at" in captured["company_profile_df"].columns
     assert list(captured["error_df"]["error_type"]) == ["NONE"]
 
@@ -115,12 +134,22 @@ def test_execute_dart_pipeline_skips_db_save_when_requested(monkeypatch) -> None
     monkeypatch.setattr(
         company_registry_pipeline.company_registry_tools,
         "run_collection",
-        lambda *, sme_df, business_year, report_code: ([], [], {"success_count": 0}),
+        lambda *, sme_df, business_year, report_code: (
+            [],
+            [],
+            [],
+            {"success_count": 0},
+        ),
     )
     monkeypatch.setattr(
         company_registry_pipeline.company_registry_tools,
         "build_final_dataframe",
         lambda processed_records: pd.DataFrame(),
+    )
+    monkeypatch.setattr(
+        company_registry_pipeline.company_registry_tools,
+        "build_statement_detail_dataframe",
+        lambda statement_records: pd.DataFrame(),
     )
     monkeypatch.setattr(
         company_registry_pipeline,
