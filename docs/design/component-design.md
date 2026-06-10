@@ -2,34 +2,34 @@
 
 ## 1. 문서 개요
 
-- 문서 목적: FinAgent-SME의 논리 컴포넌트와 책임, 상호작용, 배치 구성을 정의한다.
-- 설계 원칙:
-  - Supervisor가 전체 흐름을 제어한다.
-  - Sub-Agent는 단일 책임 원칙에 따라 역할을 분리한다.
-  - 외부 데이터 접근은 service/repository/provider 계층을 통해 수행한다.
-  - 오류는 표준 contract로 정규화해 downstream에 전달한다.
+- 목적: 현재 구현된 FinAgent-SME 컴포넌트와 책임을 설명한다
+- 원칙:
+  - API는 얇게 유지한다
+  - 오케스트레이터가 흐름을 제어한다
+  - agent는 단일 책임에 가깝게 유지한다
+  - 공통 메타데이터는 contract로 표준화한다
 
 ## 2. 상위 아키텍처
 
 ```mermaid
 flowchart LR
     User[심사 담당자]
-    UI[Streamlit Frontend]
-    API[FastAPI API]
-    SUP[Supervisor<br/>WorkflowOrchestrator]
-    AGENTS[Sub-Agents]
+    UI[Streamlit UI]
+    API[FastAPI]
+    ORCH[WorkflowOrchestrator]
+    AGENTS[Agents]
     DATA[(PostgreSQL)]
-    EXT[외부 API/LLM]
+    EXT[External APIs]
     OBS[Langfuse]
 
     User --> UI
     UI --> API
-    API --> SUP
-    SUP --> AGENTS
+    API --> ORCH
+    ORCH --> AGENTS
     AGENTS --> DATA
     AGENTS --> EXT
     API --> OBS
-    SUP --> OBS
+    ORCH --> OBS
     AGENTS --> OBS
 ```
 
@@ -37,128 +37,123 @@ flowchart LR
 
 | 계층 | 컴포넌트 | 책임 |
 | --- | --- | --- |
-| Presentation | Streamlit Frontend | 회사명 입력, 헬스 체크, 결과 표시 |
-| API | FastAPI Router | 입력 검증, request_id 바인딩, HTTP 응답 매핑 |
-| Orchestration | `WorkflowOrchestrator`, `WorkflowGraphBuilder` | Supervisor 역할, Agent 실행 순서/분기/병합 관리 |
-| Agent | `CompanyResolverAgent` | 대상 기업 여부 확인 |
-| Agent | `NewsCollectorAgent` | 뉴스 수집, 요약, 적재, downstream 뉴스 컨텍스트 생성 |
-| Agent | `FinancialAnalystAgent` | 재무제표/비율/추세/grade cap 분석 |
-| Agent | `IndustryAnalystAgent` | 업종 매핑, 산업 평균, 업황/거시 분석 |
-| Agent | `RiskEventAgent` | 뉴스/공시/법적/재무 이상 징후 통합 |
-| Agent | `DecisionAgent` | 신용등급, 승인 판단, 한도 추천, 설명 생성 |
-| Agent | `ReportAgent` | 최종 리포트 생성 |
-| Agent | `ValidationAgent` | 최종 결과 검증 및 Langfuse score 기록 |
-| Agent | `MultiModalDocumentAgent` | PDF/문서 분석 |
-| Domain Service | `company_lookup`, `company_registry_pipeline` | 유스케이스 수준 데이터 처리 |
-| Repository | `company_master`, `financial_feature`, `company_registry` | DB 조회/저장 |
-| Tool/Provider | `financial.py`, `industry.py`, `news.py`, provider classes | 외부 데이터/분석 로직 제공 |
-| Observability | Langfuse, logging | trace, span, tool 실행 추적 |
+| Presentation | Streamlit UI | 회사명 입력, 결과 렌더링 |
+| API | FastAPI Router | 요청 검증, request_id 바인딩, HTTP 매핑 |
+| Orchestration | `WorkflowOrchestrator` | 그래프 실행, 상태 계산, 응답 조립 |
+| Agent | `CompanyResolverAgent` | 기업 식별 |
+| Agent | `NewsCollectorAgent` | 뉴스 수집/요약/적재 |
+| Agent | `FinancialAnalystAgent` | 재무 분석 |
+| Agent | `IndustryAnalystAgent` | 산업/거시 분석 |
+| Agent | `RiskEventAgent` | 이벤트 탐지 |
+| Agent | `DecisionAgent` | 등급/판단/한도 산출 |
+| Agent | `ReportAgent` | 보고서 생성 |
+| Agent | `ValidationAgent` | 결과 검증과 score 기록 |
+| Data | Repository / Service | DB 조회/저장, use-case 처리 |
+| Observability | Logging / Langfuse | 요청 추적과 품질 score |
 
-## 4. Supervisor 설계
+## 4. 오케스트레이터 설계
 
-### 4.1 역할
+### 역할
 
-- 요청 단위 컨텍스트 생성
-- Agent 프로토콜 검증
-- 실행 그래프 빌드
-- 병렬 및 의존 관계 관리
-- 실패/부분성공/정상종료 상태 계산
-- 최종 응답 조립
+- payload를 초기 context로 변환
+- agent 프로토콜 검증
+- LangGraph 노드/엣지 구성
+- step 결과를 공통 형식으로 기록
+- 최종 `context`와 `steps`를 반환
 
-### 4.2 실행 그래프 규칙
+### 그래프 규칙
 
-| 단계 | 설명 |
+| 구분 | 노드 |
 | --- | --- |
-| Resolver | `CompanyResolverAgent` 실행 후 대상 기업 여부 판별 |
-| 병렬 시작 | `news_collector`, `financial_analyst`, 선택적 `multimodal_document` |
-| 의존 노드 | `risk_event`는 `news_collector` 이후, `industry_analyst`는 `financial_analyst` 이후 |
-| 순차 종료 | `decision` -> `report` -> `validation` |
+| Resolver | `company_resolver` |
+| 시작 노드 | `news_collector`, `financial_analyst` |
+| 의존 노드 | `risk_event`, `industry_analyst` |
+| 후속 노드 | `decision`, `report`, `validation` |
 
-## 5. Sub-Agent 설계
+### 상태 계산
 
-### 5.1 CompanyResolverAgent
+- `build_result()`가 최종 응답을 조립한다
+- 기업 미존재 시 `not_target`
+- 나머지는 `steps[*].ok` 집계로 `success/partial/failed`
+
+## 5. 주요 agent 설계
+
+### `CompanyResolverAgent`
 
 - 입력: `company_name`
-- 출력: `company_found`, `corp_code`, `corp_name`
-- 저장소: `sme_list`
-- 실패 정책: 공백 입력 시 예외, 미존재 시 `not_target`
+- 의존성: `company_lookup` service
+- 출력: `company_found`, `corp_code`, `corp_name`, `company_profile`
 
-### 5.2 NewsCollectorAgent
+### `NewsCollectorAgent`
 
-- 입력: `company_name`, `corp_name`, `stock_code`
-- 내부 컴포넌트: `ToolNewsCollectionProvider`, `backend.tools.news`
-- 출력: `news_data`, `news_result`, `news_tool_runs`, `news_tool_errors`
-- 특이사항: DB 적재와 downstream 뉴스 컨텍스트를 동시에 생성
+- 입력: 기업 식별 정보, 옵션성 수집 파라미터
+- 의존성: `backend/tools/news.py`
+- 출력: `news_result`, `news_data`, `news_tool_runs`, `news_tool_errors`
 
-### 5.3 FinancialAnalystAgent
+### `FinancialAnalystAgent`
 
-- 입력: `corp_code`
-- 내부 컴포넌트: 재무 provider, 재무 비율/추세/리스크 필터
-- 출력: `financial_statements`, `financial_ratios`, `grade_cap`
-- 실패 정책: tool 단위 fallback 지원
+- 입력: `corp_code`, 선택적 `target_year`
+- 의존성: `FinancialDataProvider`
+- 출력: `financial_statements`, `financial_ratios`, `financial_trend`, `grade_cap`
 
-### 5.4 IndustryAnalystAgent
+### `IndustryAnalystAgent`
 
 - 입력: `corp_code`, `financial_ratios`
-- 내부 컴포넌트: 업종 매핑, 산업 평균, 경기/거시 도구
-- 출력: `industry_summary`, `peer_comparison`, `macro_indicators`
+- 의존성: `IndustryDataProvider`
+- 출력: `industry_summary`, `industry_outlook`, `business_cycle`, `macro_indicators`
 
-### 5.5 RiskEventAgent
+### `RiskEventAgent`
 
-- 입력: `news_data`, `disclosure_data`, `court_data`, `corp_code`
-- 내부 컴포넌트: 키워드, 감성, 공시, 법적, 재무 이상 핸들러
-- 출력: `overall_risk_level`, 이벤트 카운트, 타임라인, 분류 이벤트
-- 특이사항: 내부 LangGraph에서 핸들러를 병렬 수행
+- 입력: `news_data`, `corp_code`, `company_name`
+- 출력: `overall_risk_level`, 이벤트 카운트, 처리 오류 정보
 
-### 5.6 DecisionAgent
+### `DecisionAgent`
 
-- 입력: 병합된 재무/산업/리스크/문서 컨텍스트
-- 내부 컴포넌트: 등급 계산, 승인 판단, 한도 추천, 설명 생성
+- 입력: 리스크/재무/산업 context
 - 출력: `decision`, `credit_grade`, `credit_score`, `recommended_limit`, `explanation`
 
-### 5.7 ReportAgent
+### `ReportAgent`
 
-- 입력: Decision 결과와 주요 근거
-- 출력: 최종 `report`
-- 실패 정책: explanation 부족 시 summary/recommendation fallback
+- 입력: 판단 결과와 explanation
+- 출력: `report`
+- 특이사항: explanation 부족 시 fallback summary/recommendation 생성
 
-### 5.8 ValidationAgent
+### `ValidationAgent`
 
 - 입력: `decision`, `credit_grade`, `recommended_limit`, `report`
 - 출력: `validation_result`
-- 검증 항목: 결과 계약, 리포트 정합성, 거절 시 한도 규칙
-- 관측성: Langfuse trace score 기록
+- 특이사항: Langfuse score는 활성화된 경우만 기록
 
-## 6. 데이터 계층 설계
+## 6. 데이터 계층
 
-| 계층 | 책임 |
+| 계층 | 역할 |
 | --- | --- |
-| `backend/data/db.py` | DB 연결 정보 해석, 테이블 상수 제공 |
-| Repository | SQL 실행, 테이블 존재 여부 확인, 오류 메시지 표준화 |
-| Service | 비즈니스 의미 있는 조회/배치 유스케이스 제공 |
+| `backend/data/db.py` | DB URL 해석, 테이블명 상수 |
+| `repositories/` | SQL 조회, DataFrame append/save |
+| `services/` | 기업 조회, DART 파이프라인 orchestration |
 
-## 7. 관측성 설계
+## 7. 관측성
 
-| 수단 | 적용 위치 | 목적 |
+| 수단 | 위치 | 목적 |
 | --- | --- | --- |
-| 구조화 로깅 | API, Orchestrator, Agent, Tool | 운영 추적, request_id 연동 |
-| Langfuse Trace | Workflow 루트 | 요청 단위 실행 흐름 추적 |
-| Langfuse Observation | Agent/Tool/LLM 호출 | 병목, fallback, generation 분석 |
-| Langfuse Score | Validation Agent | 품질 지표(`validation_pass_rate` 등) 기록 |
-| `steps` 메타데이터 | 최종 응답 | 단계별 상태와 fallback 근거 노출 |
+| 구조화 로깅 | API, orchestrator, agent | 운영 추적 |
+| Langfuse trace | workflow root | 요청 단위 추적 |
+| Langfuse observation | agent/tool | 세부 실행 가시성 |
+| Langfuse score | validation | 품질 수치 기록 |
+| `steps` | API 응답 | step 수준 디버깅 정보 제공 |
 
-## 8. 배포/실행 구성
+## 8. 실행 구성
 
 | 구성요소 | 현재 방식 |
 | --- | --- |
 | Backend | `uvicorn backend.main:app` |
 | Frontend | Streamlit |
-| Database | `backend/docker-compose.yml`의 PostgreSQL |
-| Batch | `scripts/setup-db.sh build` |
+| DB | `backend/docker-compose.yml`의 PostgreSQL |
+| DB Build | `scripts/setup-db.sh build` |
 
-## 9. 확장 포인트
+## 9. 현재 확장 포인트
 
-- Supervisor에 신규 Agent 노드 추가
-- MCP/A2A 연동용 adapter 계층 추가
-- Validation Agent 및 evaluation pipeline 추가
-- vLLM 기반 사내/온프레미스 LLM provider 추가
+- 공개 API body 확장 (`pdf_path`, `continue_on_error` 등)
+- 추가 agent 노드 연결
+- UI 업로드/진행상태 기능
+- 운영성 테이블(`workflow_runs` 등) 추가

@@ -2,71 +2,85 @@
 
 ## 목적
 
-워크플로우 변경 시 기능 회귀를 방지하고, 심사 결과의 일관성을 보장한다.
+워크플로우 회귀를 빠르게 감지하고, agent 간 계약이 깨지지 않도록 보장한다.
 
 ## 테스트 범위
 
-### 1) 단위 테스트 (Unit)
+### Unit
 
-- 대상: Agent 단일 로직, 유틸 함수, 상태 계산 함수
-- 외부 의존성(DB, API, 파일, LLM)은 mocking 한다
-- 빠르고 결정론적인 테스트를 작성한다
+- 대상: handler, utility, repository helper, 설정/계약 함수
+- 외부 의존성은 mocking 한다
+- 빠르고 결정론적으로 유지한다
 
-### 2) 통합 테스트 (Integration)
+### Integration
 
-- 대상: Orchestrator + 다수 Agent 조합
-- 병렬 단계 결과 병합, 상태값 계산, 실패 전파를 검증한다
-- `continue_on_error` on/off 시나리오를 모두 검증한다
-- 각 단계 결과에 `status`, `error_code`, `fallback_used`, `latency_ms`가 남는지 검증한다
+- 대상: orchestrator와 다수 agent 조합
+- 그래프 의존 관계와 context 병합을 검증한다
+- `continue_on_error` on/off 동작을 검증한다
+- `steps` 공통 메타데이터를 검증한다
 
-### 3) API 테스트
+### API
 
-- 대상: FastAPI 엔드포인트 입력/출력 계약
-- 유효 입력, 무효 입력, 내부 오류 매핑(4xx/5xx)을 검증한다
-- 응답 스키마 및 에러 포맷 일관성을 검증한다
+- 대상: FastAPI 엔드포인트 계약
+- `request_id` 헤더/응답 연동
+- `400`/`500` 오류 매핑
+- `company_name` 입력 검증을 확인한다
 
-## 필수 테스트 시나리오
+### CLI / Manual
 
-- 정상 흐름: 전체 단계 성공 시 `status=success`
-- 부분 실패 흐름: 일부 Agent 실패 + `continue_on_error=true` 시 `status=partial`
-- 실패 흐름: 핵심 단계 실패 시 `status=failed`
-- 미구성 흐름: Agent 미등록 시 `status=not_configured`
-- 입력 검증: 빈 `company_name` 요청 실패
-- 공통 실패 계약: 모든 step에 실행 메타데이터 존재
+- shell 스크립트와 DB 구축 CLI를 검증한다
+- 외부 API를 직접 치는 검증은 `tests/manual/`에 둔다
 
-## 파일/네이밍 규칙
+## 현재 필수 시나리오
 
-- 테스트 위치: `tests/`
-- 권장 하위 폴더:
-  - `tests/unit/`
-  - `tests/integration/`
-  - `tests/api/`
-  - `tests/cli/`
-  - `tests/manual/`
-- 파일명: `test_<target>.py`
-- 함수명: `test_<condition>_<expected>`
+- 정상 흐름: `status=success`
+- 대상 기업 미존재: `status=not_target`
+- 일부 step 실패 + 기본 정책: downstream 중단, 최종 `status=partial`
+- 일부 step 실패 + `continue_on_error=True`: 후속 단계 지속, 최종 `status=partial`
+- 빈/공백 `company_name`: API `400`
+- 모든 step에 `status`, `error_code`, `fallback_used`, `latency_ms` 존재
 
-예시:
-- `test_orchestrator_all_steps_success`
-- `test_orchestrator_partial_when_one_agent_fails`
+주의:
+
+- 현재 공개 workflow 상태값에는 `not_configured`가 없다.
+- agent 단위 `partial`은 존재하지만, 전체 workflow 상태는 `step.ok` 기준으로 계산된다.
+
+## 디렉터리 규칙
+
+- `tests/unit/`
+- `tests/integration/`
+- `tests/api/`
+- `tests/cli/`
+- `tests/manual/`
+
+파일명:
+
+- `test_<target>.py`
+
+함수명:
+
+- `test_<condition>_<expected>`
 
 ## 작성 규칙
 
-- Arrange-Act-Assert 패턴을 유지한다
-- 테스트 하나는 하나의 기대 동작만 검증한다
-- flaky test 금지 (시간/외부 상태 의존 최소화)
-- 버그 수정 시 회귀 테스트를 반드시 추가한다
+- Arrange-Act-Assert 패턴 유지
+- 테스트 하나는 하나의 기대 동작에 집중
+- flaky test 금지
+- 버그 수정 시 회귀 테스트 추가
 
 ## 실행 명령
 
-- 전체 테스트: `pytest tests/`
-- 빠른 확인(선택): `pytest tests/ -q`
+```bash
+./tests/run_all_tests.sh
+.venv/bin/pytest -o cache_dir=.cache/pytest tests/
+.venv/bin/pytest -q tests/
+```
 
-## PR 품질 게이트
+## 품질 게이트
 
-- 새 기능에는 테스트를 반드시 포함한다
-- 기존 기능 변경 시 영향 범위 테스트를 갱신한다
-- 최소 체크:
-  - `ruff check backend`
-  - `cd frontend && npm run lint`
-  - `pytest tests/`
+```bash
+.venv/bin/ruff check backend frontend tests
+.venv/bin/pytest -o cache_dir=.cache/pytest tests/
+```
+
+현재 프론트엔드는 Streamlit 앱이므로 별도 `npm run lint` 게이트는 적용되지 않는다.

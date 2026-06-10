@@ -1,200 +1,246 @@
 # FinAgent-SME
 
-FinAgent-SME는 중소기업 대상 B2B 거래 리스크 심사를 지원하는 멀티 에이전트 시스템입니다. 은행·금융기관 심사 담당자가 기업 정보를 빠르게 수집하고, 오케스트레이터 기반 워크플로우를 실행해 심사 판단에 필요한 결과를 확인하는 것을 목표로 합니다.
+FinAgent-SME는 중소기업 대상 B2B 거래 리스크 심사를 지원하는 멀티 에이전트 시스템입니다. 현재 저장소는 FastAPI 백엔드, Streamlit 프론트엔드, PostgreSQL 기반 기업/재무 데이터 저장소, LangGraph 오케스트레이터를 포함합니다.
 
-## 현재 상태
+## 현재 구현 상태
 
-- 백엔드: FastAPI API와 에이전트 모듈 제공
-- 프론트엔드: Streamlit 검색/리포트 UI 제공
-- 기본 실행 흐름: 프론트 `검색` 버튼 -> `/api/v1/workflows/orchestrator` -> `run_credit_workflow()`
-- 현재 오케스트레이터 흐름:
-  - `CompanyResolverAgent`로 대상 기업 여부 판별
-  - 병렬 분석: `NewsCollectorAgent`, `FinancialAnalystAgent`, `IndustryAnalystAgent`, `RiskEventAgent`
-  - 후속 단계: `DecisionAgent`, `ReportAgent`, `ValidationAgent`
-  - 선택 단계: `pdf_path`가 있을 때 `MultiModalDocumentAgent`
+- 실시간 심사 진입점: `POST /api/v1/workflows/orchestrator`
+- 기본 UI: Streamlit 검색/리포트 화면
+- 오케스트레이터 흐름:
+  1. `CompanyResolverAgent`
+  2. 시작 분석 노드: `NewsCollectorAgent`, `FinancialAnalystAgent`
+  3. 의존 분석 노드: `RiskEventAgent`(`news_collector` 이후), `IndustryAnalystAgent`(`financial_analyst` 이후)
+  4. 후속 단계: `DecisionAgent` -> `ReportAgent` -> `ValidationAgent`
+- 선택 기능: 내부 워크플로우 payload에 `pdf_path`가 있을 때 `MultiModalDocumentAgent` 추가 가능
+- 관측성: `request_id` 기반 구조화 로그, Langfuse trace/score 연동 지원
 
-기업 마스터/재무 DB 구축용 배치 에이전트는 `company_registry`, 런타임 뉴스 수집은 `news_collector`로 분리되어 있습니다.
+현재 공개 HTTP API 스키마는 `company_name`만 받습니다. `pdf_path`, `continue_on_error` 같은 옵션은 코드 레벨 확장 포인트로는 존재하지만, 공개 요청 스키마에는 아직 노출되지 않았습니다.
 
 ## 저장소 구조
 
 ```text
 FinAgent-SME/
-├── backend/     # FastAPI, 에이전트, 오케스트레이터, DB compose
+├── backend/     # FastAPI, agent, orchestrator, data/integration 계층
 ├── frontend/    # Streamlit UI
-├── tests/       # pytest 및 수동 검증용 테스트 자료
-├── docs/        # 규칙, 워크플로우, 설계 문서
-├── scripts/     # 로컬 실행/세팅 스크립트 모음
+├── docs/        # 설계/규칙 문서
+├── scripts/     # 로컬 실행/세팅 스크립트
+├── tests/       # pytest 및 수동 검증 자료
 └── requirements.txt
 ```
 
-`backend/`는 현재 역할 기준으로 단순하게 묶여 있습니다.
+## 핵심 디렉터리
 
-- `common/`: env, settings, logging, 공통 agent/runtime 유틸
-- `agents/`: 워크플로우별 agent 엔트리포인트
-- `tools/`: 재무/산업/뉴스/기업구축 도구와 프롬프트
-- `data/`: DB 연결, repository, service 계층
-- `api/`, `integrations/`, `schemas/`, `scripts/`: API/외부연동/계약/실행 진입점
-
-## 설계 문서
-
-- 워크플로우 기준 문서: `docs/domain/workflows.md`
-- 유스케이스 명세서: `docs/design/use-case-specification.md`
-- 컴포넌트 설계서: `docs/design/component-design.md`
-- 인터페이스 정의서: `docs/design/interface-definition.md`
-- 시퀀스 다이어그램: `docs/design/sequence-diagram.md`
-- ERD: `docs/design/erd.md`
+- `backend/common`: env, settings, logging, 공통 contract/provider/tool runtime
+- `backend/agents`: 개별 agent와 orchestrator
+- `backend/data`: DB 연결, repository, service
+- `backend/integrations`: DART/ECOS/KOSIS 클라이언트
+- `backend/tools`: 재무/산업/뉴스/기업구축 로직
+- `frontend/views`: 검색/리포트 화면
 
 ## 요구사항
 
-- Python 3.13+
-- Docker Desktop 또는 `docker compose`
-- OpenDART, OpenAI, ECOS, KOSIS 사용 시 해당 API 키
+- Python `3.13+`
+- Docker Desktop 또는 `docker compose` (로컬 PostgreSQL 사용 시)
+- 선택적 외부 키:
+  - `OPEN_AI_API_KEY`
+  - `OPEN_DART_API_KEY`
+  - `ECOS_API_KEY`
+  - `KOSIS_API_KEY`
+  - `LANGFUSE_PUBLIC_KEY`
+  - `LANGFUSE_SECRET_KEY`
 
-## 실행 방법
+현재 프론트엔드는 Node.js 빌드 없이 Streamlit으로 실행됩니다.
 
-> [!IMPORTANT]
-> 아래 모든 명령은 프로젝트 루트 `FinAgent-SME/`에서 실행합니다.
+## 환경 변수
 
-### 1. 환경 변수 준비
-
-백엔드 설정은 주로 `backend/.env`를 사용합니다.
+프로젝트는 주로 `backend/.env`를 읽습니다. 예시 파일은 저장소에 포함되어 있지 않으므로 직접 생성해야 합니다.
 
 ```env
 OPEN_AI_API_KEY=...
 OPEN_DART_API_KEY=...
 ECOS_API_KEY=...
 KOSIS_API_KEY=...
-DATABASE_URL=...
+DATABASE_URL=postgresql+psycopg2://finagent:finagent@localhost:5432/finagent
+
+# DATABASE_URL 대신 아래 조합도 사용 가능
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_USER=finagent
+POSTGRES_PASSWORD=finagent
+POSTGRES_DB=finagent
+
 LANGFUSE_PUBLIC_KEY=...
 LANGFUSE_SECRET_KEY=...
 LANGFUSE_BASE_URL=https://cloud.langfuse.com
 LANGFUSE_TRACING_ENVIRONMENT=development
 ```
 
-시작 전 예시 파일이 필요하면 다음처럼 준비합니다.
+## 실행 방법
 
-```bash
-cp backend/.env.example backend/.env
-```
+모든 명령은 프로젝트 루트에서 실행합니다.
 
-> [!NOTE]
-> `DATABASE_URL`을 직접 넣지 않아도 `backend/docker-compose.yml`의 기본 PostgreSQL 설정으로 로컬 실행은 가능합니다.
-> 외부 DB를 쓰거나 포트를 바꾸는 경우에는 `backend/.env` 값도 함께 맞춰주세요.
-
-### 2. 환경 세팅만 먼저 하기
-
-가상환경 생성과 Python 의존성 설치만 먼저 하려면 아래 명령을 실행합니다.
+### 1. 가상환경과 의존성 설치
 
 ```bash
 ./scripts/setup-env.sh
 ```
 
-> [!TIP]
-> 테스트 실행이나 코드 확인이 목적이라면 이 단계만 먼저 해도 됩니다.
-
-### 3. DB만 실행하기
-
-PostgreSQL 컨테이너만 따로 실행하려면 아래 명령을 사용합니다.
+### 2. PostgreSQL 실행
 
 ```bash
 ./scripts/setup-db.sh up
-```
-
-DB 상태 확인, 로그 확인, 종료 명령은 아래와 같습니다.
-
-```bash
 ./scripts/setup-db.sh status
 ./scripts/setup-db.sh logs
+```
+
+중지:
+
+```bash
 ./scripts/setup-db.sh down
 ```
 
-기업 마스터/재무 DB를 실제로 채우려면 DB를 띄운 뒤 아래 명령을 실행합니다.
+### 3. 기업/재무 데이터 적재
 
 ```bash
 ./scripts/setup-db.sh build --year 2024 --sample-size 10
 ```
 
-> [!WARNING]
-> `build`는 DART 기반 수집과 DB 저장을 수행하므로 API 키, 네트워크, DB 연결 상태가 모두 준비되어 있어야 합니다.
+이 파이프라인은 `sme_list`, `company_profiles`, `financial_features`, `financial_error_logs`를 생성하거나 갱신합니다.
 
-### 4. 백엔드와 프론트엔드만 실행하기
-
-DB가 이미 떠 있는 상태에서 앱 서버만 실행하려면 아래 명령을 사용합니다.
+### 4. 백엔드와 프론트 실행
 
 ```bash
 ./scripts/run-server.sh up
-```
-
-상태 확인, 로그 확인, 종료 명령은 아래와 같습니다.
-
-```bash
 ./scripts/run-server.sh status
 ./scripts/run-server.sh logs
+```
+
+중지:
+
+```bash
 ./scripts/run-server.sh down
 ```
 
-> [!NOTE]
-> `run-server.sh up`는 환경 세팅까지 확인한 뒤 백엔드와 프론트를 실행합니다.
-> 다만 DB는 자동으로 올리지 않으므로 먼저 `./scripts/setup-db.sh up`을 실행해야 검색 기능이 정상 동작합니다.
-
-### 5. 전체를 한 번에 실행하기
-
-환경 세팅, PostgreSQL, 백엔드, 프론트엔드를 한 번에 올리려면 아래 명령을 사용합니다.
+### 5. 전체 스택 한 번에 실행
 
 ```bash
 ./scripts/run-all.sh up
-```
-
-전체 상태 확인과 종료는 아래 명령을 사용합니다.
-
-```bash
 ./scripts/run-all.sh status
+./scripts/run-all.sh logs
 ./scripts/run-all.sh down
 ```
 
-> [!TIP]
-> 처음 프로젝트를 띄워보는 경우에는 `./scripts/run-all.sh up`가 가장 단순한 시작 방법입니다.
-
-### 6. 개발 모드로 개별 실행하기
-
-스크립트 대신 프로세스를 직접 띄우고 싶다면 아래 순서로 실행할 수 있습니다.
+### 6. 개별 개발 실행
 
 ```bash
 ./scripts/setup-env.sh
 ./scripts/setup-db.sh up
-./scripts/setup-db.sh build --year 2024 --sample-size 10
 ./.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
-cd frontend && ../.venv/bin/python -m streamlit run main.py --server.address 0.0.0.0 --server.port 8501
+cd frontend
+../.venv/bin/python -m streamlit run main.py --server.address 0.0.0.0 --server.port 8501
 ```
 
-### 7. 접속 주소
+## 접속 주소
 
 - Backend: `http://localhost:8000`
-- Frontend: `http://localhost:8501`
 - Swagger: `http://localhost:8000/docs`
+- Frontend: `http://localhost:8501`
 
-## 자주 쓰는 명령
+## API 요약
 
-```bash
-./scripts/setup-env.sh
-./scripts/setup-db.sh up
-./scripts/setup-db.sh build --sample-size 10
-./scripts/setup-db.sh status
-./scripts/setup-db.sh down
-./scripts/run-server.sh up
-./scripts/run-server.sh status
-./scripts/run-server.sh logs
-./scripts/run-server.sh down
-./scripts/run-all.sh up
-./scripts/run-all.sh down
+### `GET /`
+
+```json
+{
+  "service": "finagent-sme",
+  "docs": "/docs",
+  "health": "/api/health"
+}
+```
+
+### `GET /api/health`
+
+```json
+{
+  "status": "ok"
+}
+```
+
+### `POST /api/v1/workflows/orchestrator`
+
+요청:
+
+```json
+{
+  "company_name": "테스트기업"
+}
+```
+
+성공 응답 예시:
+
+```json
+{
+  "request_id": "req-123456789abc",
+  "company_name": "테스트기업",
+  "status": "success",
+  "context": {
+    "corp_code": "00123456",
+    "corp_name": "테스트기업",
+    "decision": "approve",
+    "credit_grade": "A",
+    "report": {}
+  },
+  "steps": []
+}
+```
+
+`decision`, `credit_grade`, `report`, `validation_result` 같은 최종 산출물은 현재 `context` 내부에 들어갑니다.
+
+`not_target` 예시:
+
+```json
+{
+  "request_id": "req-123456789abc",
+  "company_name": "없는기업",
+  "status": "not_target",
+  "code": "COMPANY_NOT_FOUND",
+  "message": "대상 기업이 아닙니다.",
+  "context": {
+    "company_found": false,
+    "workflow_code": "COMPANY_NOT_FOUND"
+  },
+  "steps": []
+}
+```
+
+오류 응답 예시:
+
+```json
+{
+  "code": "INVALID_INPUT",
+  "message": "입력값이 올바르지 않습니다.",
+  "detail": {
+    "company_name": "   "
+  },
+  "request_id": "req-123456789abc"
+}
 ```
 
 ## 테스트와 품질 확인
 
 ```bash
-.venv/bin/pytest tests/
-.venv/bin/pytest tests/ --cov=backend --cov-report=term-missing --cov-fail-under=40
+./tests/run_all_tests.sh
+.venv/bin/pytest -o cache_dir=.cache/pytest tests/
 .venv/bin/ruff check backend frontend tests
 ```
 
-GitHub Actions CI(`.github/workflows/ci.yml`)에서도 PR/Push마다 `ruff`와 coverage gate 포함 `pytest`를 자동 실행합니다.
+`frontend/`는 현재 Python Streamlit 앱이므로 `npm run lint` 대상이 아닙니다.
+
+## 관련 문서
+
+- [워크플로우](docs/domain/workflows.md)
+- [유스케이스 명세](docs/design/use-case-specification.md)
+- [컴포넌트 설계](docs/design/component-design.md)
+- [인터페이스 정의](docs/design/interface-definition.md)
+- [시퀀스 다이어그램](docs/design/sequence-diagram.md)
+- [ERD](docs/design/erd.md)
