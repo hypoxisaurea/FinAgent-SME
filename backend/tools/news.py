@@ -10,6 +10,7 @@ from typing import Any
 from urllib.parse import quote_plus
 
 import requests
+from backend.common.api_client import build_llm_client_kwargs, get_model_name
 from backend.common.env import load_backend_env
 from backend.common.langfuse import build_openai_trace_kwargs, get_openai_class
 from backend.tools.prompts.news import NEWS_SUMMARY_PROMPT_TEMPLATE
@@ -50,7 +51,7 @@ DEFAULT_PAGE_SIZE = 20
 DEFAULT_REQUEST_TIMEOUT = 10
 DEFAULT_LIST_DELAY_SEC = 0.4
 DEFAULT_CONTENT_DELAY_SEC = 1.0
-DEFAULT_SUMMARY_MODEL = "gpt-4o-mini"
+DEFAULT_SUMMARY_MODEL = get_model_name()
 DEFAULT_SUMMARIZE = True
 
 DEFAULT_HEADERS = {
@@ -470,18 +471,8 @@ def extract_daum_news_contents(
 
 
 def get_openai_client() -> Any:
-    api_key = (
-        os.environ.get("OPEN_AI_API_KEY", "").strip()
-        or os.environ.get("OPENAI_API_KEY", "").strip()
-        or os.environ.get("OPEN_API_KEY", "").strip()
-    )
-    if not api_key:
-        raise RuntimeError(
-            "OpenAI API 키가 설정되어 있지 않습니다. "
-            "OPEN_AI_API_KEY 또는 OPENAI_API_KEY를 확인해주세요."
-        )
     client_class = get_openai_class()
-    return client_class(api_key=api_key)
+    return client_class(**build_llm_client_kwargs())
 
 
 def get_llm_summary(

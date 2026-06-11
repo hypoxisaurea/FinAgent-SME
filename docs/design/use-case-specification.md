@@ -16,7 +16,7 @@
 | WorkflowOrchestrator | agent 실행 순서와 상태를 관리하는 supervisor |
 | Agent | 개별 분석/판단/검증 담당 컴포넌트 |
 | PostgreSQL | 기업 마스터, 기업개황, 재무, 뉴스 저장소 |
-| 외부 API | OpenAI, OpenDART, ECOS, KOSIS, Daum News |
+| 외부 API | OpenRouter, OpenDART, ECOS, KOSIS, Daum News |
 | Langfuse | trace, observation, score 저장 |
 
 ## 3. 핵심 유스케이스

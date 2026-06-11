@@ -172,7 +172,7 @@ class Agent(Protocol):
 
 | 시스템 | 사용 위치 |
 | --- | --- |
-| OpenAI API | 뉴스 요약, 판단 설명, 일부 분석 |
+| OpenRouter API | 뉴스 요약, 판단 설명, 일부 분석 |
 | OpenDART | 기업/재무 데이터 수집 |
 | ECOS | 거시 지표 조회 |
 | KOSIS | 업황 지표 조회 |

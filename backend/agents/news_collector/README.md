@@ -77,7 +77,7 @@
 
 - Daum News
 - PostgreSQL
-- OpenAI 요약 사용 시 `OPEN_AI_API_KEY`
+- OpenRouter 요약 사용 시 `OPEN_ROUTER_API_KEY`
 
 ## 테스트
 

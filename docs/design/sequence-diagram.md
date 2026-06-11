@@ -38,7 +38,7 @@ sequenceDiagram
         par 시작 분석 노드
             ORCH->>NEWS: run(payload)
             NEWS->>DB: sme_list / daum_news_articles
-            NEWS->>EXT: Daum News / OpenAI
+            NEWS->>EXT: Daum News / OpenRouter
             NEWS-->>ORCH: news_data, news_result
         and
             ORCH->>FIN: run(payload)
@@ -48,7 +48,7 @@ sequenceDiagram
         end
 
         ORCH->>RISK: run(news_data, corp_code)
-        RISK->>EXT: risk handlers / OpenAI
+        RISK->>EXT: risk handlers / OpenRouter
         RISK-->>ORCH: overall_risk_level
 
         ORCH->>IND: run(financial_ratios, corp_code)
