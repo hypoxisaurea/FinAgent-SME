@@ -78,6 +78,7 @@ backend/
 
 ### `common/`
 
+- `env.py`: `backend/.env` 해석의 canonical source
 - `settings.py`: 앱 설정
 - `logging.py`: request_id 기반 구조화 로깅
 - `contracts.py`: agent 공통 실행 contract
@@ -140,6 +141,9 @@ POSTGRES_DB=...
 LANGFUSE_PUBLIC_KEY=...
 LANGFUSE_SECRET_KEY=...
 ```
+
+- 신규 LLM 설정은 `OPEN_ROUTER_API_KEY` 기준입니다.
+- `OPEN_AI_API_KEY`, `OPENAI_API_KEY`, `OPEN_API_KEY`는 레거시 호환용 fallback입니다.
 
 ## 실행
 

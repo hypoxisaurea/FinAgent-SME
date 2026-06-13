@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from backend.common import api_client
 from backend.tools import news
 
@@ -64,6 +66,16 @@ def test_build_llm_client_kwargs_falls_back_to_legacy_openai_key(monkeypatch) ->
         "api_key": "sk-openai",
         "timeout": 30,
     }
+
+
+def test_get_llm_client_config_error_guides_primary_and_legacy_envs(monkeypatch) -> None:
+    _clear_llm_env(monkeypatch)
+
+    with pytest.raises(EnvironmentError) as exc_info:
+        api_client.get_llm_client_config()
+
+    assert "OPEN_ROUTER_API_KEY" in str(exc_info.value)
+    assert "OPEN_AI_API_KEY" in str(exc_info.value)
 
 
 def test_news_get_openai_client_uses_open_router_kwargs(monkeypatch) -> None:

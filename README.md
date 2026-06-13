@@ -42,12 +42,14 @@ FinAgent-SME/
 - Python `3.13+`
 - Docker Desktop 또는 `docker compose` (로컬 PostgreSQL 사용 시)
 - 선택적 외부 키:
-  - `OPEN_AI_API_KEY`
+  - `OPEN_ROUTER_API_KEY`
   - `OPEN_DART_API_KEY`
   - `ECOS_API_KEY`
   - `KOSIS_API_KEY`
   - `LANGFUSE_PUBLIC_KEY`
   - `LANGFUSE_SECRET_KEY`
+
+LLM 호출은 기본적으로 OpenRouter 설정을 사용합니다. `OPEN_AI_API_KEY`, `OPENAI_API_KEY`, `OPEN_API_KEY`는 레거시 호환용 fallback이며 신규 설정에는 권장하지 않습니다.
 
 현재 프론트엔드는 Node.js 빌드 없이 Streamlit으로 실행됩니다.
 
@@ -56,7 +58,9 @@ FinAgent-SME/
 프로젝트는 주로 `backend/.env`를 읽습니다. 예시 파일은 저장소에 포함되어 있지 않으므로 직접 생성해야 합니다.
 
 ```env
-OPEN_AI_API_KEY=...
+OPEN_ROUTER_API_KEY=...
+OPEN_ROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPEN_ROUTER_MODEL=openai/gpt-4o-mini
 OPEN_DART_API_KEY=...
 ECOS_API_KEY=...
 KOSIS_API_KEY=...
@@ -73,6 +77,11 @@ LANGFUSE_PUBLIC_KEY=...
 LANGFUSE_SECRET_KEY=...
 LANGFUSE_BASE_URL=https://cloud.langfuse.com
 LANGFUSE_TRACING_ENVIRONMENT=development
+
+# 레거시 호환 변수 (신규 설정 비권장)
+# OPEN_AI_API_KEY=...
+# OPENAI_API_KEY=...
+# OPEN_API_KEY=...
 ```
 
 ## 실행 방법

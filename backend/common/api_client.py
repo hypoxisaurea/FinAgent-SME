@@ -32,6 +32,8 @@ logger = logging.getLogger(__name__)
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 DEFAULT_OPEN_ROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_OPEN_ROUTER_MODEL = "openai/gpt-4o-mini"
+PRIMARY_LLM_API_KEY_ENV_NAMES = ("OPEN_ROUTER_API_KEY", "OPENROUTER_API_KEY")
+LEGACY_LLM_API_KEY_ENV_NAMES = ("OPEN_AI_API_KEY", "OPENAI_API_KEY", "OPEN_API_KEY")
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,14 +75,14 @@ def get_model_name() -> str:
     if model_name:
         return model_name
 
-    if _get_env_value("OPEN_ROUTER_API_KEY", "OPENROUTER_API_KEY"):
+    if _get_env_value(*PRIMARY_LLM_API_KEY_ENV_NAMES):
         return DEFAULT_OPEN_ROUTER_MODEL
 
     return DEFAULT_OPENAI_MODEL
 
 
 def get_llm_client_config() -> LLMClientConfig:
-    open_router_key = _get_env_value("OPEN_ROUTER_API_KEY", "OPENROUTER_API_KEY")
+    open_router_key = _get_env_value(*PRIMARY_LLM_API_KEY_ENV_NAMES)
     if open_router_key:
         base_url = _get_env_value("OPEN_ROUTER_BASE_URL", "OPENROUTER_BASE_URL")
         return LLMClientConfig(
@@ -90,30 +92,19 @@ def get_llm_client_config() -> LLMClientConfig:
             default_headers=_build_open_router_headers(),
         )
 
-    key = _get_env_value("OPEN_AI_API_KEY")
-    if key:
-        logger.warning(
-            "legacy_llm_api_key_used env_var=OPEN_AI_API_KEY preferred=OPEN_ROUTER_API_KEY"
-        )
-        return LLMClientConfig(api_key=key, provider="openai")
-
-    legacy_key = _get_env_value("OPENAI_API_KEY")
-    if legacy_key:
-        logger.warning(
-            "legacy_llm_api_key_used env_var=OPENAI_API_KEY preferred=OPEN_ROUTER_API_KEY"
-        )
-        return LLMClientConfig(api_key=legacy_key, provider="openai")
-
-    older_legacy_key = _get_env_value("OPEN_API_KEY")
-    if older_legacy_key:
-        logger.warning(
-            "legacy_llm_api_key_used env_var=OPEN_API_KEY preferred=OPEN_ROUTER_API_KEY"
-        )
-        return LLMClientConfig(api_key=older_legacy_key, provider="openai")
+    for legacy_env_name in LEGACY_LLM_API_KEY_ENV_NAMES:
+        legacy_key = _get_env_value(legacy_env_name)
+        if legacy_key:
+            logger.warning(
+                "legacy_llm_api_key_used env_var=%s preferred=OPEN_ROUTER_API_KEY",
+                legacy_env_name,
+            )
+            return LLMClientConfig(api_key=legacy_key, provider="openai")
 
     raise EnvironmentError(
-        "OPEN_ROUTER_API_KEY 환경변수가 설정되지 않았습니다. "
-        ".env 파일을 확인해주세요."
+        "LLM API 키가 설정되지 않았습니다. "
+        "신규 설정은 OPEN_ROUTER_API_KEY를 사용하고, "
+        "호환용으로 OPEN_AI_API_KEY, OPENAI_API_KEY, OPEN_API_KEY도 허용됩니다."
     )
 
 
