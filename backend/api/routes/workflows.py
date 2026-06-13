@@ -1,6 +1,6 @@
 import logging
 
-from backend.agents.orchestrator import run_credit_workflow
+from backend.agents.orchestrator.orchestrator import run_credit_workflow
 from backend.common.logging import get_request_id
 from backend.data.services.workflow_job_runner import workflow_job_runner
 from backend.data.services.workflow_job_service import (

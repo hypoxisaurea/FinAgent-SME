@@ -1,15 +1,1 @@
-from backend.data.repositories import (
-    company_master,
-    company_registry,
-    db_access,
-    financial_feature,
-    financial_statement_detail,
-)
-
-__all__ = [
-    "company_master",
-    "company_registry",
-    "db_access",
-    "financial_feature",
-    "financial_statement_detail",
-]
+"""데이터 저장소 패키지."""

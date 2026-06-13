@@ -3,18 +3,18 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from backend.agents.company_resolver import CompanyResolverAgent
-from backend.agents.decision import DecisionAgent
-from backend.agents.financial_analyst import FinancialAnalystAgent
-from backend.agents.industry_analyst import IndustryAnalystAgent
-from backend.agents.multimodal_document import MultiModalDocumentAgent
-from backend.agents.news_collector import NewsCollectorAgent
+from backend.agents.company_resolver.agent import CompanyResolverAgent
+from backend.agents.decision.agent import DecisionAgent
+from backend.agents.financial_analyst.agent import FinancialAnalystAgent
+from backend.agents.industry_analyst.agent import IndustryAnalystAgent
+from backend.agents.multimodal_document.agent import MultiModalDocumentAgent
+from backend.agents.news_collector.agent import NewsCollectorAgent
 from backend.agents.orchestrator.graph import WorkflowGraphBuilder
 from backend.agents.orchestrator.results import build_result, summarize_steps
 from backend.agents.orchestrator.state import WorkflowState
-from backend.agents.report import ReportAgent
-from backend.agents.risk_event import RiskEventAgent
-from backend.agents.validation import ValidationAgent
+from backend.agents.report.agent import ReportAgent
+from backend.agents.risk_event.agent import RiskEventAgent
+from backend.agents.validation.agent import ValidationAgent
 from backend.common.agent import Agent
 from backend.common.langfuse import (
     propagate_trace_attributes,

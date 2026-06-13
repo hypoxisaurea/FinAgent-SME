@@ -4,12 +4,12 @@ import logging
 from datetime import datetime
 from typing import Any
 
+import backend.tools.company_registry as company_registry_tools
 import pandas as pd
 from backend.data.repositories.company_registry import (
     add_created_at_column,
     save_outputs_to_database,
 )
-from backend.tools import company_registry as company_registry_tools
 
 logger = logging.getLogger(__name__)
 

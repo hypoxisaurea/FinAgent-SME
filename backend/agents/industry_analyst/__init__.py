@@ -1,3 +1,1 @@
-from backend.agents.industry_analyst.agent import IndustryAnalystAgent
-
-__all__ = ["IndustryAnalystAgent"]
+"""산업 분석 에이전트 패키지."""

@@ -4,8 +4,8 @@ import asyncio
 import logging
 from typing import Any
 
-from backend.agents.orchestrator import run_credit_workflow
-from backend.data.services import workflow_job_service
+import backend.data.services.workflow_job_service as workflow_job_service
+from backend.agents.orchestrator.orchestrator import run_credit_workflow
 
 logger = logging.getLogger(__name__)
 
