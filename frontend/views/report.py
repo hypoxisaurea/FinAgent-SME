@@ -47,7 +47,6 @@ def render() -> None:
     _render_risk_recommendation_card(report_payload, context, explanation)
     _render_decision_details_card(decision_step, context)
     _render_agent_verification(report_step, decision_step, report_payload)
-    _render_raw_data(result, context, steps)
 
     st.markdown("---")
     _render_pdf_print_button(
@@ -496,21 +495,6 @@ def _render_agent_verification(
         """,
         unsafe_allow_html=True,
     )
-
-
-def _render_raw_data(
-    result: dict[str, Any],
-    context: dict[str, Any],
-    steps: list[dict[str, Any]],
-) -> None:
-    with st.expander("Raw Data 보기"):
-        st.markdown("**context**")
-        st.json(context)
-        st.markdown("**steps**")
-        st.json(steps)
-        st.markdown("**원본 응답 전체**")
-        st.json(result)
-
 
 def _render_pdf_print_button(
     report: dict[str, Any],
