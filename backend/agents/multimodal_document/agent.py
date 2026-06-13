@@ -12,6 +12,10 @@ from backend.agents.multimodal_document.processor import (
 )
 from backend.common.agent import Agent
 from backend.common.contracts import build_agent_output, elapsed_ms
+from backend.schemas.agent_contracts import (
+    MultiModalDocumentInput,
+    MultiModalDocumentOutput,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +31,8 @@ class MultiModalDocumentAgent(Agent):
     """공시자료 PDF와 이미지 기반 차트 정보를 추출하는 멀티모달 문서 에이전트."""
 
     name = "multimodal_document"
+    input_model = MultiModalDocumentInput
+    output_model = MultiModalDocumentOutput
 
     def __init__(self) -> None:
         self._tasks = [

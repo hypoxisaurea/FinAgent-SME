@@ -7,6 +7,7 @@ from typing import Any
 
 from backend.common.agent import Agent
 from backend.common.contracts import build_agent_output, elapsed_ms
+from backend.schemas.agent_contracts import ReportInput, ReportOutput
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,8 @@ class ReportAgent(Agent):
     """심사 결과를 최종 리포트 형태로 정리하는 에이전트."""
 
     name = "report"
+    input_model = ReportInput
+    output_model = ReportOutput
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Decision 결과와 중간 분석 결과를 리포트로 정리한다."""

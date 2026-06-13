@@ -15,6 +15,10 @@ from backend.common.tool_runtime import (
     serialize_tool_runs,
     summarize_tool_runs,
 )
+from backend.schemas.agent_contracts import (
+    NewsCollectorInput,
+    NewsCollectorOutput,
+)
 from backend.tools.news import (
     DEFAULT_LOOKBACK_DAYS,
     DEFAULT_MAX_ARTICLES,
@@ -31,6 +35,8 @@ class NewsCollectorAgent:
     """대상 기업 뉴스 수집 전용 에이전트."""
 
     name = "news_collector"
+    input_model = NewsCollectorInput
+    output_model = NewsCollectorOutput
 
     def __init__(self, provider: NewsCollectionProvider | None = None) -> None:
         self._provider = provider or ToolNewsCollectionProvider()

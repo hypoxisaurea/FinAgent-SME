@@ -16,6 +16,10 @@ from backend.common.tool_runtime import (
     serialize_tool_runs,
     summarize_tool_runs,
 )
+from backend.schemas.agent_contracts import (
+    IndustryAnalystInput,
+    IndustryAnalystOutput,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +28,8 @@ class IndustryAnalystAgent(Agent):
     """오케스트레이터에서 직접 호출하는 산업 분석 에이전트."""
 
     name = "industry_analyst"
+    input_model = IndustryAnalystInput
+    output_model = IndustryAnalystOutput
 
     def __init__(self, provider: IndustryDataProvider | None = None) -> None:
         self._provider = provider or ToolIndustryDataProvider()

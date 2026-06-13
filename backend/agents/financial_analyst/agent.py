@@ -17,6 +17,10 @@ from backend.common.tool_runtime import (
     serialize_tool_runs,
     summarize_tool_runs,
 )
+from backend.schemas.agent_contracts import (
+    FinancialAnalystInput,
+    FinancialAnalystOutput,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +29,8 @@ class FinancialAnalystAgent(Agent):
     """오케스트레이터에서 직접 호출하는 재무 분석 에이전트."""
 
     name = "financial_analyst"
+    input_model = FinancialAnalystInput
+    output_model = FinancialAnalystOutput
 
     def __init__(self, provider: FinancialDataProvider | None = None) -> None:
         self._provider = provider or DatabaseFinancialDataProvider()

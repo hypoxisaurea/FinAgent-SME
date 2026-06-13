@@ -13,6 +13,7 @@ from backend.common.contracts import (
 )
 from backend.common.langfuse import score_current_trace
 from backend.common.logging import request_id_context
+from backend.schemas.agent_contracts import ValidationInput, ValidationOutput
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,8 @@ class ValidationAgent:
     """최종 심사 결과의 계약 및 정합성을 검증하는 에이전트."""
 
     name = "validation"
+    input_model = ValidationInput
+    output_model = ValidationOutput
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Decision/Report 결과를 검증하고 Langfuse score를 기록한다."""

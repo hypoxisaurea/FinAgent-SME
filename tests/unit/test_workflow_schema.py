@@ -50,3 +50,18 @@ def test_build_workflow_response_accepts_structured_industry_context() -> None:
         "target_year": 2024,
         "grade_cap": "BB+",
     }
+    assert response.context.runtime.request_id == "req-123"
+    assert response.context.runtime.company_name == "러셀"
+    assert response.context.industry.industry_summary == {
+        "avg_op_margin": 0.0389,
+        "avg_debt_ratio": 1.24,
+        "sales_growth": "n/a",
+    }
+    assert response.context.industry.industry_outlook == {
+        "outlook_score": "Medium",
+        "note": "중립",
+    }
+    assert response.context.financial.financial_summary == {
+        "target_year": 2024,
+        "grade_cap": "BB+",
+    }
