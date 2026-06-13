@@ -28,7 +28,7 @@ def run_orchestrator_search(company_name: str) -> dict | None:
     try:
         url = f"{st.session_state.base_url}/api/v1/workflows/orchestrator"
         payload = {"company_name": company_name}
-        resp = requests.post(url, json=payload, timeout=60)
+        resp = requests.post(url, json=payload, timeout=300)
         resp.raise_for_status()
         return resp.json()
     except requests.HTTPError as e:
