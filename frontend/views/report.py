@@ -5,6 +5,8 @@ from typing import Any
 import streamlit as st
 import streamlit.components.v1 as components
 
+from views.report_view_model import build_report_view_model
+
 
 def render() -> None:
     if not st.session_state.last_result:
@@ -18,48 +20,26 @@ def render() -> None:
     report_step = _find_step_output(steps, "report")
     decision_step = _find_step_output(steps, "decision")
     report_payload = report if isinstance(report, dict) else {}
-    explanation = context.get("explanation", {}) if isinstance(context, dict) else {}
-
-    decision = report_payload.get("decision") or context.get("decision") or "-"
-    credit_grade = report_payload.get("credit_grade") or context.get("credit_grade") or "-"
-    confidence = report_payload.get("confidence")
-    if confidence is None:
-        confidence = context.get("decision_confidence")
-    recommended_limit = report_payload.get("recommended_limit")
-    if recommended_limit is None:
-        recommended_limit = context.get("recommended_limit")
-
-    _inject_styles()
 
     if not report_payload:
         st.warning("최종 report 데이터가 없습니다. 하단 Raw Data에서 응답 구조를 확인하세요.")
 
-    _render_overview_card(
-        report_payload,
-        context,
-        result,
-        decision,
-        credit_grade,
-        confidence,
-        recommended_limit,
-    )
-    _render_summary_card(report_payload)
-    _render_risk_recommendation_card(report_payload, context, explanation)
-    _render_decision_details_card(decision_step, context)
+    view_model = build_report_view_model(result, context, report_payload, decision_step)
+    overview = view_model["overview"]
+    sections = view_model["sections"]
+
+    _inject_styles()
+    _render_overview_card(overview)
+    _render_table_section(sections["company"])
+    _render_financial_health_section(sections["financial_health"])
+    _render_growth_trend_section(sections["growth_trend"])
+    _render_default_risk_section(sections["default_risk"])
+    _render_decision_rationale_section(sections["decision_rationale"])
+    _render_monitoring_section(sections["monitoring"])
     _render_agent_verification(report_step, decision_step, report_payload)
 
     st.markdown("---")
-    _render_pdf_print_button(
-        report_payload,
-        context,
-        result,
-        decision,
-        credit_grade,
-        confidence,
-        recommended_limit,
-        decision_step,
-        explanation,
-    )
+    _render_pdf_print_button(view_model)
 
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -80,7 +60,9 @@ def _inject_styles() -> None:
         """
         <style>
         .stApp {
-            background: linear-gradient(180deg, #f8fbff 0%, #f4f7fb 100%);
+            background:
+                radial-gradient(circle at top left, rgba(216, 234, 248, 0.55), transparent 34%),
+                linear-gradient(180deg, #f8fbff 0%, #f4f7fb 100%);
         }
         .block-container {
             max-width: 1180px;
@@ -154,25 +136,29 @@ def _inject_styles() -> None:
             gap: 12px;
             margin-top: 0.5rem;
         }
-        .metric-box {
+        .metrics-grid.tight-values .mini-value {
+            font-size: 1.02rem;
+            white-space: nowrap;
+        }
+        .metric-box, .mini-box {
             background: rgba(255, 255, 255, 0.88);
             border: 1px solid #dbe4ef;
             border-radius: 16px;
             padding: 16px 16px 14px;
         }
-        .metric-label {
+        .metric-label, .mini-label {
             color: #66758a;
             font-size: 0.82rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.04em;
         }
-        .metric-value {
+        .metric-value, .mini-value {
             color: #16263e;
-            font-size: 1.45rem;
+            font-size: 1.25rem;
             font-weight: 800;
             margin-top: 0.45rem;
-            line-height: 1.2;
+            line-height: 1.25;
         }
         .body-copy {
             color: #334155;
@@ -208,31 +194,47 @@ def _inject_styles() -> None:
             background: #f6fcf8;
             border-color: #d2eadb;
         }
-        .mini-grid {
+        .table-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 12px;
-            margin-bottom: 1rem;
         }
-        .mini-box {
+        .table-row {
+            display: flex;
+            gap: 12px;
+            padding: 12px 14px;
             border: 1px solid #dbe4ef;
+            border-radius: 14px;
             background: #f9fbfd;
-            border-radius: 16px;
-            padding: 15px 16px;
         }
-        .mini-label {
-            color: #66758a;
-            font-size: 0.8rem;
+        .table-label {
+            width: 96px;
+            flex-shrink: 0;
+            color: #627287;
+            font-size: 0.88rem;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
         }
-        .mini-value {
-            color: #16263e;
-            font-size: 1.05rem;
-            font-weight: 800;
-            margin-top: 0.45rem;
-            line-height: 1.35;
+        .table-value {
+            color: #1f2937;
+            font-size: 0.93rem;
+            line-height: 1.55;
+            word-break: break-word;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.75rem;
+            font-size: 0.9rem;
+        }
+        .history-table th,
+        .history-table td {
+            border: 1px solid #dbe4ef;
+            padding: 10px 12px;
+            text-align: left;
+        }
+        .history-table th {
+            background: #f9fbfd;
+            color: #627287;
         }
         .inspect-box {
             border-radius: 18px;
@@ -255,7 +257,7 @@ def _inject_styles() -> None:
         @media (max-width: 900px) {
             .metrics-grid,
             .split-grid,
-            .mini-grid {
+            .table-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -265,48 +267,158 @@ def _inject_styles() -> None:
     )
 
 
-def _render_overview_card(
-    report: dict[str, Any],
-    context: dict[str, Any],
-    result: dict[str, Any],
-    decision: str,
-    credit_grade: str,
-    confidence: Any,
-    recommended_limit: Any,
-) -> None:
-    company_name = report.get("company_name") or context.get("company_name") or "대상 기업"
-    corp_name = report.get("corp_name") or context.get("corp_name") or "-"
-    corp_code = report.get("corp_code") or context.get("corp_code") or "-"
-    generated_at = report.get("generated_at", "-")
-    status = result.get("status", "unknown")
-
+def _render_overview_card(overview: dict[str, Any]) -> None:
+    key_reasons = _render_chip_list(overview.get("key_reasons"), "item-chip item-risk")
     st.markdown(
         f"""
         <div class="report-card overview-card">
-            <div class="company-name">{company_name}</div>
+            <div class="company-name">{escape(str(overview["company_name"]))}</div>
             <div class="company-meta">
-                법인명: {corp_name} | 법인코드: {corp_code} | 워크플로우 상태: {status} | 생성일: {generated_at}
+                법인명: {escape(str(overview["corp_name"]))} | 법인코드: {escape(str(overview["corp_code"]))} |
+                종목코드: {escape(str(overview["stock_code"]))} | 워크플로우 상태: {escape(str(overview["workflow_status"]))} |
+                생성일: {escape(str(overview["generated_at"]))}
             </div>
             <div>
-                <span class="badge {_decision_badge_class(decision)}">최종 결정 {_format_decision(decision)}</span>
-                <span class="badge badge-default">신용등급 {credit_grade}</span>
+                <span class="badge {_decision_badge_class(str(overview['decision']))}">최종 결정 {_format_decision(str(overview["decision"]))}</span>
+                <span class="badge badge-default">신용등급 {escape(str(overview["credit_grade"]))}</span>
+                <span class="badge badge-default">통합 리스크 {escape(str(overview["overall_risk_level"]))}</span>
             </div>
             <div class="metrics-grid">
                 <div class="metric-box">
                     <div class="metric-label">최종 결정</div>
-                    <div class="metric-value">{_format_decision(decision)}</div>
+                    <div class="metric-value">{_format_decision(str(overview["decision"]))}</div>
                 </div>
                 <div class="metric-box">
                     <div class="metric-label">신용등급</div>
-                    <div class="metric-value">{credit_grade}</div>
+                    <div class="metric-value">{escape(str(overview["credit_grade"]))}</div>
                 </div>
                 <div class="metric-box">
                     <div class="metric-label">판단 신뢰도</div>
-                    <div class="metric-value">{_format_confidence(confidence)}</div>
+                    <div class="metric-value">{escape(str(overview["confidence"]))}</div>
                 </div>
                 <div class="metric-box">
                     <div class="metric-label">추천 한도</div>
-                    <div class="metric-value">{_format_currency(recommended_limit)}</div>
+                    <div class="metric-value">{escape(str(overview["recommended_limit"]))}</div>
+                </div>
+            </div>
+            <div class="subsection-title" style="margin-top: 1rem;">핵심 리스크 및 판단 근거</div>
+            {key_reasons}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_table_section(section: dict[str, Any]) -> None:
+    rows = "".join(
+        f"""
+        <div class="table-row">
+            <div class="table-label">{escape(str(label))}</div>
+            <div class="table-value">{escape(str(value))}</div>
+        </div>
+        """
+        for label, value in section.get("rows", [])
+    )
+    st.markdown(
+        f"""
+        <div class="report-card">
+            <div class="card-title">{escape(str(section["title"]))}</div>
+            <div class="table-grid">{rows}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_financial_health_section(section: dict[str, Any]) -> None:
+    metrics = "".join(
+        f"""
+        <div class="mini-box">
+            <div class="mini-label">{escape(str(label))}</div>
+            <div class="mini-value">{escape(str(value))}</div>
+        </div>
+        """
+        for label, value in section.get("metrics", [])
+    )
+    st.markdown(
+        f"""
+        <div class="report-card">
+            <div class="card-title">{escape(str(section["title"]))}</div>
+            <div class="subsection-title">핵심 지표</div>
+            <div class="metrics-grid tight-values">{metrics}</div>
+            <div class="subsection-title" style="margin-top: 1rem;">해석</div>
+            <div class="item-chip">{escape(str(section.get("interpretation") or "-"))}</div>
+            <div class="subsection-title" style="margin-top: 1rem;">신용영향</div>
+            <div class="item-chip">{escape(str(section.get("credit_impact") or "-"))}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_growth_trend_section(section: dict[str, Any]) -> None:
+    rows = section.get("history_rows") or []
+    if rows:
+        table_rows = "".join(
+            f"""
+            <tr>
+                <td>{escape(str(year))}</td>
+                <td>{escape(str(revenue))}</td>
+                <td>{escape(str(net_income))}</td>
+                <td>{escape(str(total_assets))}</td>
+            </tr>
+            """
+            for year, revenue, net_income, total_assets in rows
+        )
+        history_table = f"""
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>연도</th>
+                    <th>매출액</th>
+                    <th>당기순이익</th>
+                    <th>총자산</th>
+                </tr>
+            </thead>
+            <tbody>{table_rows}</tbody>
+        </table>
+        """
+    else:
+        history_table = '<div class="item-chip">표시할 최근 연도 추세 데이터가 없습니다.</div>'
+
+    st.markdown(
+        f"""
+        <div class="report-card">
+            <div class="card-title">{escape(str(section["title"]))}</div>
+            <div class="subsection-title">최근 추세 해석</div>
+            <div class="item-chip">{escape(str(section.get("recent_trend") or "-"))}</div>
+            <div class="subsection-title" style="margin-top: 1rem;">성장 둔화 및 이상 플래그</div>
+            {_render_chip_list(section.get("financial_flags"), "item-chip item-risk")}
+            <div class="subsection-title" style="margin-top: 1rem;">최근 연도 추세</div>
+            {history_table}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_default_risk_section(section: dict[str, Any]) -> None:
+    st.markdown(
+        f"""
+        <div class="report-card">
+            <div class="card-title">{escape(str(section["title"]))}</div>
+            <div class="split-grid">
+                <div>
+                    <div class="subsection-title">부도위험 지표</div>
+                    <div class="item-chip">Altman Z-Score: {escape(str(section["z_score"]))}</div>
+                    <div class="item-chip">위험 구간: {escape(str(section["zone"]))}</div>
+                    <div class="item-chip">등급 상한: {escape(str(section["grade_cap"]))}</div>
+                </div>
+                <div>
+                    <div class="subsection-title">발동된 제한 요인</div>
+                    {_render_chip_list(section.get("triggered_filters"), "item-chip item-risk")}
+                    <div class="subsection-title" style="margin-top: 1rem;">세부 근거</div>
+                    {_render_chip_list(section.get("filter_details"), "item-chip")}
                 </div>
             </div>
         </div>
@@ -315,63 +427,25 @@ def _render_overview_card(
     )
 
 
-def _render_summary_card(report: dict[str, Any]) -> None:
-    summary = report.get("summary") or "요약 정보가 없습니다."
+def _render_decision_rationale_section(section: dict[str, Any]) -> None:
     st.markdown(
         f"""
         <div class="report-card">
-            <div class="card-title">종합 요약</div>
-            <div class="body-copy">{summary}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def _render_risk_recommendation_card(
-    report: dict[str, Any],
-    context: dict[str, Any],
-    explanation: dict[str, Any],
-) -> None:
-    key_risks = report.get("key_risks") or context.get("decision_reasons") or []
-    recommendation = report.get("recommendation") or "권고 정보가 없습니다."
-    positive_factors = explanation.get("key_positive_factors", [])
-    overall_risk_level = context.get("overall_risk_level") or "-"
-    critical_count = context.get("critical_count", 0)
-    high_count = context.get("high_count", 0)
-    medium_count = context.get("medium_count", 0)
-    low_count = context.get("low_count", 0)
-
-    risk_items = "".join(
-        f'<div class="item-chip item-risk">{item}</div>' for item in key_risks
-    ) or '<div class="item-chip item-risk">주요 리스크 정보가 없습니다.</div>'
-    positive_items = "".join(
-        f'<div class="item-chip item-good">{item}</div>' for item in positive_factors
-    ) or '<div class="item-chip item-good">긍정 요인 정보가 없습니다.</div>'
-
-    st.markdown(
-        f"""
-        <div class="report-card">
-            <div class="card-title">리스크 및 권고</div>
-            <div class="split-grid">
+            <div class="card-title">{escape(str(section["title"]))}</div>
+            <div class="subsection-title">연결 요약</div>
+            <div class="item-chip">{escape(str(section.get("connected_reason") or "-"))}</div>
+            <div class="split-grid" style="margin-top: 1rem;">
                 <div>
-                    <div class="subsection-title">주요 리스크</div>
-                    {risk_items}
-                </div>
-                <div>
-                    <div class="subsection-title">심사 권고</div>
-                    <div class="body-copy">{recommendation}</div>
-                </div>
-                <div>
-                    <div class="subsection-title">리스크 집계</div>
-                    <div class="item-chip">
-                        통합 리스크 수준: {overall_risk_level}<br/>
-                        CRITICAL {critical_count}건 / HIGH {high_count}건 / MEDIUM {medium_count}건 / LOW {low_count}건
-                    </div>
+                    <div class="subsection-title">최종 요약</div>
+                    <div class="item-chip">{escape(str(section.get("summary") or "-"))}</div>
+                    <div class="subsection-title" style="margin-top: 1rem;">판단 사유</div>
+                    {_render_chip_list(section.get("reasons"), "item-chip")}
                 </div>
                 <div>
                     <div class="subsection-title">긍정 요인</div>
-                    {positive_items}
+                    {_render_chip_list(section.get("positive_factors"), "item-chip item-good")}
+                    <div class="subsection-title" style="margin-top: 1rem;">리스크 요인</div>
+                    {_render_chip_list(section.get("risk_factors"), "item-chip item-risk")}
                 </div>
             </div>
         </div>
@@ -380,82 +454,24 @@ def _render_risk_recommendation_card(
     )
 
 
-def _render_decision_details_card(
-    decision_step: dict[str, Any] | None,
-    context: dict[str, Any],
-) -> None:
-    reasons = context.get("decision_reasons", [])
-    processing_errors = context.get("processing_errors", [])
-    grade_detail = context.get("grade_detail", {})
-    explanation = context.get("explanation", {})
-
-    if decision_step:
-        credit_score = decision_step.get("credit_score")
-        limit_range = decision_step.get("limit_range")
-        limit_basis = decision_step.get("limit_basis")
-    else:
-        credit_score = context.get("credit_score")
-        limit_range = context.get("limit_range")
-        limit_basis = context.get("limit_basis")
-
-    breakdown = grade_detail.get("score_breakdown", {}) if isinstance(grade_detail, dict) else {}
-    rationale = grade_detail.get("rationale") if isinstance(grade_detail, dict) else "-"
-    key_risk_factors = explanation.get("key_risk_factors", []) if isinstance(explanation, dict) else []
-
-    reason_items = "".join(
-        f'<div class="item-chip">{item}</div>' for item in reasons
-    ) or '<div class="item-chip">판단 사유 정보가 없습니다.</div>'
-    factor_items = "".join(
-        f'<div class="item-chip item-risk">{item}</div>' for item in key_risk_factors
-    ) or '<div class="item-chip item-risk">설명 기반 리스크 요인이 없습니다.</div>'
-    error_items = "".join(
-        f'<div class="item-chip item-risk">{item}</div>' for item in processing_errors
-    ) or '<div class="item-chip item-good">처리 중 기록된 오류가 없습니다.</div>'
-
+def _render_monitoring_section(section: dict[str, Any]) -> None:
     st.markdown(
         f"""
         <div class="report-card">
-            <div class="card-title">판단 상세</div>
-            <div class="mini-grid">
-                <div class="mini-box">
-                    <div class="mini-label">신용점수</div>
-                    <div class="mini-value">{credit_score if credit_score is not None else '-'}</div>
-                </div>
-                <div class="mini-box">
-                    <div class="mini-label">한도 범위</div>
-                    <div class="mini-value">{limit_range or '-'}</div>
-                </div>
-                <div class="mini-box">
-                    <div class="mini-label">기본 점수</div>
-                    <div class="mini-value">{breakdown.get('base_score', '-')}</div>
-                </div>
-                <div class="mini-box">
-                    <div class="mini-label">최종 점수</div>
-                    <div class="mini-value">{breakdown.get('final_score', '-')}</div>
-                </div>
-                <div class="mini-box">
-                    <div class="mini-label">리스크 차감</div>
-                    <div class="mini-value">{breakdown.get('risk_deduction', '-')}</div>
-                </div>
-                <div class="mini-box">
-                    <div class="mini-label">재무 차감</div>
-                    <div class="mini-value">{breakdown.get('financial_deduction', '-')}</div>
-                </div>
-            </div>
+            <div class="card-title">{escape(str(section["title"]))}</div>
             <div class="split-grid">
                 <div>
-                    <div class="subsection-title">한도 산정 근거</div>
-                    <div class="item-chip">{limit_basis or '-'}</div>
-                    <div class="subsection-title" style="margin-top: 1rem;">판단 사유</div>
-                    {reason_items}
+                    <div class="subsection-title">권고안</div>
+                    <div class="item-chip">{escape(str(section.get("recommendation") or "-"))}</div>
+                    <div class="subsection-title" style="margin-top: 1rem;">기본 판단 조건</div>
+                    <div class="item-chip">결정: {escape(str(section["decision"]))}</div>
+                    <div class="item-chip">권고 한도: {escape(str(section["recommended_limit"]))}</div>
                 </div>
                 <div>
-                    <div class="subsection-title">등급 산출 근거</div>
-                    <div class="item-chip">{rationale}</div>
-                    <div class="subsection-title" style="margin-top: 1rem;">설명 기반 리스크 요인</div>
-                    {factor_items}
-                    <div class="subsection-title" style="margin-top: 1rem;">처리 로그</div>
-                    {error_items}
+                    <div class="subsection-title">모니터링 포인트</div>
+                    {_render_chip_list(section.get("monitoring_points"), "item-chip item-risk")}
+                    <div class="subsection-title" style="margin-top: 1rem;">최근 90일 리스크 이벤트</div>
+                    {_render_chip_list(section.get("recent_risk_events"), "item-chip")}
                 </div>
             </div>
         </div>
@@ -486,28 +502,8 @@ def _render_agent_verification(
         decision_message = "DecisionAgent output을 찾지 못했습니다."
 
 
-def _render_pdf_print_button(
-    report: dict[str, Any],
-    context: dict[str, Any],
-    result: dict[str, Any],
-    decision: str,
-    credit_grade: str,
-    confidence: Any,
-    recommended_limit: Any,
-    decision_step: dict[str, Any] | None,
-    explanation: dict[str, Any],
-) -> None:
-    printable_html = _build_printable_html(
-        report,
-        context,
-        result,
-        decision,
-        credit_grade,
-        confidence,
-        recommended_limit,
-        decision_step,
-        explanation,
-    )
+def _render_pdf_print_button(view_model: dict[str, Any]) -> None:
+    printable_html = _build_printable_html(view_model)
     encoded_html = json.dumps(printable_html)
     components.html(
         f"""
@@ -544,115 +540,41 @@ def _render_pdf_print_button(
     )
 
 
-def _find_step_output(steps: list[dict[str, Any]], agent_name: str) -> dict[str, Any] | None:
-    for step in steps:
-        if step.get("agent_name") == agent_name:
-            output = step.get("output")
-            return output if isinstance(output, dict) else None
-    return None
-
-
-def _format_decision(decision: str) -> str:
-    return {
-        "approve": "승인",
-        "review": "재검토",
-        "reject": "거절",
-    }.get(decision, str(decision))
-
-
-def _decision_badge_class(decision: str) -> str:
-    return {
-        "approve": "badge-approve",
-        "review": "badge-review",
-        "reject": "badge-reject",
-    }.get(decision, "badge-default")
-
-
-def _format_confidence(confidence: Any) -> str:
-    if confidence is None:
-        return "-"
-    try:
-        return f"{float(confidence) * 100:.1f}%"
-    except (TypeError, ValueError):
-        return str(confidence)
-
-
-def _format_currency(amount: Any) -> str:
-    if amount in (None, "", 0):
-        return "-"
-    try:
-        numeric_amount = float(amount)
-    except (TypeError, ValueError):
-        return str(amount)
-
-    if abs(numeric_amount) >= 100_000_000:
-        return f"{numeric_amount / 100_000_000:.1f}억원"
-    return f"{numeric_amount:,.0f}원"
-
-
-def _build_printable_html(
-    report: dict[str, Any],
-    context: dict[str, Any],
-    result: dict[str, Any],
-    decision: str,
-    credit_grade: str,
-    confidence: Any,
-    recommended_limit: Any,
-    decision_step: dict[str, Any] | None,
-    explanation: dict[str, Any],
-) -> str:
-    company_name = report.get("company_name") or context.get("company_name") or "대상 기업"
-    corp_name = report.get("corp_name") or context.get("corp_name") or "-"
-    corp_code = report.get("corp_code") or context.get("corp_code") or "-"
-    generated_at = report.get("generated_at", "-")
-    status = result.get("status", "unknown")
-    summary = report.get("summary") or "요약 정보가 없습니다."
-    recommendation = report.get("recommendation") or "권고 정보가 없습니다."
-    overall_risk_level = context.get("overall_risk_level") or "-"
-    critical_count = context.get("critical_count", 0)
-    high_count = context.get("high_count", 0)
-    medium_count = context.get("medium_count", 0)
-    low_count = context.get("low_count", 0)
-    reasons = context.get("decision_reasons", [])
-    key_risks = report.get("key_risks") or reasons
-    positive_factors = explanation.get("key_positive_factors", [])
-    processing_errors = context.get("processing_errors", [])
-    grade_detail = context.get("grade_detail", {})
-    breakdown = grade_detail.get("score_breakdown", {}) if isinstance(grade_detail, dict) else {}
-    rationale = grade_detail.get("rationale") if isinstance(grade_detail, dict) else "-"
-    key_risk_factors = explanation.get("key_risk_factors", []) if isinstance(explanation, dict) else []
-
-    if decision_step:
-        credit_score = decision_step.get("credit_score")
-        limit_range = decision_step.get("limit_range")
-        limit_basis = decision_step.get("limit_basis")
-    else:
-        credit_score = context.get("credit_score")
-        limit_range = context.get("limit_range")
-        limit_basis = context.get("limit_basis")
-
-    status_color = {
-        "approve": "#1f7a4c",
-        "review": "#976400",
-        "reject": "#b23d49",
-    }.get(decision, "#526277")
-    status_bg = {
-        "approve": "#e9f8ef",
-        "review": "#fff5df",
-        "reject": "#ffecee",
-    }.get(decision, "#eef3f8")
+def _build_printable_html(view_model: dict[str, Any]) -> str:
+    overview = view_model["overview"]
+    sections = view_model["sections"]
 
     def render_list(items: list[Any]) -> str:
         if not items:
             return "<li>-</li>"
         return "".join(f"<li>{escape(str(item))}</li>" for item in items)
 
+    def render_rows(rows: list[tuple[str, Any]]) -> str:
+        return "".join(
+            f"<tr><th>{escape(str(label))}</th><td>{escape(str(value))}</td></tr>"
+            for label, value in rows
+        )
+
+    def render_metrics(metrics: list[tuple[str, Any]]) -> str:
+        return "".join(
+            f"<div class='metric'><div class='label'>{escape(str(label))}</div><div class='value'>{escape(str(value))}</div></div>"
+            for label, value in metrics
+        )
+
+    def render_history_rows(rows: list[tuple[str, Any, Any, Any]]) -> str:
+        if not rows:
+            return "<tr><td>-</td><td>-</td><td>-</td><td>-</td></tr>"
+        return "".join(
+            f"<tr><td>{escape(str(year))}</td><td>{escape(str(revenue))}</td><td>{escape(str(net_income))}</td><td>{escape(str(total_assets))}</td></tr>"
+            for year, revenue, net_income, total_assets in rows
+        )
+
     return f"""
     <!doctype html>
     <html lang="ko">
     <head>
       <meta charset="utf-8" />
-      <title>{escape(str(company_name))} 신용평가 리포트</title>
+      <title>{escape(str(overview["company_name"]))} 신용평가 리포트</title>
       <style>
         @page {{
           size: A4;
@@ -661,11 +583,7 @@ def _build_printable_html(
         body {{
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
           color: #1f2937;
-          background: #ffffff;
           margin: 0;
-        }}
-        .page {{
-          width: 100%;
         }}
         .card {{
           border: 1px solid #dbe4ef;
@@ -701,11 +619,6 @@ def _build_printable_html(
           background: #eef3f8;
           color: #526277;
         }}
-        .status {{
-          background: {status_bg};
-          color: {status_color};
-          border-color: {status_bg};
-        }}
         .metric-grid {{
           display: grid;
           grid-template-columns: repeat(4, 1fr);
@@ -717,16 +630,16 @@ def _build_printable_html(
           padding: 12px;
           background: rgba(255,255,255,0.92);
         }}
-        .metric-label {{
+        .label {{
           color: #66758a;
           font-size: 11px;
           font-weight: 700;
           text-transform: uppercase;
           letter-spacing: 0.04em;
         }}
-        .metric-value {{
+        .value {{
           color: #16263e;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 800;
           margin-top: 6px;
         }}
@@ -746,12 +659,6 @@ def _build_printable_html(
           grid-template-columns: 1fr 1fr;
           gap: 14px;
         }}
-        .sub-title {{
-          color: #24405f;
-          font-size: 14px;
-          font-weight: 800;
-          margin: 0 0 8px 0;
-        }}
         .box {{
           border: 1px solid #dbe4ef;
           border-radius: 12px;
@@ -760,6 +667,22 @@ def _build_printable_html(
           margin-bottom: 8px;
           font-size: 13px;
           line-height: 1.6;
+        }}
+        table {{
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 13px;
+        }}
+        th, td {{
+          border: 1px solid #dbe4ef;
+          padding: 10px 12px;
+          text-align: left;
+          vertical-align: top;
+        }}
+        th {{
+          width: 110px;
+          background: #f9fbfd;
+          color: #627287;
         }}
         ul {{
           margin: 0;
@@ -770,88 +693,134 @@ def _build_printable_html(
           line-height: 1.6;
           font-size: 13px;
         }}
-        @media print {{
-          .print-note {{
-            display: none;
-          }}
-        }}
       </style>
     </head>
     <body>
-      <div class="page">
-        <div class="print-note" style="margin-bottom: 12px; color: #5f6f86; font-size: 12px;">
-          브라우저 인쇄 창에서 대상 프린터를 "PDF로 저장"으로 선택하면 PDF 다운로드가 가능합니다.
+      <div class="card overview">
+        <div class="title">{escape(str(overview["company_name"]))}</div>
+        <div class="meta">
+          법인명: {escape(str(overview["corp_name"]))} | 법인코드: {escape(str(overview["corp_code"]))} |
+          종목코드: {escape(str(overview["stock_code"]))} | 상태: {escape(str(overview["workflow_status"]))} |
+          생성일: {escape(str(overview["generated_at"]))}
         </div>
-        <div class="card overview">
-          <div class="title">{escape(str(company_name))}</div>
-          <div class="meta">
-            법인명: {escape(str(corp_name))} | 법인코드: {escape(str(corp_code))} |
-            워크플로우 상태: {escape(str(status))} | 생성일: {escape(str(generated_at))}
+        <div>
+          <span class="badge">최종 결정 {_format_decision(str(overview["decision"]))}</span>
+          <span class="badge">신용등급 {escape(str(overview["credit_grade"]))}</span>
+          <span class="badge">통합 리스크 {escape(str(overview["overall_risk_level"]))}</span>
+        </div>
+        <div class="metric-grid">
+          <div class="metric"><div class="label">최종 결정</div><div class="value">{_format_decision(str(overview["decision"]))}</div></div>
+          <div class="metric"><div class="label">신용등급</div><div class="value">{escape(str(overview["credit_grade"]))}</div></div>
+          <div class="metric"><div class="label">판단 신뢰도</div><div class="value">{escape(str(overview["confidence"]))}</div></div>
+          <div class="metric"><div class="label">추천 한도</div><div class="value">{escape(str(overview["recommended_limit"]))}</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">{escape(str(sections["company"]["title"]))}</div>
+        <table>{render_rows(sections["company"].get("rows", []))}</table>
+      </div>
+
+      <div class="card">
+        <div class="section-title">{escape(str(sections["financial_health"]["title"]))}</div>
+        <div class="metric-grid">{render_metrics(sections["financial_health"].get("metrics", []))}</div>
+        <div class="box" style="margin-top: 12px;">{escape(str(sections["financial_health"].get("interpretation") or "-"))}</div>
+        <div class="box">{escape(str(sections["financial_health"].get("credit_impact") or "-"))}</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">{escape(str(sections["growth_trend"]["title"]))}</div>
+        <div class="box">{escape(str(sections["growth_trend"].get("recent_trend") or "-"))}</div>
+        <div class="box"><ul>{render_list(sections["growth_trend"].get("financial_flags", []))}</ul></div>
+        <table>
+          <thead>
+            <tr>
+              <th>연도</th>
+              <th>매출액</th>
+              <th>당기순이익</th>
+              <th>총자산</th>
+            </tr>
+          </thead>
+          <tbody>{render_history_rows(sections["growth_trend"].get("history_rows", []))}</tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <div class="section-title">{escape(str(sections["default_risk"]["title"]))}</div>
+        <div class="two-col">
+          <div>
+            <div class="box">Altman Z-Score: {escape(str(sections["default_risk"]["z_score"]))}</div>
+            <div class="box">위험 구간: {escape(str(sections["default_risk"]["zone"]))}</div>
+            <div class="box">등급 상한: {escape(str(sections["default_risk"]["grade_cap"]))}</div>
           </div>
           <div>
-            <span class="badge status">최종 결정 {escape(_format_decision(decision))}</span>
-            <span class="badge">신용등급 {escape(str(credit_grade))}</span>
-          </div>
-          <div class="metric-grid">
-            <div class="metric"><div class="metric-label">최종 결정</div><div class="metric-value">{escape(_format_decision(decision))}</div></div>
-            <div class="metric"><div class="metric-label">신용등급</div><div class="metric-value">{escape(str(credit_grade))}</div></div>
-            <div class="metric"><div class="metric-label">판단 신뢰도</div><div class="metric-value">{escape(_format_confidence(confidence))}</div></div>
-            <div class="metric"><div class="metric-label">추천 한도</div><div class="metric-value">{escape(_format_currency(recommended_limit))}</div></div>
+            <div class="box"><ul>{render_list(sections["default_risk"].get("triggered_filters", []))}</ul></div>
+            <div class="box"><ul>{render_list(sections["default_risk"].get("filter_details", []))}</ul></div>
           </div>
         </div>
+      </div>
 
-        <div class="card">
-          <div class="section-title">종합 요약</div>
-          <div class="body">{escape(str(summary))}</div>
-        </div>
-
-        <div class="card">
-          <div class="section-title">리스크 및 권고</div>
-          <div class="two-col">
-            <div>
-              <div class="sub-title">주요 리스크</div>
-              <div class="box"><ul>{render_list(key_risks)}</ul></div>
-              <div class="sub-title">리스크 집계</div>
-              <div class="box">
-                통합 리스크 수준: {escape(str(overall_risk_level))}<br/>
-                CRITICAL {critical_count}건 / HIGH {high_count}건 / MEDIUM {medium_count}건 / LOW {low_count}건
-              </div>
-            </div>
-            <div>
-              <div class="sub-title">심사 권고</div>
-              <div class="box">{escape(str(recommendation))}</div>
-              <div class="sub-title">긍정 요인</div>
-              <div class="box"><ul>{render_list(positive_factors)}</ul></div>
-            </div>
+      <div class="card">
+        <div class="section-title">{escape(str(sections["decision_rationale"]["title"]))}</div>
+        <div class="box">{escape(str(sections["decision_rationale"].get("connected_reason") or "-"))}</div>
+        <div class="two-col">
+          <div>
+            <div class="box">{escape(str(sections["decision_rationale"].get("summary") or "-"))}</div>
+            <div class="box"><ul>{render_list(sections["decision_rationale"].get("reasons", []))}</ul></div>
+          </div>
+          <div>
+            <div class="box"><ul>{render_list(sections["decision_rationale"].get("positive_factors", []))}</ul></div>
+            <div class="box"><ul>{render_list(sections["decision_rationale"].get("risk_factors", []))}</ul></div>
           </div>
         </div>
+      </div>
 
-        <div class="card">
-          <div class="section-title">판단 상세</div>
-          <div class="two-col">
-            <div>
-              <div class="sub-title">핵심 수치</div>
-              <div class="box">신용점수: {escape(str(credit_score if credit_score is not None else '-'))}</div>
-              <div class="box">한도 범위: {escape(str(limit_range or '-'))}</div>
-              <div class="box">한도 산정 근거: {escape(str(limit_basis or '-'))}</div>
-              <div class="sub-title">판단 사유</div>
-              <div class="box"><ul>{render_list(reasons)}</ul></div>
-            </div>
-            <div>
-              <div class="sub-title">점수 산출</div>
-              <div class="box">기본 점수: {escape(str(breakdown.get('base_score', '-')))}</div>
-              <div class="box">최종 점수: {escape(str(breakdown.get('final_score', '-')))}</div>
-              <div class="box">리스크 차감: {escape(str(breakdown.get('risk_deduction', '-')))}</div>
-              <div class="box">재무 차감: {escape(str(breakdown.get('financial_deduction', '-')))}</div>
-              <div class="box">등급 산출 근거: {escape(str(rationale))}</div>
-              <div class="sub-title">설명 기반 리스크 요인</div>
-              <div class="box"><ul>{render_list(key_risk_factors)}</ul></div>
-              <div class="sub-title">처리 로그</div>
-              <div class="box"><ul>{render_list(processing_errors)}</ul></div>
-            </div>
+      <div class="card">
+        <div class="section-title">{escape(str(sections["monitoring"]["title"]))}</div>
+        <div class="two-col">
+          <div>
+            <div class="box">{escape(str(sections["monitoring"].get("recommendation") or "-"))}</div>
+            <div class="box">결정: {escape(str(sections["monitoring"]["decision"]))}</div>
+            <div class="box">권고 한도: {escape(str(sections["monitoring"]["recommended_limit"]))}</div>
+          </div>
+          <div>
+            <div class="box"><ul>{render_list(sections["monitoring"].get("monitoring_points", []))}</ul></div>
+            <div class="box"><ul>{render_list(sections["monitoring"].get("recent_risk_events", []))}</ul></div>
           </div>
         </div>
       </div>
     </body>
     </html>
     """
+
+
+def _find_step_output(steps: list[dict[str, Any]], agent_name: str) -> dict[str, Any] | None:
+    for step in steps:
+        if step.get("agent_name") == agent_name:
+            output = step.get("output")
+            return output if isinstance(output, dict) else None
+    return None
+
+
+def _render_chip_list(items: list[Any] | None, css_class: str) -> str:
+    if not items:
+        return f'<div class="{css_class}">표시할 정보가 없습니다.</div>'
+    return "".join(
+        f'<div class="{css_class}">{escape(str(item))}</div>' for item in items
+    )
+
+
+def _format_decision(decision: str) -> str:
+    return {
+        "approve": "승인",
+        "review": "재검토",
+        "reject": "거절",
+    }.get(decision, str(decision))
+
+
+def _decision_badge_class(decision: str) -> str:
+    return {
+        "approve": "badge-approve",
+        "review": "badge-review",
+        "reject": "badge-reject",
+    }.get(decision, "badge-default")
