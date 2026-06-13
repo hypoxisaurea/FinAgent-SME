@@ -10,11 +10,15 @@ from typing import Any
 from urllib.parse import quote_plus
 
 import requests
+from backend.common.api_client import (
+    build_llm_client_kwargs,
+    get_llm_client_config,
+)
 from backend.common.env import load_backend_env
+from backend.common.langfuse import build_openai_trace_kwargs, get_openai_class
 from backend.tools.prompts.news import NEWS_SUMMARY_PROMPT_TEMPLATE
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from openai import OpenAI
 from sqlalchemy import (
     DateTime,
     Integer,
@@ -50,8 +54,9 @@ DEFAULT_PAGE_SIZE = 20
 DEFAULT_REQUEST_TIMEOUT = 10
 DEFAULT_LIST_DELAY_SEC = 0.4
 DEFAULT_CONTENT_DELAY_SEC = 1.0
-DEFAULT_SUMMARY_MODEL = "gpt-4o-mini"
+DEFAULT_SUMMARY_MODEL = os.getenv("NEWS_SUMMARY_MODEL", "qwen/qwen3-8b").strip()
 DEFAULT_SUMMARIZE = True
+NEWS_SUMMARY_PROVIDER = "openrouter"
 
 DEFAULT_HEADERS = {
     "User-Agent": (
@@ -469,24 +474,24 @@ def extract_daum_news_contents(
     return news_list
 
 
-def get_openai_client() -> OpenAI:
-    api_key = (
-        os.environ.get("OPEN_AI_API_KEY", "").strip()
-        or os.environ.get("OPENAI_API_KEY", "").strip()
-        or os.environ.get("OPEN_API_KEY", "").strip()
-    )
-    if not api_key:
+def get_openai_client() -> Any:
+    llm_config = get_llm_client_config()
+    if llm_config.provider != NEWS_SUMMARY_PROVIDER:
         raise RuntimeError(
-            "OpenAI API 키가 설정되어 있지 않습니다. "
-            "OPEN_AI_API_KEY 또는 OPENAI_API_KEY를 확인해주세요."
+            "news summary는 OpenRouter provider가 필요합니다. "
+            "OPENROUTER_API_KEY 또는 OPEN_ROUTER_API_KEY를 확인해주세요."
         )
-    return OpenAI(api_key=api_key)
+    client_class = get_openai_class()
+    return client_class(**build_llm_client_kwargs())
 
 
 def get_llm_summary(
     text: str,
-    client: OpenAI | None = None,
+    client: Any | None = None,
     model_name: str = DEFAULT_SUMMARY_MODEL,
+    *,
+    corp_name: str | None = None,
+    request_id: str | None = None,
 ) -> tuple[str, float]:
     if not text or len(text.strip()) < 50:
         return "본문이 너무 짧습니다.", 0.0
@@ -503,6 +508,18 @@ def get_llm_summary(
                 {"role": "user", "content": prompt},
             ],
             temperature=0.0,
+            **build_openai_trace_kwargs(
+                name="news.summary",
+                session_id=request_id,
+                tags=["news_collector", "summary"],
+                metadata={
+                    "agent_name": "news_collector",
+                    "company_name": corp_name,
+                    "input_length": len(text),
+                    "provider": NEWS_SUMMARY_PROVIDER,
+                    "model_name": model_name,
+                },
+            ),
         )
         summary_result = response.choices[0].message.content.strip()
         latency = time.time() - start_time
@@ -528,8 +545,9 @@ def build_article_payload(
     corp_name: str,
     news: dict[str, Any],
     summarize: bool = DEFAULT_SUMMARIZE,
-    summary_client: OpenAI | None = None,
+    summary_client: Any | None = None,
     model_name: str = DEFAULT_SUMMARY_MODEL,
+    request_id: str | None = None,
 ) -> dict[str, Any]:
     article_content = (news.get("content") or "").strip()
     stored_content = article_content
@@ -540,6 +558,8 @@ def build_article_payload(
             article_content,
             client=summary_client,
             model_name=model_name,
+            corp_name=corp_name,
+            request_id=request_id,
         )
         stored_content = summary_text
         content_type = "summary"
@@ -621,6 +641,7 @@ def execute_news_pipeline(
     company_name: str | None = None,
     corp_name: str | None = None,
     stock_code: str | None = None,
+    request_id: str | None = None,
 ) -> dict[str, Any]:
     engine = create_db_engine(database_url)
     create_tables(engine)
@@ -691,6 +712,7 @@ def execute_news_pipeline(
                     summarize=summarize,
                     summary_client=summary_client,
                     model_name=model_name,
+                    request_id=request_id,
                 )
                 for news in news_list
                 if (news.get("title") or "").strip() and (news.get("url") or "").strip()

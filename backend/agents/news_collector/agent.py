@@ -19,6 +19,7 @@ from backend.tools.news import (
     DEFAULT_LOOKBACK_DAYS,
     DEFAULT_MAX_ARTICLES,
     DEFAULT_SUMMARY_MODEL,
+    NEWS_SUMMARY_PROVIDER,
     execute_news_pipeline,
 )
 from backend.tools.prompts.news import NEWS_COLLECTOR_PROMPT
@@ -51,12 +52,14 @@ class NewsCollectorAgent:
             logger.info(
                 (
                     "news_collector_started lookback_days=%s "
-                    "max_articles=%s company_limit=%s summarize=%s model_name=%s"
+                    "max_articles=%s company_limit=%s summarize=%s "
+                    "summary_provider=%s model_name=%s"
                 ),
                 lookback_days,
                 max_articles,
                 company_limit,
                 summarize,
+                NEWS_SUMMARY_PROVIDER,
                 model_name,
             )
 
@@ -77,6 +80,7 @@ class NewsCollectorAgent:
                     company_name=payload.get("company_name"),
                     corp_name=payload.get("corp_name"),
                     stock_code=payload.get("stock_code"),
+                    request_id=request_id,
                 ),
                 fallback_factory=_default_news_result,
                 validate_dict=True,
@@ -115,6 +119,7 @@ class NewsCollectorAgent:
                         "max_articles": max_articles,
                         "company_limit": company_limit,
                         "summarize": summarize,
+                        "summary_provider": NEWS_SUMMARY_PROVIDER,
                         "model_name": model_name,
                         "prompt": NEWS_COLLECTOR_PROMPT,
                     },
@@ -141,6 +146,7 @@ def news_collection_node(state: dict[str, Any]) -> dict[str, Any]:
         company_name=state.get("company_name"),
         corp_name=state.get("corp_name"),
         stock_code=state.get("stock_code"),
+        request_id=state.get("request_id"),
     )
     return {
         "news_data": pipeline_result.get("collected_news_data", []),

@@ -19,7 +19,7 @@ from backend.data.repositories.company_registry import (
     add_created_at_column,
     filter_new_rows,
 )
-from backend.integrations.dart_client import resolve_dart_api_key
+from backend.integrations.dart_client import get_dart_json, resolve_dart_api_key
 from tqdm.auto import tqdm
 
 try:
@@ -48,6 +48,100 @@ TARGET_ACCOUNTS = [
     "당기순이익(손실)",
     "부채총계",
     "자본총계",
+]
+
+STATEMENT_DETAIL_ACCOUNT_MAP = {
+    "current_assets": ["유동자산"],
+    "current_liabilities": ["유동부채"],
+    "total_assets_statement": ["자산총계"],
+    "total_liabilities": ["부채총계"],
+    "total_equity": ["자본총계"],
+    "retained_earnings": ["이익잉여금", "이익잉여금(결손금)"],
+    "inventory": ["재고자산", "유동재고자산"],
+    "accounts_receivable": [
+        "매출채권",
+        "매출채권 및 기타채권",
+        "매출채권및기타채권",
+        "매출채권 및 기타유동채권",
+        "매출채권및기타유동채권",
+    ],
+    "accounts_payable": [
+        "매입채무",
+        "매입채무 및 기타채무",
+        "매입채무및기타채무",
+        "매입채무 및 기타유동채무",
+        "매입채무및기타유동채무",
+    ],
+    "short_term_borrowings": ["단기차입금", "단기차입부채"],
+    "current_portion_long_term_borrowings": [
+        "유동성장기차입금",
+        "유동성성장기차입부채",
+        "유동성장기차입부채",
+    ],
+    "long_term_borrowings": ["장기차입금", "장기차입부채"],
+    "bonds": ["사채"],
+    "tangible_assets": ["유형자산"],
+    "revenue": ["매출액", "영업수익", "수익(매출액)", "Revenue"],
+    "cost_of_goods_sold": ["매출원가", "영업비용"],
+    "operating_income": ["영업이익", "영업이익(손실)"],
+    "net_income": ["당기순이익(손실)", "당기순이익"],
+    "interest_expense": ["금융비용", "이자비용"],
+    "operating_cashflow": ["영업활동현금흐름", "영업활동 현금흐름"],
+    "capital_expenditure": ["유형자산의 취득", "유형자산취득"],
+}
+
+STATEMENT_DETAIL_COLUMNS = [
+    "corp_code",
+    "corp_name",
+    "stock_code",
+    "year",
+    "avg_revenue_last_3y",
+    "current_assets",
+    "current_liabilities",
+    "total_assets_statement",
+    "total_liabilities",
+    "total_equity",
+    "retained_earnings",
+    "inventory",
+    "accounts_receivable",
+    "accounts_payable",
+    "short_term_borrowings",
+    "current_portion_long_term_borrowings",
+    "long_term_borrowings",
+    "bonds",
+    "tangible_assets",
+    "revenue",
+    "cost_of_goods_sold",
+    "operating_income",
+    "net_income",
+    "interest_expense",
+    "operating_cashflow",
+    "capital_expenditure",
+    "audit_opinion",
+    "is_external_audit",
+    CREATED_AT_COLUMN,
+]
+
+STATEMENT_DETAIL_ACCOUNT_NAMES = sorted(
+    {
+        account_name
+        for account_names in STATEMENT_DETAIL_ACCOUNT_MAP.values()
+        for account_name in account_names
+    }
+)
+
+COMPANY_PROFILE_COLUMNS = [
+    "corp_cls",
+    "stock_name",
+    "ceo_name",
+    "address",
+    "homepage_url",
+    "ir_url",
+    "phone_number",
+    "fax_number",
+    "industry_code",
+    "established_date",
+    "settlement_month",
 ]
 
 # 매출액 유사 단어 묶기
@@ -141,6 +235,136 @@ def convert_amount_columns(filtered_df, amount_cols):
     return converted_df
 
 
+def normalize_text(value: Any) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def normalize_established_date(value: Any) -> str | None:
+    text = normalize_text(value)
+    if text is None:
+        return None
+    digits = "".join(ch for ch in text if ch.isdigit())
+    if len(digits) != 8:
+        return text
+    try:
+        return datetime.strptime(digits, "%Y%m%d").date().isoformat()
+    except ValueError:
+        return text
+
+
+def fetch_company_profile(corp_code: str) -> dict[str, Any]:
+    payload = get_dart_json(
+        "company.json",
+        params={"corp_code": str(corp_code).zfill(8)},
+        timeout=10,
+    )
+    if payload.get("status") != "000":
+        raise ValueError(f"기업개황 조회 실패: {payload.get('message')}")
+
+    return {
+        "corp_code": str(payload.get("corp_code") or corp_code).zfill(8),
+        "corp_cls": normalize_text(payload.get("corp_cls")),
+        "stock_name": normalize_text(payload.get("stock_name")),
+        "stock_code": normalize_text(payload.get("stock_code")),
+        "ceo_name": normalize_text(payload.get("ceo_nm")),
+        "address": normalize_text(payload.get("adres")),
+        "homepage_url": normalize_text(payload.get("hm_url")),
+        "ir_url": normalize_text(payload.get("ir_url")),
+        "phone_number": normalize_text(payload.get("phn_no")),
+        "fax_number": normalize_text(payload.get("fax_no")),
+        "industry_code": normalize_text(payload.get("induty_code")),
+        "established_date": normalize_established_date(payload.get("est_dt")),
+        "settlement_month": normalize_text(payload.get("acc_mt")),
+    }
+
+
+def build_company_profile_dataframe(
+    sme_list_df: pd.DataFrame,
+) -> tuple[pd.DataFrame, list[dict[str, Any]], dict[str, int]]:
+    columns = ["corp_code", *COMPANY_PROFILE_COLUMNS]
+    if sme_list_df.empty:
+        return pd.DataFrame(columns=columns), [], {
+            "profile_success_count": 0,
+            "profile_error_count": 0,
+        }
+
+    profile_records: list[dict[str, Any]] = []
+    error_logs: list[dict[str, Any]] = []
+    unique_companies = (
+        sme_list_df[["corp_code", "corp_name"]]
+        .drop_duplicates(subset=["corp_code"])
+        .reset_index(drop=True)
+    )
+
+    for _, row in tqdm(
+        unique_companies.iterrows(),
+        total=len(unique_companies),
+        desc="기업개황 수집",
+    ):
+        corp_code = str(row["corp_code"]).zfill(8)
+        corp_name = row.get("corp_name")
+        try:
+            profile_records.append(fetch_company_profile(corp_code))
+        except Exception as exc:  # noqa: BLE001
+            add_error_log(
+                error_logs,
+                corp_code=corp_code,
+                corp_name=corp_name,
+                error_type="COMPANY_PROFILE_ERROR",
+                message=str(exc),
+            )
+
+    return (
+        pd.DataFrame(profile_records, columns=columns),
+        error_logs,
+        {
+            "profile_success_count": len(profile_records),
+            "profile_error_count": len(error_logs),
+        },
+    )
+
+
+def fetch_audit_metadata(corp_code: str, business_year: int) -> tuple[str | None, bool]:
+    """기준 사업연도의 감사의견과 외감 여부를 조회한다."""
+    try:
+        payload = get_dart_json(
+            "accnutAdtorNmNdAdtOpinion.json",
+            params={
+                "corp_code": str(corp_code).zfill(8),
+                "bsns_year": str(business_year),
+                "reprt_code": DEFAULT_REPORT_CODE,
+            },
+            timeout=10,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "audit_metadata_fetch_failed corp_code=%s year=%s error=%s",
+            corp_code,
+            business_year,
+            exc,
+        )
+        return None, False
+
+    if payload.get("status") != "000":
+        return None, False
+
+    items = payload.get("list", [])
+    if not items:
+        return None, False
+
+    target = next(
+        (item for item in items if "당기" in str(item.get("bsns_year", ""))),
+        items[0],
+    )
+    opinion = normalize_text(target.get("adt_opinion"))
+    if opinion == "-":
+        opinion = None
+    return opinion, True
+
+
 # 연결제무제표 사용 함수
 def select_preferred_financial_statement(filtered_df):
     cfs_df = filtered_df[filtered_df["fs_div"] == "CFS"].copy()
@@ -152,6 +376,156 @@ def select_preferred_financial_statement(filtered_df):
         return ofs_df
 
     return pd.DataFrame()
+
+
+def build_account_subset_dataframe(
+    raw_df: pd.DataFrame,
+    target_accounts: list[str],
+) -> pd.DataFrame:
+    columns = [
+        "corp_code",
+        "stock_code",
+        "fs_div",
+        "account_nm",
+        "thstrm_amount",
+        "frmtrm_amount",
+        "bfefrmtrm_amount",
+    ]
+    subset_df = raw_df[raw_df["account_nm"].isin(target_accounts)].copy()
+    for column in columns:
+        if column not in subset_df.columns:
+            subset_df[column] = None
+    subset_df = subset_df[columns].copy()
+    if subset_df.empty:
+        return subset_df
+
+    subset_df = select_preferred_financial_statement(subset_df)
+    if subset_df.empty:
+        return subset_df
+
+    return convert_amount_columns(
+        subset_df,
+        ["thstrm_amount", "frmtrm_amount", "bfefrmtrm_amount"],
+    )
+
+
+def normalize_account_name(value: Any) -> str:
+    return "".join(str(value or "").split())
+
+
+def extract_account_amount(
+    statement_df: pd.DataFrame,
+    amount_column: str,
+    candidate_names: list[str],
+) -> float | None:
+    if statement_df.empty:
+        return None
+
+    normalized_candidates = {
+        normalize_account_name(candidate_name)
+        for candidate_name in candidate_names
+    }
+    matched_rows = statement_df[
+        statement_df["account_nm"].map(normalize_account_name).isin(
+            normalized_candidates
+        )
+    ]
+    if matched_rows.empty:
+        return None
+
+    value = matched_rows.iloc[0][amount_column]
+    if pd.isna(value):
+        return None
+    return float(value)
+
+
+def build_statement_detail_records(
+    statement_df: pd.DataFrame,
+    *,
+    corp_code: str,
+    corp_name: str,
+    stock_code: str | None,
+    business_year: int,
+    avg_revenue_last_3y: float,
+    audit_opinion: str | None,
+    is_external_audit: bool,
+) -> list[dict[str, Any]]:
+    """단일 기업의 재무제표 DataFrame에서 연도별 상세 재무 스냅샷을 만든다."""
+    if statement_df.empty:
+        return []
+
+    year_mapping = get_year_mapping(business_year)
+    records: list[dict[str, Any]] = []
+    normalized_stock_code = normalize_text(stock_code)
+
+    for amount_column, year in year_mapping.items():
+        record: dict[str, Any] = {
+            "corp_code": corp_code,
+            "corp_name": corp_name,
+            "stock_code": normalized_stock_code,
+            "year": year,
+            "avg_revenue_last_3y": avg_revenue_last_3y,
+            "audit_opinion": audit_opinion if year == business_year else None,
+            "is_external_audit": bool(is_external_audit) if year == business_year else False,
+        }
+
+        for column_name, candidate_names in STATEMENT_DETAIL_ACCOUNT_MAP.items():
+            value = extract_account_amount(statement_df, amount_column, candidate_names)
+            if column_name == "capital_expenditure" and value is not None:
+                value = abs(value)
+            record[column_name] = value
+
+        records.append(record)
+
+    return records
+
+
+def fetch_statement_detail_dataframe(
+    corp_code: str,
+    business_year: int,
+    report_code: str,
+) -> pd.DataFrame:
+    """상세 재무 스냅샷용 전체 계정 재무제표를 우선 연결, 없으면 별도로 조회한다."""
+    for fs_div in ("CFS", "OFS"):
+        payload = get_dart_json(
+            "fnlttSinglAcntAll.json",
+            params={
+                "corp_code": str(corp_code).zfill(8),
+                "bsns_year": str(business_year),
+                "reprt_code": report_code,
+                "fs_div": fs_div,
+            },
+            timeout=20,
+        )
+        if payload.get("status") != "000":
+            continue
+
+        items = payload.get("list", [])
+        if not items:
+            continue
+
+        raw_df = pd.DataFrame(items)
+        if raw_df.empty:
+            continue
+
+        raw_df["corp_code"] = str(corp_code).zfill(8)
+        raw_df["stock_code"] = None
+        raw_df["fs_div"] = fs_div
+        detail_df = build_account_subset_dataframe(
+            raw_df,
+            STATEMENT_DETAIL_ACCOUNT_NAMES,
+        )
+        if not detail_df.empty:
+            return detail_df
+
+    return pd.DataFrame()
+
+
+def build_statement_detail_dataframe(statement_records: list[dict[str, Any]]) -> pd.DataFrame:
+    """연도별 상세 재무 스냅샷 레코드를 DataFrame으로 정규화한다."""
+    if not statement_records:
+        return pd.DataFrame(columns=STATEMENT_DETAIL_COLUMNS)
+    return pd.DataFrame(statement_records, columns=STATEMENT_DETAIL_COLUMNS)
 
 
 # 연도 맵핑 함수
@@ -205,19 +579,7 @@ def process_company(row, business_year, report_code, error_logs):
             )
             return {"status": "error", "records": []}
 
-        filtered_df = temp_df[temp_df["account_nm"].isin(TARGET_ACCOUNTS)][
-            [
-                "corp_code",
-                "stock_code",
-                "fs_div",
-                "account_nm",
-                "thstrm_amount",
-                "frmtrm_amount",
-                "bfefrmtrm_amount",
-            ]
-        ].copy()
-
-        filtered_df = select_preferred_financial_statement(filtered_df)
+        filtered_df = build_account_subset_dataframe(temp_df, TARGET_ACCOUNTS)
         if filtered_df.empty:
             add_error_log(
                 error_logs,
@@ -227,9 +589,6 @@ def process_company(row, business_year, report_code, error_logs):
                 message="사용 가능한 재무제표 없음",
             )
             return {"status": "error", "records": []}
-
-        amount_cols = ["thstrm_amount", "frmtrm_amount", "bfefrmtrm_amount"]
-        filtered_df = convert_amount_columns(filtered_df, amount_cols)
 
         asset_row = filtered_df[filtered_df["account_nm"] == "자산총계"]
         if asset_row.empty:
@@ -330,8 +689,42 @@ def process_company(row, business_year, report_code, error_logs):
                         "total_assets": total_assets,
                     }
                 )
+        try:
+            detail_df = fetch_statement_detail_dataframe(
+                corp_code=corp_code,
+                business_year=business_year,
+                report_code=report_code,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "statement_detail_fetch_failed corp_code=%s year=%s error=%s",
+                corp_code,
+                business_year,
+                exc,
+            )
+            detail_df = pd.DataFrame()
+        audit_opinion, is_external_audit = fetch_audit_metadata(
+            corp_code,
+            business_year,
+        )
+        statement_records = build_statement_detail_records(
+            detail_df,
+            corp_code=corp_code,
+            corp_name=corp_name,
+            stock_code=normalize_text(row.get("stock_code")) or normalize_text(
+                revenue_row.get("stock_code")
+            ),
+            business_year=business_year,
+            avg_revenue_last_3y=avg_revenue_last_3y,
+            audit_opinion=audit_opinion,
+            is_external_audit=is_external_audit,
+        )
 
-        return {"status": "success", "records": records}
+        return {
+            "status": "success",
+            "records": records,
+            "statement_records": statement_records,
+        }
 
     except Exception as exc:
         add_error_log(
@@ -348,6 +741,7 @@ def process_company(row, business_year, report_code, error_logs):
 # 진행 상황 확인 위한 함수
 def run_collection(sme_df, business_year, report_code):
     processed_records = []
+    statement_records = []
     error_logs = []
     success_count = 0
     asset_filtered_count = 0
@@ -361,6 +755,7 @@ def run_collection(sme_df, business_year, report_code):
 
         if status == "success":
             processed_records.extend(result["records"])
+            statement_records.extend(result.get("statement_records", []))
             success_count += 1
         elif status == "asset_filtered":
             asset_filtered_count += 1
@@ -389,7 +784,7 @@ def run_collection(sme_df, business_year, report_code):
         "error_count": error_count,
         "elapsed_total": round(time.time() - start_time, 1),
     }
-    return processed_records, error_logs, stats
+    return processed_records, statement_records, error_logs, stats
 
 
 # 최종 데이터프레임 만드는 함수
@@ -524,6 +919,43 @@ def run_self_tests():
     assert not final_df.empty
     assert "revenue" in final_df.columns
     assert "operating_income" in final_df.columns
+
+    statement_records = [
+        {
+            "corp_code": "001",
+            "corp_name": "테스트기업",
+            "stock_code": "123456",
+            "year": 2024,
+            "avg_revenue_last_3y": 90.0,
+            "current_assets": 10,
+            "current_liabilities": 5,
+            "total_assets_statement": 1000,
+            "total_liabilities": 300,
+            "total_equity": 700,
+            "retained_earnings": 100,
+            "inventory": 20,
+            "accounts_receivable": 30,
+            "accounts_payable": 15,
+            "short_term_borrowings": 40,
+            "current_portion_long_term_borrowings": 10,
+            "long_term_borrowings": 50,
+            "bonds": 0,
+            "tangible_assets": 200,
+            "revenue": 100,
+            "cost_of_goods_sold": 60,
+            "operating_income": 20,
+            "net_income": 10,
+            "interest_expense": 3,
+            "operating_cashflow": 15,
+            "capital_expenditure": 5,
+            "audit_opinion": "적정",
+            "is_external_audit": True,
+        }
+    ]
+    statement_detail_df = build_statement_detail_dataframe(statement_records)
+    assert not statement_detail_df.empty
+    assert "current_assets" in statement_detail_df.columns
+    assert "capital_expenditure" in statement_detail_df.columns
 
     sme_list_df = build_sme_list_dataframe(final_df)
     assert len(sme_list_df) == 1

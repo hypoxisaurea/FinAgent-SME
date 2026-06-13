@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 # Financial Agent 출력 서브 모델
 
@@ -236,8 +236,9 @@ class CreditState(BaseModel):
     decision_summary: str | None           = None   # 의사결정 요약
     xai_explanation:  dict[str, Any] | None = None  # XAI 근거
 
-    class Config:
-        extra = "allow"   # 향후 에이전트 확장 시 유연하게 수용
+    model_config = ConfigDict(
+        extra="allow",
+    )
 
 
 # Orchestrator 적재 헬퍼

@@ -8,9 +8,12 @@ from backend.agents.orchestrator.results import summarize_steps
 from backend.agents.orchestrator.state import WorkflowState
 from backend.agents.orchestrator.step_runner import run_agent_step
 from backend.common.agent import Agent
+from backend.common.langfuse import start_as_current_observation
+from backend.common.langgraph import LANGGRAPH_IMPORT_GUARD
 from langgraph.graph import END, START, StateGraph
 
 logger = logging.getLogger("backend.agents.orchestrator.orchestrator")
+LANGGRAPH_RUNTIME_CONFIGURED = LANGGRAPH_IMPORT_GUARD
 
 
 class WorkflowGraphBuilder:
@@ -68,77 +71,99 @@ class WorkflowGraphBuilder:
             if context.get("_halt_workflow"):
                 return {}
 
-            logger.info(
-                "workflow_agent_started company_name=%s agent_name=%s",
-                context.get("company_name"),
-                agent.name,
-            )
-            step = await run_agent_step(agent, context)
-            node_state: WorkflowState = {"steps": [asdict(step)]}
+            with start_as_current_observation(
+                name=agent.name,
+                as_type="agent",
+                input={
+                    "company_name": context.get("company_name"),
+                    "agent_name": agent.name,
+                },
+                metadata={
+                    "request_id": context.get("request_id"),
+                    "company_name": context.get("company_name"),
+                    "agent_name": agent.name,
+                },
+            ) as observation:
+                logger.info(
+                    "workflow_agent_started company_name=%s agent_name=%s",
+                    context.get("company_name"),
+                    agent.name,
+                )
+                step = await run_agent_step(agent, context)
+                observation.update(
+                    output={
+                        "status": step.status,
+                        "ok": step.ok,
+                        "error_code": step.error_code,
+                        "fallback_used": step.fallback_used,
+                        "latency_ms": step.latency_ms,
+                    }
+                )
+                node_state: WorkflowState = {"steps": [asdict(step)]}
 
-            if step.ok:
+                if step.ok:
+                    logger.info(
+                        (
+                            "workflow_agent_completed company_name=%s agent_name=%s "
+                            "status=%s fallback_used=%s "
+                            "latency_ms=%s output_keys=%s"
+                        ),
+                        context.get("company_name"),
+                        agent.name,
+                        step.status,
+                        step.fallback_used,
+                        step.latency_ms,
+                        sorted(step.output.keys()),
+                    )
+                    if step.output:
+                        node_state["context"] = step.output
+                elif not self._continue_on_error:
+                    logger.warning(
+                        (
+                            "workflow_agent_failed company_name=%s agent_name=%s "
+                            "status=%s error_code=%s "
+                            "continue_on_error=%s error=%s"
+                        ),
+                        context.get("company_name"),
+                        agent.name,
+                        step.status,
+                        step.error_code,
+                        self._continue_on_error,
+                        step.error,
+                    )
+                    node_state["context"] = {"_halt_workflow": True}
+                else:
+                    logger.warning(
+                        (
+                            "workflow_agent_failed company_name=%s agent_name=%s "
+                            "status=%s error_code=%s "
+                            "continue_on_error=%s error=%s"
+                        ),
+                        context.get("company_name"),
+                        agent.name,
+                        step.status,
+                        step.error_code,
+                        self._continue_on_error,
+                        step.error,
+                    )
+
+                progress_steps = list(state.get("steps", [])) + [asdict(step)]
+                progress_summary = summarize_steps(progress_steps)
                 logger.info(
                     (
-                        "workflow_agent_completed company_name=%s agent_name=%s "
-                        "status=%s fallback_used=%s "
-                        "latency_ms=%s output_keys=%s"
+                        "workflow_progress company_name=%s completed_steps=%s "
+                        "success_steps=%s partial_steps=%s "
+                        "failed_steps=%s fallback_steps=%s last_agent=%s last_status=%s"
                     ),
                     context.get("company_name"),
+                    len(progress_steps),
+                    progress_summary["success"],
+                    progress_summary["partial"],
+                    progress_summary["failed"],
+                    progress_summary["fallback"],
                     agent.name,
                     step.status,
-                    step.fallback_used,
-                    step.latency_ms,
-                    sorted(step.output.keys()),
                 )
-                if step.output:
-                    node_state["context"] = step.output
-            elif not self._continue_on_error:
-                logger.warning(
-                    (
-                        "workflow_agent_failed company_name=%s agent_name=%s "
-                        "status=%s error_code=%s "
-                        "continue_on_error=%s error=%s"
-                    ),
-                    context.get("company_name"),
-                    agent.name,
-                    step.status,
-                    step.error_code,
-                    self._continue_on_error,
-                    step.error,
-                )
-                node_state["context"] = {"_halt_workflow": True}
-            else:
-                logger.warning(
-                    (
-                        "workflow_agent_failed company_name=%s agent_name=%s "
-                        "status=%s error_code=%s "
-                        "continue_on_error=%s error=%s"
-                    ),
-                    context.get("company_name"),
-                    agent.name,
-                    step.status,
-                    step.error_code,
-                    self._continue_on_error,
-                    step.error,
-                )
-
-            progress_steps = list(state.get("steps", [])) + [asdict(step)]
-            progress_summary = summarize_steps(progress_steps)
-            logger.info(
-                (
-                    "workflow_progress company_name=%s completed_steps=%s "
-                    "success_steps=%s partial_steps=%s "
-                    "failed_steps=%s fallback_steps=%s last_agent=%s last_status=%s"
-                ),
-                context.get("company_name"),
-                len(progress_steps),
-                progress_summary["success"],
-                progress_summary["partial"],
-                progress_summary["failed"],
-                progress_summary["fallback"],
-                agent.name,
-                step.status,
-            )
 
             return node_state
 

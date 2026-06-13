@@ -10,6 +10,7 @@ from backend.common.contracts import (
     classify_agent_error,
     elapsed_ms,
 )
+from backend.common.langfuse import start_as_current_observation
 
 
 @dataclass(slots=True)
@@ -37,74 +38,115 @@ def execute_tool_step(
 ) -> tuple[Any, ToolRunResult]:
     """Agent 내부 tool 호출을 공통 규약으로 실행한다."""
     started_at = perf_counter()
-    logger.info(
-        "agent_tool_started company_name=%s agent_name=%s tool_name=%s",
-        company_name,
-        agent_name,
-        tool_name,
-    )
-    try:
-        value = runner()
-        if validate_dict and not isinstance(value, dict):
-            raise TypeError(
-                f"{agent_name}.{tool_name} 반환값은 dict여야 합니다. "
-                f"실제 타입: {type(value).__name__}"
-            )
-        tool_run = ToolRunResult(
-            tool_name=tool_name,
-            status="success",
-            error_code="OK",
-            fallback_used=False,
-            latency_ms=elapsed_ms(started_at),
-        )
+    with start_as_current_observation(
+        name=f"{agent_name}.{tool_name}",
+        as_type="tool",
+        input={
+            "company_name": company_name,
+            "agent_name": agent_name,
+            "tool_name": tool_name,
+        },
+        metadata={
+            "request_id": request_id,
+            "company_name": company_name,
+            "agent_name": agent_name,
+            "tool_name": tool_name,
+        },
+    ) as observation:
         logger.info(
-            (
-                "agent_tool_completed company_name=%s agent_name=%s "
-                "tool_name=%s latency_ms=%s"
-            ),
+            "agent_tool_started company_name=%s agent_name=%s tool_name=%s",
             company_name,
             agent_name,
             tool_name,
-            tool_run.latency_ms,
         )
-        return value, tool_run
-    except Exception as exc:  # noqa: BLE001
-        error_code = classify_agent_error(exc)
-        if fallback_factory is None:
-            logger.exception(
+        try:
+            value = runner()
+            if validate_dict and not isinstance(value, dict):
+                raise TypeError(
+                    f"{agent_name}.{tool_name} 반환값은 dict여야 합니다. "
+                    f"실제 타입: {type(value).__name__}"
+                )
+            tool_run = ToolRunResult(
+                tool_name=tool_name,
+                status="success",
+                error_code="OK",
+                fallback_used=False,
+                latency_ms=elapsed_ms(started_at),
+            )
+            observation.update(
+                output={
+                    "status": tool_run.status,
+                    "error_code": tool_run.error_code,
+                    "fallback_used": tool_run.fallback_used,
+                    "latency_ms": tool_run.latency_ms,
+                }
+            )
+            logger.info(
                 (
-                    "agent_tool_failed company_name=%s agent_name=%s "
-                    "tool_name=%s error_code=%s"
+                    "agent_tool_completed company_name=%s agent_name=%s "
+                    "tool_name=%s latency_ms=%s"
+                ),
+                company_name,
+                agent_name,
+                tool_name,
+                tool_run.latency_ms,
+            )
+            return value, tool_run
+        except Exception as exc:  # noqa: BLE001
+            error_code = classify_agent_error(exc)
+            if fallback_factory is None:
+                observation.update(
+                    output={
+                        "status": "failed",
+                        "error_code": error_code,
+                        "fallback_used": False,
+                        "error": str(exc),
+                        "latency_ms": elapsed_ms(started_at),
+                    }
+                )
+                logger.exception(
+                    (
+                        "agent_tool_failed company_name=%s agent_name=%s "
+                        "tool_name=%s error_code=%s"
+                    ),
+                    company_name,
+                    agent_name,
+                    tool_name,
+                    error_code,
+                )
+                raise
+
+            fallback_value = fallback_factory()
+            tool_run = ToolRunResult(
+                tool_name=tool_name,
+                status="partial",
+                error_code=error_code,
+                fallback_used=True,
+                latency_ms=elapsed_ms(started_at),
+                error=str(exc),
+            )
+            observation.update(
+                output={
+                    "status": tool_run.status,
+                    "error_code": tool_run.error_code,
+                    "fallback_used": tool_run.fallback_used,
+                    "error": tool_run.error,
+                    "latency_ms": tool_run.latency_ms,
+                }
+            )
+            logger.warning(
+                (
+                    "agent_tool_fallback company_name=%s agent_name=%s "
+                    "tool_name=%s error_code=%s latency_ms=%s error=%s"
                 ),
                 company_name,
                 agent_name,
                 tool_name,
                 error_code,
+                tool_run.latency_ms,
+                exc,
             )
-            raise
-
-        fallback_value = fallback_factory()
-        tool_run = ToolRunResult(
-            tool_name=tool_name,
-            status="partial",
-            error_code=error_code,
-            fallback_used=True,
-            latency_ms=elapsed_ms(started_at),
-            error=str(exc),
-        )
-        logger.warning(
-            (
-                "agent_tool_fallback company_name=%s agent_name=%s "
-                "tool_name=%s error_code=%s latency_ms=%s error=%s"
-            ),
-            company_name,
-            agent_name,
-            tool_name,
-            error_code,
-            tool_run.latency_ms,
-            exc,
-        )
-        return fallback_value, tool_run
+            return fallback_value, tool_run
 
 
 def build_skipped_tool_result(

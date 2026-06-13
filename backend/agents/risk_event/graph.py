@@ -36,9 +36,11 @@ from backend.agents.risk_event.models import (
     SeverityClassifiedEvent,
     SeverityLevel,
 )
+from backend.common.langgraph import LANGGRAPH_IMPORT_GUARD
 from langgraph.graph import END, StateGraph
 
 logger = logging.getLogger(__name__)
+LANGGRAPH_RUNTIME_CONFIGURED = LANGGRAPH_IMPORT_GUARD
 RiskEventState = dict[str, Any]
 
 
@@ -53,6 +55,7 @@ async def _parallel_handlers(state: RiskEventState) -> RiskEventState:
     """
     company_name    = state["company_name"]
     corp_code       = state["corp_code"]
+    request_id      = state.get("request_id")
     news_data       = state.get("news_data", [])
     disclosure_data = state.get("disclosure_data", [])
     court_data      = state.get("court_data", [])
@@ -72,7 +75,7 @@ async def _parallel_handlers(state: RiskEventState) -> RiskEventState:
         # 동기 함수 → 스레드풀
         asyncio.to_thread(detect_keywords, company_name, news_data, disclosure_data),
         # 비동기 함수 → 그대로
-        analyze_sentiment(company_name, news_data),
+        analyze_sentiment(company_name, news_data, request_id=request_id),
         # 동기 함수 → 스레드풀
         asyncio.to_thread(
             detect_disclosure_anomalies,
@@ -266,6 +269,7 @@ async def run_risk_event_agent(
     news_data:       list[dict],
     disclosure_data: list[dict],
     court_data:      list[dict],
+    request_id:      str | None = None,
 ) -> RiskEventResult:
     final_state = await risk_event_graph.ainvoke({
         "company_name":    company_name,
@@ -273,5 +277,6 @@ async def run_risk_event_agent(
         "news_data":       news_data,
         "disclosure_data": disclosure_data,
         "court_data":      court_data,
+        "request_id":      request_id,
     })
     return final_state["final_result"]

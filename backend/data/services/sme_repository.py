@@ -15,6 +15,9 @@ from backend.data.repositories.company_master import (
 from backend.data.repositories.financial_feature import (
     get_financial_rows_by_corp_code as get_financial_rows_by_corp_code_from_repository,
 )
+from backend.data.repositories.financial_statement_detail import (
+    get_statement_detail_rows_by_corp_code as get_statement_detail_rows_by_corp_code_from_repository,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +29,13 @@ def _normalize_corp_code(corp_code: str) -> str:
 def get_financial_rows_by_corp_code(corp_code: str) -> list[dict[str, Any]]:
     """재무 피처 테이블에서 기업의 연도별 재무 데이터를 조회한다."""
     return get_financial_rows_by_corp_code_from_repository(
+        _normalize_corp_code(corp_code)
+    )
+
+
+def get_statement_detail_rows_by_corp_code(corp_code: str) -> list[dict[str, Any]]:
+    """심사용 상세 재무 테이블에서 기업의 연도별 재무 스냅샷을 조회한다."""
+    return get_statement_detail_rows_by_corp_code_from_repository(
         _normalize_corp_code(corp_code)
     )
 

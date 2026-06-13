@@ -1,6 +1,6 @@
 """D-004 | 판단 근거 자연어 설명 핸들러
 
-OpenAI API를 호출해 신용등급·승인 결정의 근거를
+LLM API를 호출해 신용등급·승인 결정의 근거를
 심사 담당자가 이해할 수 있는 자연어로 설명한다.
 """
 
@@ -39,7 +39,7 @@ async def generate_explanation(
     reasons: list[str],
     context: dict,
 ) -> DecisionExplanation:
-    """OpenAI API로 판단 근거 자연어 설명을 생성한다.
+    """LLM API로 판단 근거 자연어 설명을 생성한다.
 
     Args:
         company_name:  기업명
@@ -69,6 +69,15 @@ async def generate_explanation(
                 system=_SYSTEM_PROMPT,
                 max_tokens=1000,
                 response_format={"type": "json_object"},
+                observation_name="decision.explanation",
+                request_id=context.get("request_id"),
+                tags=["decision", "explanation"],
+                metadata={
+                    "agent_name": "decision",
+                    "company_name": company_name,
+                    "decision": decision.value,
+                    "grade": grade_result.grade.value,
+                },
             )
         parsed = parse_json_response(raw)
         if not isinstance(parsed, dict):

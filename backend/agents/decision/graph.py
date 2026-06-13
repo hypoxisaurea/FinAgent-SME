@@ -21,9 +21,11 @@ from backend.agents.decision.models import (
     GradeCalculationResult,
     LimitRecommendationResult,
 )
+from backend.common.langgraph import LANGGRAPH_IMPORT_GUARD
 from langgraph.graph import END, StateGraph
 
 logger = logging.getLogger(__name__)
+LANGGRAPH_RUNTIME_CONFIGURED = LANGGRAPH_IMPORT_GUARD
 
 DecisionState = dict[str, Any]
 

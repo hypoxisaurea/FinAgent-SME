@@ -5,6 +5,7 @@ import logging
 from typing import Any
 
 from backend.agents.orchestrator.orchestrator import WorkflowOrchestrator
+from backend.agents.orchestrator.orchestrator import create_credit_workflow
 from backend.common.agent import Agent
 
 
@@ -167,6 +168,7 @@ def test_orchestrator_halts_downstream_after_failure_by_default() -> None:
         step["agent_name"] == "news_collector" and step["ok"] is False
         for step in result["steps"]
     )
+    assert "_halt_workflow" not in result["context"]
     assert risk_event.seen_contexts == []
     assert decision.seen_contexts == []
 
@@ -271,6 +273,16 @@ def test_orchestrator_logs_agent_progress(caplog: Any) -> None:
         in msg
         for msg in messages
     )
+
+
+def test_default_credit_workflow_includes_validation_agent() -> None:
+    orchestrator = create_credit_workflow(payload={"company_name": "테스트기업"})
+
+    assert [agent.name for agent in orchestrator._sequential_agents] == [
+        "decision",
+        "report",
+        "validation",
+    ]
 
 
 def test_orchestrator_marks_failed_contract_output_as_step_failure() -> None:

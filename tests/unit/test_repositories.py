@@ -5,6 +5,7 @@ from typing import Any
 from backend.data.repositories import company_master
 from backend.data.repositories import db_access
 from backend.data.repositories import financial_feature
+from backend.data.repositories import financial_statement_detail
 
 
 class _FakeResult:
@@ -87,6 +88,42 @@ def test_get_financial_rows_by_corp_code_queries_postgres_table(
     assert rows == fake_engine.rows
     assert fake_engine.executed_queries[0][1] == {"corp_code": "00123456"}
     assert "FROM financial_features" in fake_engine.executed_queries[0][0]
+    assert fake_engine.disposed is True
+
+
+def test_get_statement_detail_rows_by_corp_code_queries_detail_table(
+    monkeypatch,
+) -> None:
+    fake_engine = _FakeEngine(
+        [
+            {
+                "corp_code": "00123456",
+                "corp_name": "테스트기업",
+                "stock_code": "123456",
+                "year": 2024,
+                "current_assets": 1000,
+            }
+        ]
+    )
+
+    monkeypatch.setattr(
+        db_access,
+        "create_db_engine",
+        lambda: fake_engine,
+    )
+    monkeypatch.setattr(
+        db_access,
+        "inspect",
+        lambda engine: _FakeInspector(
+            {financial_statement_detail.STATEMENT_DETAILS_TABLE_NAME: True}
+        ),
+    )
+
+    rows = financial_statement_detail.get_statement_detail_rows_by_corp_code("123456")
+
+    assert rows == fake_engine.rows
+    assert fake_engine.executed_queries[0][1] == {"corp_code": "00123456"}
+    assert "FROM financial_statement_details" in fake_engine.executed_queries[0][0]
     assert fake_engine.disposed is True
 
 

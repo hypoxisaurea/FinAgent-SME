@@ -21,7 +21,38 @@ def clear_database_env(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(env_name, raising=False)
 
 
-def test_get_backend_env_path_prefers_backend_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_common_get_backend_env_path_prefers_backend_env(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    backend_env_path = tmp_path / "backend.env"
+    legacy_env_path = tmp_path / "legacy.env"
+    backend_env_path.write_text("OPEN_DART_API_KEY=test\n", encoding="utf-8")
+
+    monkeypatch.setattr(common_env, "DEFAULT_ENV_PATH", backend_env_path)
+    monkeypatch.setattr(common_env, "LEGACY_ENV_PATH", legacy_env_path)
+
+    assert common_env.get_backend_env_path() == backend_env_path
+
+
+def test_common_get_backend_env_path_falls_back_to_legacy_env(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    backend_env_path = tmp_path / "backend.env"
+    legacy_env_path = tmp_path / "legacy.env"
+    legacy_env_path.write_text("OPEN_DART_API_KEY=test\n", encoding="utf-8")
+
+    monkeypatch.setattr(common_env, "DEFAULT_ENV_PATH", backend_env_path)
+    monkeypatch.setattr(common_env, "LEGACY_ENV_PATH", legacy_env_path)
+
+    assert common_env.get_backend_env_path() == legacy_env_path
+
+
+def test_legacy_backend_env_shim_delegates_to_common_env(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     backend_env_path = tmp_path / "backend.env"
     legacy_env_path = tmp_path / "legacy.env"
     backend_env_path.write_text("OPEN_DART_API_KEY=test\n", encoding="utf-8")
@@ -30,17 +61,6 @@ def test_get_backend_env_path_prefers_backend_env(tmp_path: Path, monkeypatch: p
     monkeypatch.setattr(backend_env, "LEGACY_ENV_PATH", legacy_env_path)
 
     assert backend_env.get_backend_env_path() == backend_env_path
-
-
-def test_get_backend_env_path_falls_back_to_legacy_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    backend_env_path = tmp_path / "backend.env"
-    legacy_env_path = tmp_path / "legacy.env"
-    legacy_env_path.write_text("OPEN_DART_API_KEY=test\n", encoding="utf-8")
-
-    monkeypatch.setattr(backend_env, "DEFAULT_ENV_PATH", backend_env_path)
-    monkeypatch.setattr(backend_env, "LEGACY_ENV_PATH", legacy_env_path)
-
-    assert backend_env.get_backend_env_path() == legacy_env_path
 
 
 def test_get_env_path_defaults_to_backend_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

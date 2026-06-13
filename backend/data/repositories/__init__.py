@@ -3,6 +3,7 @@ from backend.data.repositories import (
     company_registry,
     db_access,
     financial_feature,
+    financial_statement_detail,
 )
 
 __all__ = [
@@ -10,4 +11,5 @@ __all__ = [
     "company_registry",
     "db_access",
     "financial_feature",
+    "financial_statement_detail",
 ]

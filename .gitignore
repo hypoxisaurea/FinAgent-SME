@@ -14,5 +14,4 @@ backend/ksm_result/
 .env.*
 **/.env
 **/.env.*
-
 .DS_Store

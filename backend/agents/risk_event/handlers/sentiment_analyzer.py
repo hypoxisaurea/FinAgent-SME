@@ -40,6 +40,8 @@ JSON 외 다른 텍스트는 출력하지 마세요.
 async def analyze_sentiment(
     company_name: str,
     news_data: list[dict],
+    *,
+    request_id: str | None = None,
 ) -> SentimentAnalysisResult:
     """뉴스 목록을 한 번의 API 호출로 배치 감성 분석한다.
 
@@ -79,6 +81,14 @@ async def analyze_sentiment(
                 messages=[{"role": "user", "content": prompt}],
                 system=_SYSTEM_PROMPT,
                 max_tokens=1500,
+                observation_name="risk_event.sentiment_analysis",
+                request_id=request_id,
+                tags=["risk_event", "sentiment"],
+                metadata={
+                    "agent_name": "risk_event",
+                    "company_name": company_name,
+                    "news_count": len(news_data),
+                },
             )
         results = parse_json_response(raw)
         if not isinstance(results, list):
