@@ -2,11 +2,25 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from typing import Any
 
 from backend.agents.orchestrator import run_credit_workflow
 from backend.data.services import workflow_job_service
 
 logger = logging.getLogger(__name__)
+
+
+def run_credit_workflow_in_background(
+    company_name: str,
+    request_id: str,
+) -> dict[str, Any]:
+    """별도 스레드에서 workflow coroutine을 독립 이벤트 루프로 실행한다."""
+    return asyncio.run(
+        run_credit_workflow(
+            company_name,
+            extra_payload={"request_id": request_id},
+        )
+    )
 
 
 class WorkflowJobRunner:
@@ -91,9 +105,10 @@ class WorkflowJobRunner:
             request_id,
         )
         try:
-            result = await run_credit_workflow(
+            result = await asyncio.to_thread(
+                run_credit_workflow_in_background,
                 company_name,
-                extra_payload={"request_id": request_id},
+                request_id,
             )
             await asyncio.to_thread(
                 workflow_job_service.complete_workflow_job,

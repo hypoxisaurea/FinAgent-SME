@@ -36,9 +36,9 @@ def test_workflow_job_runner_completes_job(monkeypatch) -> None:
         lambda *args, **kwargs: None,
     )
 
-    async def fake_run_credit_workflow(company_name: str, *, extra_payload: dict[str, str]):
+    def fake_run_credit_workflow(company_name: str, request_id: str) -> dict[str, object]:
         return {
-            "request_id": extra_payload["request_id"],
+            "request_id": request_id,
             "company_name": company_name,
             "status": "success",
             "context": {},
@@ -46,7 +46,7 @@ def test_workflow_job_runner_completes_job(monkeypatch) -> None:
         }
 
     monkeypatch.setattr(
-        "backend.data.services.workflow_job_runner.run_credit_workflow",
+        "backend.data.services.workflow_job_runner.run_credit_workflow_in_background",
         fake_run_credit_workflow,
     )
 
@@ -94,11 +94,11 @@ def test_workflow_job_runner_marks_failure(monkeypatch) -> None:
         lambda job_id, **kwargs: failed.update({"job_id": job_id, **kwargs}),
     )
 
-    async def fake_run_credit_workflow(company_name: str, *, extra_payload: dict[str, str]):
+    def fake_run_credit_workflow(company_name: str, request_id: str) -> dict[str, object]:
         raise RuntimeError("boom")
 
     monkeypatch.setattr(
-        "backend.data.services.workflow_job_runner.run_credit_workflow",
+        "backend.data.services.workflow_job_runner.run_credit_workflow_in_background",
         fake_run_credit_workflow,
     )
 
