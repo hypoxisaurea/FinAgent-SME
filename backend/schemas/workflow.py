@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 WorkflowStatus = Literal["not_started", "success", "partial", "failed", "not_target"]
 AgentStepStatus = Literal["success", "partial", "failed", "skipped"]
+WorkflowJobStatus = Literal["queued", "running", "succeeded", "failed"]
 
 _INTERNAL_CONTEXT_KEYS = frozenset({"_halt_workflow"})
 
@@ -112,6 +113,33 @@ class WorkflowErrorResponse(BaseModel):
     message: str
     detail: dict[str, Any] = Field(default_factory=dict)
     request_id: str
+
+
+class WorkflowJobSubmitResponse(BaseModel):
+    """비동기 워크플로우 job 생성 응답 계약."""
+
+    job_id: str
+    request_id: str
+    company_name: str
+    status: WorkflowJobStatus
+    submitted_at: str
+    status_url: str
+    result_url: str
+
+
+class WorkflowJobStatusResponse(BaseModel):
+    """비동기 워크플로우 job 상태 조회 응답 계약."""
+
+    job_id: str
+    request_id: str
+    company_name: str
+    status: WorkflowJobStatus
+    submitted_at: str
+    started_at: str | None = None
+    finished_at: str | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+    step_summary: dict[str, int] | None = None
 
 
 def sanitize_workflow_context(

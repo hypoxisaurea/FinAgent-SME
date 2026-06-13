@@ -6,6 +6,7 @@ from backend.api.router import api_router
 from backend.common.langfuse import shutdown_langfuse
 from backend.common.logging import configure_logging, request_id_context
 from backend.common.settings import settings
+from backend.data.services.workflow_job_runner import workflow_job_runner
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -17,8 +18,10 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def app_lifespan(_: FastAPI):
     try:
+        await workflow_job_runner.start()
         yield
     finally:
+        await workflow_job_runner.stop()
         shutdown_langfuse()
 
 
