@@ -105,11 +105,13 @@ class WorkflowOrchestrator:
                     }
                     final_state = await self._graph.ainvoke(initial_state)
                     result = build_result(final_state)
-                    step_summary = summarize_steps(result["steps"])
+                    step_summary = summarize_steps(
+                        [step.model_dump(mode="json") for step in result.steps]
+                    )
                     observation.update(
                         output={
-                            "status": result["status"],
-                            "step_count": len(result["steps"]),
+                            "status": result.status,
+                            "step_count": len(result.steps),
                             "success_steps": step_summary["success"],
                             "partial_steps": step_summary["partial"],
                             "failed_steps": step_summary["failed"],
@@ -123,14 +125,14 @@ class WorkflowOrchestrator:
                             "failed_steps=%s fallback_steps=%s"
                         ),
                         payload.get("company_name"),
-                        result["status"],
-                        len(result["steps"]),
+                        result.status,
+                        len(result.steps),
                         step_summary["success"],
                         step_summary["partial"],
                         step_summary["failed"],
                         step_summary["fallback"],
                     )
-                    return result
+                    return result.model_dump(mode="json", exclude_none=True)
 
     def _build_graph(self) -> Any:
         return WorkflowGraphBuilder(

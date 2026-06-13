@@ -168,6 +168,7 @@ def test_orchestrator_halts_downstream_after_failure_by_default() -> None:
         step["agent_name"] == "news_collector" and step["ok"] is False
         for step in result["steps"]
     )
+    assert "_halt_workflow" not in result["context"]
     assert risk_event.seen_contexts == []
     assert decision.seen_contexts == []
 

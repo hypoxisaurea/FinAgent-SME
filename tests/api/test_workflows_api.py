@@ -42,6 +42,9 @@ def test_credit_assessment_route_runs_orchestrator(
     payload = response.json()
     assert payload["status"] == "success"
     assert payload["company_name"] == "FinAgent"
+    assert payload["context"]["company_name"] == "FinAgent"
+    assert payload["context"]["request_id"] == payload["request_id"]
+    assert payload["steps"] == []
     assert payload["request_id"].startswith("req-")
     assert response.headers["x-request-id"] == payload["request_id"]
 
@@ -68,6 +71,9 @@ def test_orchestrator_route_runs_orchestrator(
     payload = response.json()
     assert payload["status"] == "success"
     assert payload["company_name"] == "FinAgent"
+    assert payload["context"]["company_name"] == "FinAgent"
+    assert payload["context"]["request_id"] == payload["request_id"]
+    assert payload["steps"] == []
     assert payload["request_id"].startswith("req-")
     assert response.headers["x-request-id"] == payload["request_id"]
 
