@@ -4,6 +4,8 @@ from backend.schemas.credit import CreditAssessmentRequest
 from backend.schemas.workflow import (
     WorkflowContext,
     WorkflowErrorResponse,
+    WorkflowJobStatusResponse,
+    WorkflowJobSubmitResponse,
     WorkflowResponse,
     WorkflowStep,
     build_workflow_error_response,
@@ -14,6 +16,8 @@ __all__ = [
     "CreditAssessmentRequest",
     "WorkflowContext",
     "WorkflowErrorResponse",
+    "WorkflowJobStatusResponse",
+    "WorkflowJobSubmitResponse",
     "WorkflowResponse",
     "WorkflowStep",
     "build_workflow_error_response",

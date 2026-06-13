@@ -39,22 +39,26 @@
 | --- | --- |
 | 트리거 | 사용자가 검색 화면에서 회사명을 입력하고 `검색` 버튼을 누른다 |
 | 선행조건 | 백엔드와 DB가 동작 중이며 기업 마스터가 적재돼 있다 |
-| 후행조건 | `status`, `context`, `steps`, `request_id`를 포함한 응답을 받는다 |
+| 후행조건 | workflow job이 접수되고, 완료 후 최종 결과를 조회할 수 있다 |
 
 기본 흐름:
 
 1. 사용자가 회사명을 입력한다.
-2. UI가 `POST /api/v1/workflows/orchestrator`를 호출한다.
-3. API가 요청을 검증하고 `request_id`를 바인딩한다.
-4. 워크플로우가 기업 판별을 수행한다.
-5. 대상 기업이면 분석, 판단, 리포트, 검증을 수행한다.
-6. 결과를 JSON으로 반환한다.
+2. UI가 `POST /api/v1/workflows/jobs`를 호출한다.
+3. API가 요청을 검증하고 `request_id`와 `job_id`를 발급한다.
+4. API가 job을 `queued` 상태로 저장하고 `202 Accepted`를 반환한다.
+5. background worker가 job을 `running`으로 바꾸고 워크플로우를 실행한다.
+6. UI가 `GET /api/v1/workflows/jobs/{job_id}`를 polling 한다.
+7. 대상 기업이면 분석, 판단, 리포트, 검증을 수행한다.
+8. worker가 최종 결과를 저장하고 job을 종료한다.
+9. UI가 `GET /api/v1/workflows/jobs/{job_id}/result`로 최종 결과를 가져온다.
 
 대체 흐름:
 
 - 공백 회사명: `400 INVALID_INPUT`
-- 대상 기업 미존재: `200 + status=not_target`
-- 내부 예외: `500 AGENT_EXECUTION_FAILED`
+- 대상 기업 미존재: job은 `succeeded`, 결과 payload는 `status=not_target`
+- 내부 예외: job은 `failed`, 상태 조회에서 `error_code`, `error_message` 확인 가능
+- 미완료 job 결과 조회: `409 JOB_NOT_COMPLETED`
 
 ### UC-02 대상 기업 판별
 
@@ -165,3 +169,4 @@ Langfuse 활성화 시 아래 score를 기록한다.
 - 공개 API는 `company_name`만 받는다
 - UI에서 base URL 수정 기능이 없다
 - 문서 업로드/PDF 분석은 공개 UI/API로 아직 노출되지 않았다
+- worker는 현재 FastAPI 앱 프로세스 내부에서 함께 실행된다

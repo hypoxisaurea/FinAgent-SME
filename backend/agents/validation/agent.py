@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import date
 from time import perf_counter
 from typing import Any
 
@@ -62,8 +63,13 @@ def _validate_payload(payload: dict[str, Any]) -> dict[str, Any]:
     report = payload.get("report")
     decision = payload.get("decision")
     credit_grade = payload.get("credit_grade")
+    decision_confidence = payload.get("decision_confidence")
+    decision_reasons = payload.get("decision_reasons")
+    explanation = payload.get("explanation")
     recommended_limit = payload.get("recommended_limit")
     company_name = payload.get("company_name")
+    corp_name = payload.get("corp_name")
+    corp_code = payload.get("corp_code")
 
     _append_check(
         checks,
@@ -83,14 +89,40 @@ def _validate_payload(payload: dict[str, Any]) -> dict[str, Any]:
         isinstance(report, dict),
         f"report_type={type(report).__name__}",
     )
+    _append_check(
+        checks,
+        "decision_confidence_range",
+        _is_probability(decision_confidence),
+        f"decision_confidence={decision_confidence!r}",
+    )
 
     if isinstance(report, dict):
+        _append_check(
+            checks,
+            "report_generated_at_valid",
+            _is_iso_date(report.get("generated_at")),
+            f"report.generated_at={report.get('generated_at')!r}",
+        )
         _append_check(
             checks,
             "report_company_matches",
             report.get("company_name") == company_name,
             f"report.company_name={report.get('company_name')!r}",
         )
+        if corp_name is not None:
+            _append_check(
+                checks,
+                "report_corp_name_matches",
+                report.get("corp_name") == corp_name,
+                f"report.corp_name={report.get('corp_name')!r}",
+            )
+        if corp_code is not None:
+            _append_check(
+                checks,
+                "report_corp_code_matches",
+                report.get("corp_code") == corp_code,
+                f"report.corp_code={report.get('corp_code')!r}",
+            )
         _append_check(
             checks,
             "report_decision_matches",
@@ -116,6 +148,43 @@ def _validate_payload(payload: dict[str, Any]) -> dict[str, Any]:
             and bool(report.get("recommendation", "").strip()),
             f"report.recommendation={report.get('recommendation')!r}",
         )
+        _append_check(
+            checks,
+            "report_recommended_limit_matches",
+            report.get("recommended_limit") == recommended_limit,
+            f"report.recommended_limit={report.get('recommended_limit')!r}",
+        )
+
+        if _is_probability(decision_confidence):
+            _append_check(
+                checks,
+                "report_confidence_matches",
+                report.get("confidence") == decision_confidence,
+                f"report.confidence={report.get('confidence')!r}",
+            )
+
+        if isinstance(decision_reasons, list):
+            _append_check(
+                checks,
+                "report_key_risks_matches",
+                report.get("key_risks") == decision_reasons[:3],
+                f"report.key_risks={report.get('key_risks')!r}",
+            )
+
+        if isinstance(explanation, dict) and _has_text(explanation.get("summary")):
+            _append_check(
+                checks,
+                "report_summary_matches_explanation",
+                report.get("summary") == explanation.get("summary"),
+                f"report.summary={report.get('summary')!r}",
+            )
+        if isinstance(explanation, dict) and _has_text(explanation.get("recommendation")):
+            _append_check(
+                checks,
+                "report_recommendation_matches_explanation",
+                report.get("recommendation") == explanation.get("recommendation"),
+                f"report.recommendation={report.get('recommendation')!r}",
+            )
 
     is_non_negative_limit = isinstance(recommended_limit, (int, float)) and recommended_limit >= 0
     _append_check(
@@ -161,6 +230,26 @@ def _append_check(
             "detail": detail,
         }
     )
+
+
+def _has_text(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def _is_iso_date(value: Any) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        date.fromisoformat(value)
+    except ValueError:
+        return False
+    return True
+
+
+def _is_probability(value: Any) -> bool:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    return 0.0 <= float(value) <= 1.0
 
 
 def _record_validation_scores(validation_result: dict[str, Any]) -> None:

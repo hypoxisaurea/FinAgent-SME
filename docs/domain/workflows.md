@@ -2,7 +2,7 @@
 
 ## 목적
 
-본 문서는 현재 구현된 FinAgent-SME 신용 심사 워크플로우를 설명한다. 기준 흐름은 `Streamlit UI -> FastAPI -> WorkflowOrchestrator -> Agent Graph -> Report/Validation`이다.
+본 문서는 현재 구현된 FinAgent-SME 신용 심사 워크플로우를 설명한다. 기준 흐름은 `Streamlit UI -> FastAPI Job API -> Workflow Job Runner -> WorkflowOrchestrator -> Agent Graph -> Report/Validation`이다.
 
 ## 참여 Agent
 
@@ -26,6 +26,19 @@
 
 - `pdf_path`, `continue_on_error`는 내부 워크플로우 확장 포인트로는 존재하지만 현재 공개 API 스키마에는 없다.
 - 공백만 있는 `company_name`은 API 계층에서 `400 INVALID_INPUT`으로 처리된다.
+
+## 공개 Job API 계약
+
+현재 프론트엔드 기본 흐름은 아래 3개 엔드포인트를 사용한다.
+
+- `POST /api/v1/workflows/jobs`
+- `GET /api/v1/workflows/jobs/{job_id}`
+- `GET /api/v1/workflows/jobs/{job_id}/result`
+
+호환용 동기 엔드포인트도 유지된다.
+
+- `POST /api/v1/workflows/orchestrator`
+- `POST /api/v1/workflows/credit-assessment`
 
 ## 최종 응답 계약
 
@@ -71,31 +84,41 @@
 
 ## 현재 실행 순서
 
-1. **요청 수신**
-   - 프론트가 `company_name`으로 워크플로우 API를 호출한다.
+1. **Job 접수**
+   - 프론트가 `company_name`으로 `POST /api/v1/workflows/jobs`를 호출한다.
    - 서버는 `request_id`를 생성하거나 헤더 값을 사용한다.
+   - 서버는 `job_id`를 발급하고 DB에 `queued` 상태로 저장한다.
 
-2. **기업 식별**
+2. **Job 실행 시작**
+   - `workflow_job_runner`가 queued job을 claim 해 `running`으로 바꾼다.
+   - runner가 background thread에서 `run_credit_workflow()`를 실행한다.
+
+3. **기업 식별**
    - `CompanyResolverAgent`가 `sme_list`를 조회한다.
    - 필요 시 `company_profiles`를 병합해 `company_profile`을 구성한다.
    - 기업이 없으면 `status=not_target`으로 종료한다.
 
-3. **시작 분석 노드**
+4. **시작 분석 노드**
    - `NewsCollectorAgent`
    - `FinancialAnalystAgent`
    - 내부 payload에 `pdf_path`가 있을 때 `MultiModalDocumentAgent`
 
-4. **의존 분석 노드**
+5. **의존 분석 노드**
    - `RiskEventAgent`는 `news_collector` 이후 실행된다.
    - `IndustryAnalystAgent`는 `financial_analyst` 이후 실행된다.
 
-5. **후속 심사 단계**
+6. **후속 심사 단계**
    - `DecisionAgent`
    - `ReportAgent`
    - `ValidationAgent`
 
-6. **응답 반환**
+7. **결과 저장**
    - 오케스트레이터가 최종 `context`와 `steps`를 조립해 반환한다.
+   - runner가 workflow 결과와 `step_summary`를 저장하고 job을 `succeeded` 또는 `failed`로 마감한다.
+
+8. **상태 조회 및 결과 fetch**
+   - 프론트는 `GET /api/v1/workflows/jobs/{job_id}`로 상태를 polling 한다.
+   - `status=succeeded`가 되면 `/result`에서 최종 workflow 결과를 가져온다.
 
 ## 상태값 규칙
 
@@ -115,6 +138,13 @@
 - `continue_on_error=True`로 오케스트레이터를 만들면 실패 step이 있어도 후속 단계 지속 가능
 - 공개 HTTP API는 현재 `continue_on_error` 토글을 직접 노출하지 않음
 - 내부 예외는 API 계층에서 `500 AGENT_EXECUTION_FAILED`로 매핑
+
+## Job 상태 정책
+
+- `queued`: 접수 완료, 미실행
+- `running`: worker가 claim 후 실행 중
+- `succeeded`: workflow 결과 저장 완료
+- `failed`: 입력 오류 또는 실행 오류로 종료
 
 ## 관측성
 

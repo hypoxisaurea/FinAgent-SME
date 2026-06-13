@@ -18,6 +18,7 @@ COMPANY_PROFILE_TABLE_NAME = "company_profiles"
 FEATURES_TABLE_NAME = "financial_features"
 STATEMENT_DETAILS_TABLE_NAME = "financial_statement_details"
 ERROR_LOG_TABLE_NAME = "financial_error_logs"
+WORKFLOW_JOB_TABLE_NAME = "workflow_jobs"
 CREATED_AT_COLUMN = "created_at"
 
 

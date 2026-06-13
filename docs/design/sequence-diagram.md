@@ -1,12 +1,13 @@
 # 시퀀스 다이어그램
 
-## 1. 실시간 심사 워크플로우
+## 1. 비동기 심사 워크플로우
 
 ```mermaid
 sequenceDiagram
     actor User as 심사 담당자
     participant UI as Streamlit UI
     participant API as FastAPI
+    participant WORKER as WorkflowJobRunner
     participant ORCH as WorkflowOrchestrator
     participant RES as CompanyResolverAgent
     participant NEWS as NewsCollectorAgent
@@ -21,9 +22,19 @@ sequenceDiagram
     participant LF as Langfuse
 
     User->>UI: 회사명 입력 후 검색
-    UI->>API: POST /api/v1/workflows/orchestrator
+    UI->>API: POST /api/v1/workflows/jobs
     API->>API: request_id 바인딩
-    API->>ORCH: run_credit_workflow(company_name, request_id)
+    API->>DB: workflow_jobs insert (queued)
+    API-->>UI: 202 + job_id
+
+    loop 2초 간격
+        UI->>API: GET /api/v1/workflows/jobs/{job_id}
+        API->>DB: workflow_jobs 조회
+        API-->>UI: status=queued|running|succeeded|failed
+    end
+
+    WORKER->>DB: queued job claim
+    WORKER->>ORCH: run_credit_workflow(company_name, request_id)
     ORCH->>LF: workflow observation 시작
 
     ORCH->>RES: run(payload)
@@ -32,8 +43,7 @@ sequenceDiagram
 
     alt 대상 기업 아님
         RES-->>ORCH: company_found=false
-        ORCH-->>API: status=not_target
-        API-->>UI: 200 + not_target 응답
+        ORCH-->>WORKER: status=not_target
     else 대상 기업
         par 시작 분석 노드
             ORCH->>NEWS: run(payload)
@@ -67,10 +77,14 @@ sequenceDiagram
         VAL-->>ORCH: validation_result
 
         ORCH->>LF: workflow observation 종료
-        ORCH-->>API: status + context + steps
-        API-->>UI: JSON 응답
-        UI->>User: 리포트 화면 표시
+        ORCH-->>WORKER: status + context + steps
     end
+
+    WORKER->>DB: workflow_jobs update (succeeded|failed)
+    UI->>API: GET /api/v1/workflows/jobs/{job_id}/result
+    API->>DB: workflow_jobs result 조회
+    API-->>UI: workflow result JSON
+    UI->>User: 리포트 화면 표시
 ```
 
 ## 2. fallback / 실패 처리

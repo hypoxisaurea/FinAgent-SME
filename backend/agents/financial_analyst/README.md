@@ -50,7 +50,7 @@
 
 ## 의존성
 
-- `ToolFinancialDataProvider`
+- `DatabaseFinancialDataProvider`
 - `backend/tools/financial.py`
 - `OPEN_DART_API_KEY` 일부 기능 사용
 

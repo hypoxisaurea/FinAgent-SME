@@ -4,7 +4,9 @@ FinAgent-SME는 중소기업 대상 B2B 거래 리스크 심사를 지원하는 
 
 ## 현재 구현 상태
 
-- 실시간 심사 진입점: `POST /api/v1/workflows/orchestrator`
+- 기본 심사 진입점: `POST /api/v1/workflows/jobs`
+- 결과 조회 방식: `job submit -> status poll -> result fetch`
+- 호환용 동기 엔드포인트: `POST /api/v1/workflows/orchestrator`, `POST /api/v1/workflows/credit-assessment`
 - 기본 UI: Streamlit 검색/리포트 화면
 - 오케스트레이터 흐름:
   1. `CompanyResolverAgent`
@@ -13,6 +15,7 @@ FinAgent-SME는 중소기업 대상 B2B 거래 리스크 심사를 지원하는 
   4. 후속 단계: `DecisionAgent` -> `ReportAgent` -> `ValidationAgent`
 - 선택 기능: 내부 워크플로우 payload에 `pdf_path`가 있을 때 `MultiModalDocumentAgent` 추가 가능
 - 관측성: `request_id` 기반 구조화 로그, Langfuse trace/score 연동 지원
+- 실행 모델: FastAPI 앱 시작 시 background job runner가 queued job을 처리
 
 현재 공개 HTTP API 스키마는 `company_name`만 받습니다. `pdf_path`, `continue_on_error` 같은 옵션은 코드 레벨 확장 포인트로는 존재하지만, 공개 요청 스키마에는 아직 노출되지 않았습니다.
 
@@ -175,7 +178,7 @@ cd frontend
 }
 ```
 
-### `POST /api/v1/workflows/orchestrator`
+### `POST /api/v1/workflows/jobs`
 
 요청:
 
@@ -185,7 +188,44 @@ cd frontend
 }
 ```
 
-성공 응답 예시:
+응답 예시 (`202 Accepted`):
+
+```json
+{
+  "job_id": "job-123456789abc",
+  "request_id": "req-123456789abc",
+  "company_name": "테스트기업",
+  "status": "queued",
+  "submitted_at": "2026-06-13T00:00:00+00:00",
+  "status_url": "/api/v1/workflows/jobs/job-123456789abc",
+  "result_url": "/api/v1/workflows/jobs/job-123456789abc/result"
+}
+```
+
+### `GET /api/v1/workflows/jobs/{job_id}`
+
+응답 예시:
+
+```json
+{
+  "job_id": "job-123456789abc",
+  "request_id": "req-123456789abc",
+  "company_name": "테스트기업",
+  "status": "running",
+  "submitted_at": "2026-06-13T00:00:00+00:00",
+  "started_at": "2026-06-13T00:00:01+00:00",
+  "finished_at": null,
+  "error_code": null,
+  "error_message": null,
+  "step_summary": null
+}
+```
+
+`status`는 `queued`, `running`, `succeeded`, `failed` 중 하나입니다.
+
+### `GET /api/v1/workflows/jobs/{job_id}/result`
+
+완료된 job의 최종 결과는 아래처럼 반환됩니다.
 
 ```json
 {
@@ -221,6 +261,13 @@ cd frontend
   "steps": []
 }
 ```
+
+### 호환용 동기 실행 엔드포인트
+
+- `POST /api/v1/workflows/orchestrator`
+- `POST /api/v1/workflows/credit-assessment`
+
+두 엔드포인트는 현재도 동일한 워크플로우를 즉시 실행하지만, 프론트엔드 기본 흐름과 운영 권장 경로는 `/jobs` 기반 비동기 구조입니다.
 
 오류 응답 예시:
 

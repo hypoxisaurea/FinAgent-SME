@@ -11,6 +11,10 @@ if "last_result" not in st.session_state:
     st.session_state.last_result = None
 if "base_url" not in st.session_state:
     st.session_state.base_url = "http://localhost:8000"
+if "pending_job_id" not in st.session_state:
+    st.session_state.pending_job_id = None
+if "pending_job_status" not in st.session_state:
+    st.session_state.pending_job_status = None
 
 st.title("FinAgent-SME")
 

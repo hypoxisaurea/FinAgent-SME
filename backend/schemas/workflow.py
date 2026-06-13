@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 WorkflowStatus = Literal["not_started", "success", "partial", "failed", "not_target"]
 AgentStepStatus = Literal["success", "partial", "failed", "skipped"]
+WorkflowJobStatus = Literal["queued", "running", "succeeded", "failed"]
 
 _INTERNAL_CONTEXT_KEYS = frozenset({"_halt_workflow"})
 
@@ -52,20 +53,28 @@ class WorkflowContext(BaseModel):
     news_data: list[dict[str, Any]] = Field(default_factory=list)
     news_result: dict[str, Any] | None = None
     news_tool_errors: list[dict[str, Any]] = Field(default_factory=list)
+    financial_statements: dict[str, Any] | None = None
     financial_result: FinancialResult | dict[str, Any] | None = None
     financial_ratios: FinancialRatios | dict[str, Any] | None = None
+    company_ratios: dict[str, Any] | None = None
     growth_ratios: GrowthRatios | dict[str, Any] | None = None
     altman_z: AltmanZ | dict[str, Any] | None = None
+    financial_trend: dict[str, Any] | None = None
     trend_analysis: TrendAnalysis | dict[str, Any] | None = None
+    financial_flags: list[str] = Field(default_factory=list)
+    financial_summary: dict[str, Any] | None = None
+    risk_filters: dict[str, Any] | None = None
     risk_filter: RiskFilter | dict[str, Any] | None = None
     grade_cap: str | None = None
     industry_result: IndustryResult | dict[str, Any] | None = None
+    industry_outlook: dict[str, Any] | None = None
     peer_comparison: dict[str, Any] | None = None
     ksic_code: str | None = None
     outlook_score: str | None = None
     business_cycle: BusinessCycle | dict[str, Any] | None = None
+    macro_indicators: dict[str, Any] | None = None
     macro_signals: MacroSignals | dict[str, Any] | None = None
-    industry_summary: str | None = None
+    industry_summary: dict[str, Any] | str | None = None
     risk_event_result: dict[str, Any] | None = None
     document_result: dict[str, Any] | None = None
     overall_risk_level: str | None = None
@@ -112,6 +121,33 @@ class WorkflowErrorResponse(BaseModel):
     message: str
     detail: dict[str, Any] = Field(default_factory=dict)
     request_id: str
+
+
+class WorkflowJobSubmitResponse(BaseModel):
+    """비동기 워크플로우 job 생성 응답 계약."""
+
+    job_id: str
+    request_id: str
+    company_name: str
+    status: WorkflowJobStatus
+    submitted_at: str
+    status_url: str
+    result_url: str
+
+
+class WorkflowJobStatusResponse(BaseModel):
+    """비동기 워크플로우 job 상태 조회 응답 계약."""
+
+    job_id: str
+    request_id: str
+    company_name: str
+    status: WorkflowJobStatus
+    submitted_at: str
+    started_at: str | None = None
+    finished_at: str | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+    step_summary: dict[str, int] | None = None
 
 
 def sanitize_workflow_context(
