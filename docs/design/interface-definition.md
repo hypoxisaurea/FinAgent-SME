@@ -33,7 +33,11 @@
 
 ### `POST /api/v1/workflows/credit-assessment`
 
-두 엔드포인트는 현재 동일한 워크플로우를 호출한다.
+두 엔드포인트는 현재 동일한 워크플로우를 즉시 실행한다.
+
+### `POST /api/v1/workflows/jobs`
+
+현재 프론트엔드 기본 진입점이다. 요청을 즉시 완료하지 않고 workflow job을 등록한다.
 
 요청 바디:
 
@@ -54,7 +58,42 @@
 - 최소 길이 `1`
 - 공백만 입력된 경우 워크플로우 진입 직전 `400 INVALID_INPUT`
 
-정상 응답 예시:
+job 생성 응답 예시 (`202 Accepted`):
+
+```json
+{
+  "job_id": "job-...",
+  "request_id": "req-...",
+  "company_name": "회사명",
+  "status": "queued",
+  "submitted_at": "2026-06-13T00:00:00+00:00",
+  "status_url": "/api/v1/workflows/jobs/job-...",
+  "result_url": "/api/v1/workflows/jobs/job-.../result"
+}
+```
+
+### `GET /api/v1/workflows/jobs/{job_id}`
+
+job 상태 응답 예시:
+
+```json
+{
+  "job_id": "job-...",
+  "request_id": "req-...",
+  "company_name": "회사명",
+  "status": "running",
+  "submitted_at": "2026-06-13T00:00:00+00:00",
+  "started_at": "2026-06-13T00:00:01+00:00",
+  "finished_at": null,
+  "error_code": null,
+  "error_message": null,
+  "step_summary": null
+}
+```
+
+### `GET /api/v1/workflows/jobs/{job_id}/result`
+
+성공적으로 완료된 job의 결과 응답 예시:
 
 ```json
 {
@@ -69,6 +108,16 @@
   "steps": []
 }
 ```
+
+주의:
+
+- job이 아직 끝나지 않으면 `409 JOB_NOT_COMPLETED`
+- job이 실패했으면 `409 JOB_FAILED`
+- 완료된 job만 최종 workflow 결과를 반환
+
+### 동기 호환 엔드포인트 응답
+
+`POST /api/v1/workflows/orchestrator`, `POST /api/v1/workflows/credit-assessment`는 아래 workflow 응답을 즉시 반환한다.
 
 `not_target` 응답 예시:
 
@@ -108,6 +157,21 @@
 | `status` | `success`, `partial`, `failed`, `not_target` |
 | `context` | 누적 비즈니스 결과 |
 | `steps` | step 실행 메타데이터 목록 |
+
+### Job 상태 응답 상위 필드
+
+| 필드 | 설명 |
+| --- | --- |
+| `job_id` | 비동기 workflow job ID |
+| `request_id` | 요청 추적 ID |
+| `company_name` | 정규화된 요청 기업명 |
+| `status` | `queued`, `running`, `succeeded`, `failed` |
+| `submitted_at` | 접수 시각 |
+| `started_at` | 실행 시작 시각 |
+| `finished_at` | 종료 시각 |
+| `error_code` | 실패 코드 |
+| `error_message` | 실패 메시지 |
+| `step_summary` | 완료 시 step 결과 요약 |
 
 ### `steps[*]`
 

@@ -12,13 +12,23 @@
 
 ## 요청 흐름
 
-1. 프론트가 `POST /api/v1/workflows/orchestrator`를 호출합니다.
-2. API 계층이 `request_id`를 바인딩하고 `run_credit_workflow()`를 실행합니다.
-3. `CompanyResolverAgent`가 `sme_list`와 `company_profiles` 기반으로 기업을 식별합니다.
-4. 식별 성공 시 `news_collector`, `financial_analyst`가 시작 노드로 실행됩니다.
-5. `risk_event`는 뉴스 결과 이후, `industry_analyst`는 재무 결과 이후 실행됩니다.
-6. `decision` -> `report` -> `validation`이 순차 실행됩니다.
-7. 최종 응답은 `status`, `context`, `steps`, `request_id`를 포함해 반환됩니다.
+1. 프론트가 `POST /api/v1/workflows/jobs`를 호출합니다.
+2. API 계층이 `request_id`를 바인딩하고 job row를 `queued` 상태로 등록합니다.
+3. 앱 startup 시 시작된 `workflow_job_runner`가 queued job을 claim 합니다.
+4. runner가 background thread에서 `run_credit_workflow()`를 실행합니다.
+5. `CompanyResolverAgent`가 `sme_list`와 `company_profiles` 기반으로 기업을 식별합니다.
+6. 식별 성공 시 `news_collector`, `financial_analyst`가 시작 노드로 실행됩니다.
+7. `risk_event`는 뉴스 결과 이후, `industry_analyst`는 재무 결과 이후 실행됩니다.
+8. `decision` -> `report` -> `validation`이 순차 실행됩니다.
+9. runner가 최종 workflow 결과를 저장하고 job을 `succeeded` 또는 `failed`로 마감합니다.
+10. 프론트는 `GET /api/v1/workflows/jobs/{job_id}`와 `/result`를 polling/fetch 합니다.
+
+참고:
+
+- `POST /api/v1/workflows/orchestrator`
+- `POST /api/v1/workflows/credit-assessment`
+
+위 두 동기 엔드포인트는 호환 및 직접 디버깅 용도로 유지되고 있습니다.
 
 ## 디렉터리 구조
 
@@ -43,10 +53,14 @@ backend/
 - FastAPI 앱 생성
 - CORS 등록
 - 요청별 `X-Request-ID` 바인딩
+- startup/shutdown 시 workflow job runner 시작/종료
 - 종료 시 Langfuse shutdown 처리
 
 ### `api/routes/workflows.py`
 
+- `POST /api/v1/workflows/jobs`
+- `GET /api/v1/workflows/jobs/{job_id}`
+- `GET /api/v1/workflows/jobs/{job_id}/result`
 - `POST /api/v1/workflows/orchestrator`
 - `POST /api/v1/workflows/credit-assessment`
 - 입력 오류를 `400`, 내부 예외를 `500`으로 매핑
@@ -74,7 +88,9 @@ backend/
 
 - `db.py`: DB URL 해석과 테이블 상수
 - `repositories/`: 직접 SQL 실행과 DataFrame 저장
-- `services/`: 기업 조회, DB 구축 use case
+- `services/`: 기업 조회, DB 구축 use case, workflow job submit/status/result
+- `repositories/workflow_job.py`: workflow job row 저장/조회
+- `services/workflow_job_runner.py`: queued job background worker
 
 ### `common/`
 
@@ -89,13 +105,47 @@ backend/
 
 - `GET /`
 - `GET /api/health`
+- `POST /api/v1/workflows/jobs`
+- `GET /api/v1/workflows/jobs/{job_id}`
+- `GET /api/v1/workflows/jobs/{job_id}/result`
 - `POST /api/v1/workflows/orchestrator`
 - `POST /api/v1/workflows/credit-assessment`
 - `GET /docs`
 
 ## 응답 구조 메모
 
-공개 워크플로우 응답은 현재 아래 구조를 기준으로 합니다.
+### 1. Job submit 응답
+
+```json
+{
+  "job_id": "job-...",
+  "request_id": "req-...",
+  "company_name": "회사명",
+  "status": "queued",
+  "submitted_at": "2026-06-13T00:00:00+00:00",
+  "status_url": "/api/v1/workflows/jobs/job-...",
+  "result_url": "/api/v1/workflows/jobs/job-.../result"
+}
+```
+
+### 2. Job status 응답
+
+```json
+{
+  "job_id": "job-...",
+  "request_id": "req-...",
+  "company_name": "회사명",
+  "status": "queued | running | succeeded | failed",
+  "submitted_at": "2026-06-13T00:00:00+00:00",
+  "started_at": null,
+  "finished_at": null,
+  "error_code": null,
+  "error_message": null,
+  "step_summary": null
+}
+```
+
+### 3. 최종 workflow 결과 응답
 
 ```json
 {
@@ -110,6 +160,7 @@ backend/
 - 최종 산출물은 `context` 내부에 누적됩니다.
 - `steps[*]`에는 `agent_name`, `ok`, `status`, `error_code`, `fallback_used`, `latency_ms`, `output`, `error`가 포함됩니다.
 - `not_target`일 때만 `code`, `message`가 함께 반환됩니다.
+- `GET /api/v1/workflows/jobs/{job_id}/result`는 job이 `succeeded`일 때만 workflow 결과를 반환합니다.
 
 ## 상태 계산 규칙
 
@@ -122,6 +173,13 @@ backend/
 
 - agent 단위 `partial`이나 `fallback_used=true`가 있어도 step이 `ok=True`이면 전체 workflow 상태는 `success`로 계산될 수 있습니다.
 - 현재 `continue_on_error`는 내부 워크플로우 옵션이며 공개 API 바디에서는 조정하지 않습니다.
+
+## Job 상태 규칙
+
+- `queued`: DB에 등록됐지만 아직 worker가 claim 하지 않음
+- `running`: worker가 claim 했고 workflow 실행 중
+- `succeeded`: 최종 workflow 결과 저장 완료
+- `failed`: 입력 오류 또는 workflow 실행 오류로 종료
 
 ## 환경 변수
 
@@ -160,6 +218,11 @@ LANGFUSE_SECRET_KEY=...
 ```bash
 ./.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+주의:
+
+- 현재 worker는 FastAPI 앱 프로세스 안에서 같이 실행됩니다.
+- 따라서 job 처리를 위해서는 API 서버가 떠 있어야 합니다.
 
 ## DB 구축
 
