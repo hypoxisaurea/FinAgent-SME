@@ -36,9 +36,11 @@ from backend.agents.risk_event.models import (
     SeverityClassifiedEvent,
     SeverityLevel,
 )
+from backend.common.langgraph import LANGGRAPH_IMPORT_GUARD
 from langgraph.graph import END, StateGraph
 
 logger = logging.getLogger(__name__)
+LANGGRAPH_RUNTIME_CONFIGURED = LANGGRAPH_IMPORT_GUARD
 RiskEventState = dict[str, Any]
 
 

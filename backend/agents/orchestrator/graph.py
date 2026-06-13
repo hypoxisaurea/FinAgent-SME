@@ -9,9 +9,11 @@ from backend.agents.orchestrator.state import WorkflowState
 from backend.agents.orchestrator.step_runner import run_agent_step
 from backend.common.agent import Agent
 from backend.common.langfuse import start_as_current_observation
+from backend.common.langgraph import LANGGRAPH_IMPORT_GUARD
 from langgraph.graph import END, START, StateGraph
 
 logger = logging.getLogger("backend.agents.orchestrator.orchestrator")
+LANGGRAPH_RUNTIME_CONFIGURED = LANGGRAPH_IMPORT_GUARD
 
 
 class WorkflowGraphBuilder:
