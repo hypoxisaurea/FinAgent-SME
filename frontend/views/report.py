@@ -77,6 +77,14 @@ def _inject_styles() -> None:
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
             margin-bottom: 1rem;
         }
+        .st-key-growth-trend-card {
+            background: #ffffff;
+            border: 1px solid #dbe4ef;
+            border-radius: 22px;
+            padding: 24px 24px 20px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+            margin-bottom: 1rem;
+        }
         .overview-card {
             background: linear-gradient(180deg, #f6fbff 0%, #eef5fb 100%);
             border: 1px solid #d7e6f4;
@@ -358,48 +366,48 @@ def _render_financial_health_section(section: dict[str, Any]) -> None:
 
 def _render_growth_trend_section(section: dict[str, Any]) -> None:
     rows = section.get("history_rows") or []
-    if rows:
-        table_rows = "".join(
-            f"""
-            <tr>
-                <td>{escape(str(year))}</td>
-                <td>{escape(str(revenue))}</td>
-                <td>{escape(str(net_income))}</td>
-                <td>{escape(str(total_assets))}</td>
-            </tr>
-            """
-            for year, revenue, net_income, total_assets in rows
+    with st.container(border=False, key="growth-trend-card"):
+        st.markdown(
+            f'<div class="card-title">{escape(str(section["title"]))}</div>',
+            unsafe_allow_html=True,
         )
-        history_table = f"""
-        <table class="history-table">
-            <thead>
-                <tr>
-                    <th>연도</th>
-                    <th>매출액</th>
-                    <th>당기순이익</th>
-                    <th>총자산</th>
-                </tr>
-            </thead>
-            <tbody>{table_rows}</tbody>
-        </table>
-        """
-    else:
-        history_table = '<div class="item-chip">표시할 최근 연도 추세 데이터가 없습니다.</div>'
-
-    st.markdown(
-        f"""
-        <div class="report-card">
-            <div class="card-title">{escape(str(section["title"]))}</div>
-            <div class="subsection-title">최근 추세 해석</div>
-            <div class="item-chip">{escape(str(section.get("recent_trend") or "-"))}</div>
-            <div class="subsection-title" style="margin-top: 1rem;">성장 둔화 및 이상 플래그</div>
-            {_render_chip_list(section.get("financial_flags"), "item-chip item-risk")}
-            <div class="subsection-title" style="margin-top: 1rem;">최근 연도 추세</div>
-            {history_table}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        st.markdown(
+            '<div class="subsection-title">최근 추세 해석</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div class="item-chip">{escape(str(section.get("recent_trend") or "-"))}</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<div class="subsection-title" style="margin-top: 1rem;">성장 둔화 및 이상 플래그</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            _render_chip_list(section.get("financial_flags"), "item-chip item-risk"),
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<div class="subsection-title" style="margin-top: 1rem;">최근 연도 추세</div>',
+            unsafe_allow_html=True,
+        )
+        if rows:
+            st.table(
+                [
+                    {
+                        "연도": year,
+                        "매출액": revenue,
+                        "당기순이익": net_income,
+                        "총자산": total_assets,
+                    }
+                    for year, revenue, net_income, total_assets in rows
+                ]
+            )
+        else:
+            st.markdown(
+                '<div class="item-chip">표시할 최근 연도 추세 데이터가 없습니다.</div>',
+                unsafe_allow_html=True,
+            )
 
 
 def _render_default_risk_section(section: dict[str, Any]) -> None:
@@ -500,6 +508,17 @@ def _render_agent_verification(
         decision_message = "DecisionAgent output이 존재하므로 ReportAgent 입력 검증이 가능합니다."
     else:
         decision_message = "DecisionAgent output을 찾지 못했습니다."
+
+    st.markdown(
+        f"""
+        <div class="{box_class}">
+            <div class="card-title" style="margin-bottom: 0.45rem;">에이전트 전달 검증</div>
+            <div class="body-copy">{report_message}</div>
+            <div class="body-copy" style="margin-top: 0.35rem;">{decision_message}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def _render_pdf_print_button(view_model: dict[str, Any]) -> None:
