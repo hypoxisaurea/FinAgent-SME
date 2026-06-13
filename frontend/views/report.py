@@ -485,16 +485,6 @@ def _render_agent_verification(
     else:
         decision_message = "DecisionAgent output을 찾지 못했습니다."
 
-    st.markdown(
-        f"""
-        <div class="{box_class}">
-            <div class="card-title" style="margin-bottom: 0.45rem;">에이전트 전달 검증</div>
-            <div class="body-copy">{report_message}</div>
-            <div class="body-copy" style="margin-top: 0.35rem;">{decision_message}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
 def _render_pdf_print_button(
     report: dict[str, Any],

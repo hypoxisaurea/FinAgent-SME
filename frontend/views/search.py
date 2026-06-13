@@ -6,6 +6,12 @@ import streamlit as st
 
 
 STATUS_META: dict[str, dict[str, str | int]] = {
+    "submitting": {
+        "label": "접수 중",
+        "headline": "심사 작업을 생성하고 있습니다.",
+        "description": "입력한 기업 정보를 확인한 뒤 분석용 job을 등록하는 중입니다.",
+        "progress": 8,
+    },
     "queued": {
         "label": "접수 완료",
         "headline": "심사 대기열에 작업이 등록되었습니다.",
@@ -52,17 +58,6 @@ def _render_http_error(response: requests.Response) -> None:
 
     st.error(f"워크플로우 호출 실패 ({status_code})")
     st.json(payload)
-
-
-def run_health_check() -> dict | None:
-    try:
-        resp = requests.get(f"{st.session_state.base_url}/api/health", timeout=10)
-        resp.raise_for_status()
-        return resp.json()
-    except Exception as e:
-        st.error("Health check failed")
-        st.exception(e)
-        return None
 
 
 def submit_workflow_job(company_name: str) -> dict | None:
@@ -360,12 +355,6 @@ def _inject_styles() -> None:
             background-size: 180% 180%;
             animation: gradientShift 3.5s ease infinite;
         }
-        .loading-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
-            margin-top: 1.15rem;
-        }
         .loading-panel {
             background: rgba(248, 251, 255, 0.9);
             border: 1px solid #dde8f4;
@@ -419,28 +408,6 @@ def _inject_styles() -> None:
             background: #fff9ef;
             border-color: #f3e2bc;
         }
-        .skeleton-stack {
-            display: grid;
-            gap: 12px;
-        }
-        .skeleton-card {
-            border-radius: 18px;
-            padding: 14px 15px;
-            border: 1px solid #dbe5f0;
-            background: linear-gradient(90deg, #eef4fb 25%, #f8fbff 37%, #eef4fb 63%);
-            background-size: 400% 100%;
-            animation: shimmerMove 1.9s ease infinite;
-        }
-        .skeleton-line {
-            height: 10px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.92);
-            margin-bottom: 10px;
-        }
-        .skeleton-line.short {
-            width: 48%;
-            margin-bottom: 0;
-        }
         .refresh-note {
             margin-top: 1rem;
             color: #64758b;
@@ -451,10 +418,6 @@ def _inject_styles() -> None:
             0%, 100% { transform: scale(1); opacity: 0.9; }
             50% { transform: scale(1.18); opacity: 1; }
         }
-        @keyframes shimmerMove {
-            0% { background-position: 100% 50%; }
-            100% { background-position: 0 50%; }
-        }
         @keyframes gradientShift {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -462,7 +425,6 @@ def _inject_styles() -> None:
         }
         @media (max-width: 900px) {
             .search-note,
-            .loading-grid,
             .step-grid {
                 grid-template-columns: 1fr;
             }
@@ -540,7 +502,7 @@ def _extract_step_cards(step_summary: dict[str, object]) -> list[tuple[str, str,
 
 def _estimate_progress(status: str, step_summary: dict[str, object]) -> int:
     default_progress = int(_resolve_status_meta(status)["progress"])
-    if status in {"succeeded", "failed"}:
+    if status in {"submitting", "succeeded", "failed"}:
         return default_progress
 
     total = step_summary.get("total")
@@ -618,47 +580,15 @@ def _render_step_summary(step_summary: dict[str, object]) -> None:
     )
 
 
-def _render_loading_skeleton() -> None:
-    st.markdown(
-        """
-        <div class="loading-panel">
-            <div class="loading-panel-title">에이전트 작업 중</div>
-            <div class="skeleton-stack">
-                <div class="skeleton-card">
-                    <div class="skeleton-line"></div>
-                    <div class="skeleton-line short"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-line"></div>
-                    <div class="skeleton-line short"></div>
-                </div>
-                <div class="skeleton-card">
-                    <div class="skeleton-line"></div>
-                    <div class="skeleton-line short"></div>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def _render_job_progress() -> None:
-    job_id = st.session_state.pending_job_id
-    if not job_id:
-        return
-
-    status_payload = get_workflow_job_status(job_id)
-    if status_payload is None:
-        return
-
-    st.session_state.pending_job_status = status_payload
-    status = status_payload.get("status", "queued")
-    company_name = status_payload.get("company_name", "-")
-    step_summary = status_payload.get("step_summary") or {}
-
+def _render_loading_state(
+    *,
+    status: str,
+    company_name: str,
+    job_label: str,
+    step_summary: dict[str, object] | None = None,
+) -> None:
     meta = _resolve_status_meta(status)
-    progress = _estimate_progress(status, step_summary)
+    progress = _estimate_progress(status, step_summary or {})
 
     st.markdown(
         f"""
@@ -670,9 +600,8 @@ def _render_job_progress() -> None:
                     <p class="loading-copy">{escape(str(meta["description"]))}</p>
                 </div>
                 <div class="job-chip">
-                    <div class="job-chip-label">Active Job</div>
+                    <div class="job-chip-label">{escape(job_label)}</div>
                     <div class="job-chip-value">{escape(company_name)}</div>
-                    <div class="job-chip-value">{escape(job_id)}</div>
                 </div>
             </div>
             <div class="progress-meta">
@@ -690,11 +619,51 @@ def _render_job_progress() -> None:
         unsafe_allow_html=True,
     )
 
-    left_col, right_col = st.columns(2)
-    with left_col:
+    if step_summary:
         _render_step_summary(step_summary)
-    with right_col:
-        _render_loading_skeleton()
+
+
+def _submit_pending_job() -> None:
+    company_name = st.session_state.submitting_company_name
+    if not company_name:
+        return
+
+    _render_loading_state(
+        status="submitting",
+        company_name=company_name,
+        job_label="Submitting",
+    )
+
+    job = submit_workflow_job(company_name)
+    st.session_state.submitting_company_name = None
+    if job is None:
+        return
+
+    st.session_state.pending_job_id = job["job_id"]
+    st.session_state.pending_job_status = job
+    st.rerun()
+
+
+def _render_job_progress() -> None:
+    job_id = st.session_state.pending_job_id
+    if not job_id:
+        return
+
+    status_payload = get_workflow_job_status(job_id)
+    if status_payload is None:
+        return
+
+    st.session_state.pending_job_status = status_payload
+    status = status_payload.get("status", "queued")
+    company_name = status_payload.get("company_name", "-")
+    step_summary = status_payload.get("step_summary") or {}
+
+    _render_loading_state(
+        status=status,
+        company_name=company_name,
+        job_label="Active Job",
+        step_summary=step_summary,
+    )
 
     if status == "succeeded":
         result = get_workflow_job_result(job_id)
@@ -702,6 +671,7 @@ def _render_job_progress() -> None:
             st.session_state.last_result = result
             st.session_state.pending_job_id = None
             st.session_state.pending_job_status = None
+            st.session_state.submitting_company_name = None
             st.session_state.page = "Report"
             st.rerun()
         return
@@ -709,6 +679,7 @@ def _render_job_progress() -> None:
     if status == "failed":
         st.error("심사 작업이 실패했습니다. 상태 정보를 확인해주세요.")
         st.session_state.pending_job_id = None
+        st.session_state.pending_job_status = None
         return
 
     time.sleep(2)
@@ -718,33 +689,25 @@ def _render_job_progress() -> None:
 def render() -> None:
     _inject_styles()
 
+    if st.session_state.submitting_company_name:
+        _submit_pending_job()
+        return
+
     if st.session_state.pending_job_id:
         _render_job_progress()
         return
 
     _render_search_intro()
 
-    col1, col2 = st.columns([3, 1])
-    with col1:
-        company_name = st.text_input(
-            "회사명",
-            key="company_name_input",
-            placeholder="예: Acme Trading Co.",
-        )
-    with col2:
-        if st.button("연결 확인", use_container_width=True):
-            health = run_health_check()
-            if health:
-                st.success("백엔드 연결 성공")
-                st.json(health)
+    company_name = st.text_input(
+        "회사명",
+        key="company_name_input",
+        placeholder="예: Acme Trading Co.",
+    )
 
     if st.button("심사 시작", use_container_width=True):
         if not company_name:
             st.warning("회사명을 입력하세요.")
         else:
-            with st.spinner("심사 작업을 접수하고 있습니다..."):
-                job = submit_workflow_job(company_name)
-                if job is not None:
-                    st.session_state.pending_job_id = job["job_id"]
-                    st.session_state.pending_job_status = job
-                    st.rerun()
+            st.session_state.submitting_company_name = company_name
+            st.rerun()
