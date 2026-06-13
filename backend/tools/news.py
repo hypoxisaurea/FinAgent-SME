@@ -10,7 +10,10 @@ from typing import Any
 from urllib.parse import quote_plus
 
 import requests
-from backend.common.api_client import build_llm_client_kwargs, get_model_name
+from backend.common.api_client import (
+    build_llm_client_kwargs,
+    get_llm_client_config,
+)
 from backend.common.env import load_backend_env
 from backend.common.langfuse import build_openai_trace_kwargs, get_openai_class
 from backend.tools.prompts.news import NEWS_SUMMARY_PROMPT_TEMPLATE
@@ -51,8 +54,9 @@ DEFAULT_PAGE_SIZE = 20
 DEFAULT_REQUEST_TIMEOUT = 10
 DEFAULT_LIST_DELAY_SEC = 0.4
 DEFAULT_CONTENT_DELAY_SEC = 1.0
-DEFAULT_SUMMARY_MODEL = get_model_name()
+DEFAULT_SUMMARY_MODEL = os.getenv("NEWS_SUMMARY_MODEL", "qwen/qwen3-8b").strip()
 DEFAULT_SUMMARIZE = True
+NEWS_SUMMARY_PROVIDER = "openrouter"
 
 DEFAULT_HEADERS = {
     "User-Agent": (
@@ -471,6 +475,12 @@ def extract_daum_news_contents(
 
 
 def get_openai_client() -> Any:
+    llm_config = get_llm_client_config()
+    if llm_config.provider != NEWS_SUMMARY_PROVIDER:
+        raise RuntimeError(
+            "news summary는 OpenRouter provider가 필요합니다. "
+            "OPENROUTER_API_KEY 또는 OPEN_ROUTER_API_KEY를 확인해주세요."
+        )
     client_class = get_openai_class()
     return client_class(**build_llm_client_kwargs())
 
@@ -506,6 +516,8 @@ def get_llm_summary(
                     "agent_name": "news_collector",
                     "company_name": corp_name,
                     "input_length": len(text),
+                    "provider": NEWS_SUMMARY_PROVIDER,
+                    "model_name": model_name,
                 },
             ),
         )
