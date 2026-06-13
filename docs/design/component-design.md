@@ -146,8 +146,8 @@ flowchart LR
 
 | 구성요소 | 현재 방식 |
 | --- | --- |
-| Backend | `uvicorn backend.main:app` |
-| Frontend | Streamlit |
+| Backend | `.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000` |
+| Frontend | `.venv/bin/python -m streamlit run frontend/main.py --server.address 0.0.0.0 --server.port 8501` |
 | DB | `backend/docker-compose.yml`의 PostgreSQL |
 | DB Build | `scripts/setup-db.sh build` |
 

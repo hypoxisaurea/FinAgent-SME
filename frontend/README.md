@@ -60,8 +60,7 @@ frontend/
 프론트만 직접 실행:
 
 ```bash
-cd frontend
-../.venv/bin/python -m streamlit run main.py --server.address 0.0.0.0 --server.port 8501
+.venv/bin/python -m streamlit run frontend/main.py --server.address 0.0.0.0 --server.port 8501
 ```
 
 ## 구현 메모

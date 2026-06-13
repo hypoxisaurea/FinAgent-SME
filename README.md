@@ -91,6 +91,8 @@ LANGFUSE_TRACING_ENVIRONMENT=development
 
 모든 명령은 프로젝트 루트에서 실행합니다.
 
+Python 실행/검증 명령은 모두 `.venv/bin/...` 기준으로 통일합니다.
+
 ### 1. 가상환경과 의존성 설치
 
 ```bash
@@ -147,9 +149,8 @@ LANGFUSE_TRACING_ENVIRONMENT=development
 ```bash
 ./scripts/setup-env.sh
 ./scripts/setup-db.sh up
-./.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
-cd frontend
-../.venv/bin/python -m streamlit run main.py --server.address 0.0.0.0 --server.port 8501
+.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+.venv/bin/python -m streamlit run frontend/main.py --server.address 0.0.0.0 --server.port 8501
 ```
 
 ## 접속 주소
@@ -289,6 +290,8 @@ cd frontend
 .venv/bin/pytest -o cache_dir=.cache/pytest tests/
 .venv/bin/ruff check backend frontend tests
 ```
+
+모든 Python 실행/검증 명령은 `.venv/bin/...` 기준으로 실행합니다.
 
 `frontend/`는 현재 Python Streamlit 앱이므로 `npm run lint` 대상이 아닙니다.
 

@@ -70,6 +70,8 @@
 
 ## 실행 명령
 
+프로젝트 루트에서 모든 Python 실행/검증 명령을 `.venv/bin/...` 기준으로 사용한다.
+
 ```bash
 ./tests/run_all_tests.sh
 .venv/bin/pytest -o cache_dir=.cache/pytest tests/
