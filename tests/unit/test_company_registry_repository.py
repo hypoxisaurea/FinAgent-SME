@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 import pandas as pd
 from sqlalchemy import create_engine, text
 
@@ -121,3 +123,49 @@ def test_save_dataframe_to_postgres_upserts_new_and_existing_rows() -> None:
     assert saved_count == 2
     assert list(saved_df["corp_code"]) == ["001", "002"]
     assert list(saved_df["revenue"]) == [300, 400]
+
+
+def test_save_dataframe_to_postgres_logs_replace_deletes_explicitly(
+    caplog,
+) -> None:
+    engine = create_engine("sqlite:///:memory:")
+    initial_df = pd.DataFrame(
+        [
+            {
+                "corp_code": "001",
+                "stock_code": "111111",
+                "year": 2024,
+                "revenue": 100,
+                "created_at": "2026-06-01",
+            }
+        ]
+    )
+    updated_df = pd.DataFrame(
+        [
+            {
+                "corp_code": "001",
+                "stock_code": "111111",
+                "year": 2024,
+                "revenue": 250,
+                "created_at": "2026-06-10",
+            }
+        ]
+    )
+
+    save_dataframe_to_postgres(
+        initial_df,
+        engine,
+        FEATURES_TABLE_NAME,
+        ["corp_code", "stock_code", "year"],
+    )
+
+    with caplog.at_level(logging.INFO):
+        save_dataframe_to_postgres(
+            updated_df,
+            engine,
+            FEATURES_TABLE_NAME,
+            ["corp_code", "stock_code", "year"],
+        )
+
+    assert "deleted_for_replace_count=1" in caplog.text
+    assert "deleted_count=" not in caplog.text

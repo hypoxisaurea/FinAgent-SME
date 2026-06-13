@@ -210,7 +210,7 @@ def save_dataframe_to_postgres(
     logger.info(
         (
             "db_rows_upserted table=%s row_count=%s inserted_count=%s "
-            "updated_count=%s deleted_count=%s"
+            "updated_count=%s deleted_for_replace_count=%s"
         ),
         table_name,
         len(deduplicated_df),

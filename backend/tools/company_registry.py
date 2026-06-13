@@ -57,16 +57,20 @@ STATEMENT_DETAIL_ACCOUNT_MAP = {
     "total_liabilities": ["부채총계"],
     "total_equity": ["자본총계"],
     "retained_earnings": ["이익잉여금", "이익잉여금(결손금)"],
-    "inventory": ["재고자산"],
+    "inventory": ["재고자산", "유동재고자산"],
     "accounts_receivable": [
         "매출채권",
         "매출채권 및 기타채권",
         "매출채권및기타채권",
+        "매출채권 및 기타유동채권",
+        "매출채권및기타유동채권",
     ],
     "accounts_payable": [
         "매입채무",
         "매입채무 및 기타채무",
         "매입채무및기타채무",
+        "매입채무 및 기타유동채무",
+        "매입채무및기타유동채무",
     ],
     "short_term_borrowings": ["단기차입금", "단기차입부채"],
     "current_portion_long_term_borrowings": [
@@ -387,7 +391,11 @@ def build_account_subset_dataframe(
         "frmtrm_amount",
         "bfefrmtrm_amount",
     ]
-    subset_df = raw_df[raw_df["account_nm"].isin(target_accounts)][columns].copy()
+    subset_df = raw_df[raw_df["account_nm"].isin(target_accounts)].copy()
+    for column in columns:
+        if column not in subset_df.columns:
+            subset_df[column] = None
+    subset_df = subset_df[columns].copy()
     if subset_df.empty:
         return subset_df
 
@@ -470,6 +478,47 @@ def build_statement_detail_records(
         records.append(record)
 
     return records
+
+
+def fetch_statement_detail_dataframe(
+    corp_code: str,
+    business_year: int,
+    report_code: str,
+) -> pd.DataFrame:
+    """상세 재무 스냅샷용 전체 계정 재무제표를 우선 연결, 없으면 별도로 조회한다."""
+    for fs_div in ("CFS", "OFS"):
+        payload = get_dart_json(
+            "fnlttSinglAcntAll.json",
+            params={
+                "corp_code": str(corp_code).zfill(8),
+                "bsns_year": str(business_year),
+                "reprt_code": report_code,
+                "fs_div": fs_div,
+            },
+            timeout=20,
+        )
+        if payload.get("status") != "000":
+            continue
+
+        items = payload.get("list", [])
+        if not items:
+            continue
+
+        raw_df = pd.DataFrame(items)
+        if raw_df.empty:
+            continue
+
+        raw_df["corp_code"] = str(corp_code).zfill(8)
+        raw_df["stock_code"] = None
+        raw_df["fs_div"] = fs_div
+        detail_df = build_account_subset_dataframe(
+            raw_df,
+            STATEMENT_DETAIL_ACCOUNT_NAMES,
+        )
+        if not detail_df.empty:
+            return detail_df
+
+    return pd.DataFrame()
 
 
 def build_statement_detail_dataframe(statement_records: list[dict[str, Any]]) -> pd.DataFrame:
@@ -640,10 +689,20 @@ def process_company(row, business_year, report_code, error_logs):
                         "total_assets": total_assets,
                     }
                 )
-        detail_df = build_account_subset_dataframe(
-            temp_df,
-            STATEMENT_DETAIL_ACCOUNT_NAMES,
-        )
+        try:
+            detail_df = fetch_statement_detail_dataframe(
+                corp_code=corp_code,
+                business_year=business_year,
+                report_code=report_code,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(
+                "statement_detail_fetch_failed corp_code=%s year=%s error=%s",
+                corp_code,
+                business_year,
+                exc,
+            )
+            detail_df = pd.DataFrame()
         audit_opinion, is_external_audit = fetch_audit_metadata(
             corp_code,
             business_year,
