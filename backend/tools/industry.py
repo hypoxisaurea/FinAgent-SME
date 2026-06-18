@@ -1,16 +1,37 @@
 import logging
 import re
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 from backend.common.env import load_backend_env
 from backend.integrations import dart_client, economic_data_client
 from langchain_core.tools import tool
 
+try:
+    from backend.rag.retriever import (
+        retrieve_industry_methodology as _retrieve_industry_methodology,
+    )
+except ImportError:
+    _retrieve_industry_methodology = None  # type: ignore[assignment]
+
 load_backend_env()
 
 logger = logging.getLogger(__name__)
 OpenDartReader = dart_client.OpenDartReader
+
+_METHODOLOGY_UNAVAILABLE = {
+    "industry_methodology": {
+        "industry_name": "",
+        "summary": "",
+        "key_risk_factors": [],
+        "credit_assessment_factors": [],
+        "source_count": 0,
+        "unavailable": True,
+        "error": None,
+    },
+    "methodology_sources": [],
+}
 
 # ---------------------------------------------------------------------------
 # CSV 파일 경로
@@ -378,9 +399,72 @@ _INDUTY_TO_KSIC = {
 
 
 # ===========================================================================
+# C 제조업 세부 업종(sub_sector) 추론 매핑
+# ===========================================================================
+_MANUFACTURING_INDUTY_CODE_TO_SUB_SECTOR: dict[str, str] = {
+    "2610": "반도체",
+    "2620": "반도체",
+    "2411": "철강",
+    "2412": "철강",
+    "2413": "철강",
+    "2310": "정유",
+    "3011": "조선",
+    "3012": "조선",
+    "1411": "의류",
+    "1412": "의류",
+    "2394": "레미콘",
+    "3040": "방산",
+    "2591": "방산",
+}
+
+_MANUFACTURING_COMPANY_NAME_KEYWORDS: tuple[tuple[str, str], ...] = (
+    ("반도체", "반도체"),
+    ("semiconductor", "반도체"),
+    ("철강", "철강"),
+    ("스틸", "철강"),
+    ("steel", "철강"),
+    ("정유", "정유"),
+    ("오일", "정유"),
+    ("oil", "정유"),
+    ("에너지", "정유"),
+    ("조선", "조선"),
+    ("중공업", "조선"),
+    ("shipbuilding", "조선"),
+    ("의류", "의류"),
+    ("패션", "의류"),
+    ("apparel", "의류"),
+    ("레미콘", "레미콘"),
+    ("콘크리트", "레미콘"),
+    ("방산", "방산"),
+    ("defense", "방산"),
+    ("항공우주", "방산"),
+)
+
+
+def _infer_sub_sector_for_manufacturing(
+    ksic_code: str,
+    induty_code: str | None,
+    company_name: str | None,
+) -> str | None:
+    """C 제조업 한정으로 induty_code → company_name 순서로 세부 업종을 추론한다."""
+    if not ksic_code.startswith("C "):
+        return None
+    if induty_code:
+        sub_sector = _MANUFACTURING_INDUTY_CODE_TO_SUB_SECTOR.get(induty_code[:4])
+        if sub_sector:
+            return sub_sector
+    if company_name:
+        lower_name = company_name.lower()
+        for keyword, sub_sector in _MANUFACTURING_COMPANY_NAME_KEYWORDS:
+            if keyword.lower() in lower_name:
+                return sub_sector
+    return None
+
+
+# ===========================================================================
 # 내부 헬퍼
 # ===========================================================================
-def _get_dart():
+def _get_dart() -> Any:
     return dart_client.get_dart_client()
 
 
@@ -546,7 +630,7 @@ def get_industry_avg_ratios(
         max(int(y) for y in available_years if int(y) <= year)
     )
 
-    def _r(path, nm):
+    def _r(path: Path, nm: str) -> float | None:
         v = _read_csv_val(path, nm, ksic_code, year_str)
         return v / 100 if v is not None else None
 
@@ -568,7 +652,7 @@ def get_industry_avg_ratios(
     if company_ratios:
         thresholds = _SECTOR_THRESHOLDS.get(ksic_code, _DEFAULT_THRESHOLDS)
 
-        def _cmp(key, avg_key):
+        def _cmp(key: str, avg_key: str) -> str:
             return _compare(
                 company_ratios.get(key),
                 avg.get(avg_key),
@@ -591,8 +675,15 @@ def get_industry_avg_ratios(
 
 
 @tool
-def get_industry_outlook(ksic_code: str) -> dict:
+def get_industry_outlook(
+    ksic_code: str,
+    induty_code: str | None = None,
+    company_name: str | None = None,
+) -> dict:
     """업종별 생산지수로 업황 등급 산출.
+
+    induty_code(DART 업종코드)와 company_name을 전달하면
+    C 제조업 내 세부 업종(반도체·철강·조선 등)을 추론해 RAG 검색 정확도를 높인다.
 
     ┌──────────────────────────────┬──────────────────────────────────────┐
     │ 업종                         │ 소스                                 │
@@ -611,7 +702,12 @@ def get_industry_outlook(ksic_code: str) -> dict:
             itm_id="T10 T11 T12",
         )
         if not rows:
-            return {"outlook_score": "Medium", "source": "KOSIS 광공업(오류-중립)"}
+            return _with_methodology_context(
+                {"outlook_score": "Medium", "source": "KOSIS 광공업(오류-중립)"},
+                ksic_code,
+                induty_code=induty_code,
+                company_name=company_name,
+            )
 
         prod_v, inv_v, ship_v = [], [], []
         for row in rows:
@@ -638,13 +734,18 @@ def get_industry_outlook(ksic_code: str) -> dict:
         else:
             score = "Low"
 
-        return {
-            "production_index_yoy": round(prod_yoy,  4),
-            "inventory_index_yoy":  round(inv_yoy,   4),
-            "shipment_index_yoy":   round(ship_yoy,  4),
-            "outlook_score":        score,
-            "source":               "KOSIS 광공업생산지수",
-        }
+        return _with_methodology_context(
+            {
+                "production_index_yoy": round(prod_yoy,  4),
+                "inventory_index_yoy":  round(inv_yoy,   4),
+                "shipment_index_yoy":   round(ship_yoy,  4),
+                "outlook_score":        score,
+                "source":               "KOSIS 광공업생산지수",
+            },
+            ksic_code,
+            induty_code=induty_code,
+            company_name=company_name,
+        )
 
     # ── ② KOSIS 서비스업: E G H I J L M N P R S ────────────────────────────
     if ksic_code in _KSIC_TO_KOSIS_SVC_KW:
@@ -662,14 +763,19 @@ def get_industry_outlook(ksic_code: str) -> dict:
                 keyword,
                 itm_keyword="",
             )
-        return {
-            "production_index_yoy": round(prod_yoy, 4) if prod_yoy is not None else None,
-            "inventory_index_yoy":  None,
-            "shipment_index_yoy":   None,
-            "outlook_score":        _score_from_yoy(prod_yoy),
-            "source":               "KOSIS 서비스업생산지수" if prod_yoy is not None
-                                    else "KOSIS 서비스업생산지수(데이터 없음-중립)",
-        }
+        return _with_methodology_context(
+            {
+                "production_index_yoy": round(prod_yoy, 4) if prod_yoy is not None else None,
+                "inventory_index_yoy":  None,
+                "shipment_index_yoy":   None,
+                "outlook_score":        _score_from_yoy(prod_yoy),
+                "source":               "KOSIS 서비스업생산지수" if prod_yoy is not None
+                                        else "KOSIS 서비스업생산지수(데이터 없음-중립)",
+            },
+            ksic_code,
+            induty_code=induty_code,
+            company_name=company_name,
+        )
 
     # ── ③ KOSIS 전산업생산지수: F 건설업 ──────────────────────────────────
     # tblId: KOSIS 홈페이지 전산업생산지수 > OPENAPI 버튼에서 확인
@@ -680,36 +786,105 @@ def get_industry_outlook(ksic_code: str) -> dict:
             "건설업",
             itm_keyword="",
         )
-        return {
-            "production_index_yoy": round(prod_yoy, 4) if prod_yoy is not None else None,
-            "inventory_index_yoy":  None,
-            "shipment_index_yoy":   None,
-            "outlook_score":        _score_from_yoy(prod_yoy),
-            "source":               "KOSIS 전산업생산지수" if prod_yoy is not None
-                                    else "KOSIS 전산업생산지수(tblId 확인 필요-중립)",
-        }
+        return _with_methodology_context(
+            {
+                "production_index_yoy": round(prod_yoy, 4) if prod_yoy is not None else None,
+                "inventory_index_yoy":  None,
+                "shipment_index_yoy":   None,
+                "outlook_score":        _score_from_yoy(prod_yoy),
+                "source":               "KOSIS 전산업생산지수" if prod_yoy is not None
+                                        else "KOSIS 전산업생산지수(tblId 확인 필요-중립)",
+            },
+            ksic_code,
+            induty_code=induty_code,
+            company_name=company_name,
+        )
 
     # ── ④ 농림업생산지수 CSV: A01 농업 ────────────────────────────────────
     if ksic_code == "A01 농업":
         prod_yoy = _read_agri_yoy()
-        return {
-            "production_index_yoy": round(prod_yoy, 4) if prod_yoy is not None else None,
-            "inventory_index_yoy":  None,
-            "shipment_index_yoy":   None,
-            "outlook_score":        _score_from_yoy(prod_yoy),
-            "source":               "농림업생산지수 CSV (농업총계)" if prod_yoy is not None
-                                    else "농림업생산지수 CSV 없음 - 중립",
-        }
+        return _with_methodology_context(
+            {
+                "production_index_yoy": round(prod_yoy, 4) if prod_yoy is not None else None,
+                "inventory_index_yoy":  None,
+                "shipment_index_yoy":   None,
+                "outlook_score":        _score_from_yoy(prod_yoy),
+                "source":               "농림업생산지수 CSV (농업총계)" if prod_yoy is not None
+                                        else "농림업생산지수 CSV 없음 - 중립",
+            },
+            ksic_code,
+            induty_code=induty_code,
+            company_name=company_name,
+        )
 
     # ── ⑤ None 처리: A03 어업 / D35 전기가스 ─────────────────────────────
+    return _with_methodology_context(
+        {
+            "production_index_yoy": None,
+            "inventory_index_yoy":  None,
+            "shipment_index_yoy":   None,
+            "outlook_score":        "Medium",
+            "source":               "N/A",
+            "note":                 f"{ksic_code} 생산지수 데이터 없음 - 중립(Medium) 적용",
+        },
+        ksic_code,
+        induty_code=induty_code,
+        company_name=company_name,
+    )
+
+
+def _with_methodology_context(
+    outlook: dict,
+    ksic_code: str,
+    induty_code: str | None = None,
+    company_name: str | None = None,
+) -> dict:
+    try:
+        methodology_context = _retrieve_methodology_for_outlook(
+            ksic_code,
+            induty_code=induty_code,
+            company_name=company_name,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(
+            "industry_rag_context_failed ksic_code=%s error=%s",
+            ksic_code,
+            exc,
+        )
+        methodology_context = _build_unavailable_methodology_context(str(exc))
     return {
-        "production_index_yoy": None,
-        "inventory_index_yoy":  None,
-        "shipment_index_yoy":   None,
-        "outlook_score":        "Medium",
-        "source":               "N/A",
-        "note":                 f"{ksic_code} 생산지수 데이터 없음 - 중립(Medium) 적용",
+        **outlook,
+        **methodology_context,
     }
+
+
+def _retrieve_methodology_for_outlook(
+    ksic_code: str,
+    induty_code: str | None = None,
+    company_name: str | None = None,
+) -> dict:
+    if _retrieve_industry_methodology is None:
+        return _build_unavailable_methodology_context("chromadb 미설치")
+    sub_sector = _infer_sub_sector_for_manufacturing(ksic_code, induty_code, company_name)
+    query = (
+        f"{ksic_code} 신용평가방법론 주요 평가요소 사업위험 재무위험 업황 리스크"
+    )
+    return _retrieve_industry_methodology(
+        query=query,
+        ksic_code=ksic_code,
+        sub_sector=sub_sector,
+    )
+
+
+def _build_unavailable_methodology_context(error: str | None) -> dict:
+    fallback = {
+        "industry_methodology": dict(
+            _METHODOLOGY_UNAVAILABLE["industry_methodology"]
+        ),
+        "methodology_sources": [],
+    }
+    fallback["industry_methodology"]["error"] = error
+    return fallback
 
 
 @tool

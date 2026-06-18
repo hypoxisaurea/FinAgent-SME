@@ -163,6 +163,16 @@ def _default_industry_outlook(ksic_code: str) -> dict[str, Any]:
         "ksic_code": ksic_code,
         "outlook_score": "Medium",
         "note": "업황 데이터를 불러오지 못해 중립값을 적용했습니다.",
+        "industry_methodology": {
+            "industry_name": "",
+            "summary": "",
+            "key_risk_factors": [],
+            "credit_assessment_factors": [],
+            "source_count": 0,
+            "unavailable": True,
+            "error": None,
+        },
+        "methodology_sources": [],
     }
 
 

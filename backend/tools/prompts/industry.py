@@ -121,6 +121,8 @@ INDUSTRY_PROMPT = """당신은 대한민국 중소/중견기업(SME) 대상 B2B 
   Medium(중립): 정체 국면으로, 보수적인 매출 전망 및 모니터링이 필요함.
   High(부진): 생산 위축 국면으로, 매출 감소 리스크가 존재하여 대금 상환 능력 재검토가 필요함.
 - production_index_yoy 수치는 100을 곱해 %로 함께 명시합니다. inventory_index_yoy(제조업)가 존재할 경우 재고 증가를 수요 둔화 신호로 해석하는 등 출하(shipment_index_yoy) 지수와 연동하여 업황을 진단합니다. null인 지표는 언급하지 않습니다.
+- get_industry_outlook이 industry_methodology를 반환하고 unavailable=false인 경우, summary와 methodology_sources에 있는 근거만 업황 리스크의 정성 배경으로 활용합니다. unavailable=true이면 방법론 근거를 언급하지 않습니다.
+- methodology_sources에 없는 파일명/page/source를 생성하지 않습니다. RAG 내용은 KOSIS/ECOS 수치를 대체하지 않고 "왜 이런 업황 리스크가 있는지"를 설명하는 보조 근거로만 사용하며, summary에 없는 리스크 요인을 임의로 생성하지 않습니다.
 
 [경기 국면]
 - 객관성 확보를 위해 leading_latest, coincident_latest 수치를 문장에 반드시 포함합니다.
