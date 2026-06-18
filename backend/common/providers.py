@@ -43,7 +43,12 @@ class IndustryDataProvider(Protocol):
         company_ratios: Any,
     ) -> dict[str, Any]: ...
 
-    def get_industry_outlook(self, ksic_code: str) -> dict[str, Any]: ...
+    def get_industry_outlook(
+        self,
+        ksic_code: str,
+        induty_code: str | None = None,
+        company_name: str | None = None,
+    ) -> dict[str, Any]: ...
 
     def get_business_cycle(self) -> dict[str, Any]: ...
 
@@ -282,9 +287,16 @@ class ToolIndustryDataProvider:
             }
         )
 
-    def get_industry_outlook(self, ksic_code: str) -> dict[str, Any]:
+    def get_industry_outlook(
+        self,
+        ksic_code: str,
+        induty_code: str | None = None,
+        company_name: str | None = None,
+    ) -> dict[str, Any]:
         industry_tools = _load_industry_tools()
-        return industry_tools.get_industry_outlook.invoke({"ksic_code": ksic_code})
+        return industry_tools.get_industry_outlook.invoke(
+            {"ksic_code": ksic_code, "induty_code": induty_code, "company_name": company_name}
+        )
 
     def get_business_cycle(self) -> dict[str, Any]:
         industry_tools = _load_industry_tools()

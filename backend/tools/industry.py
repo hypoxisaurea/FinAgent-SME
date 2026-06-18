@@ -576,10 +576,12 @@ def map_corp_to_ksic(corp_code: str) -> dict:
     if ksic is None:
         return {
             "corp_name": corp_name,
+            "induty_code": induty,
             "ksic_code": f"N/A (업종코드 {induty} - 산업평균 데이터 없음)",
         }
     return {
         "corp_name": corp_name,
+        "induty_code": induty,
         "ksic_code": ksic,
     }
 

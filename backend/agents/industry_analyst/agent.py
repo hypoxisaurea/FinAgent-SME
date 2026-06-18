@@ -58,6 +58,7 @@ class IndustryAnalystAgent(Agent):
             )
             tool_runs.append(company_info_run)
             ksic_code = str(company_info.get("ksic_code", ""))
+            induty_code = str(company_info.get("induty_code", "")) or None
             company_ratios = payload.get("financial_ratios")
 
             industry_avg, industry_avg_run = execute_tool_step(
@@ -84,7 +85,11 @@ class IndustryAnalystAgent(Agent):
                 tool_name="get_industry_outlook",
                 request_id=request_id,
                 company_name=company_name,
-                runner=lambda: self._provider.get_industry_outlook(ksic_code),
+                runner=lambda: self._provider.get_industry_outlook(
+                    ksic_code,
+                    induty_code=induty_code,
+                    company_name=company_name,
+                ),
                 fallback_factory=lambda: _default_industry_outlook(ksic_code),
                 validate_dict=True,
             )

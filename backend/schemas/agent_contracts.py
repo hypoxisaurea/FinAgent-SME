@@ -119,6 +119,44 @@ class FinancialAnalystOutput(AgentOutputModel):
     financial_tool_errors: list[dict[str, Any]] = Field(default_factory=list)
 
 
+class IndustryMethodology(BaseModel):
+    """retrieve_industry_methodology 반환값 — 신용평가방법론 RAG 검색 결과."""
+
+    industry_name: str = ""
+    summary: str = ""
+    key_risk_factors: list[str] = Field(default_factory=list)
+    credit_assessment_factors: list[str] = Field(default_factory=list)
+    source_count: int = 0
+    unavailable: bool = True
+    error: str | None = None
+
+
+class MethodologySource(BaseModel):
+    """methodology_sources 단일 출처 항목."""
+
+    filename: str
+    page: int
+    score: float
+    industry_name: str = ""
+    ksic_code: str = ""
+    sub_sector: str = ""
+
+
+class OutlookResult(BaseModel):
+    """get_industry_outlook 반환값 — 업황 지수 YoY + RAG 방법론."""
+
+    model_config = ConfigDict(extra="allow")
+
+    production_index_yoy: float | None = None
+    inventory_index_yoy: float | None = None
+    shipment_index_yoy: float | None = None
+    outlook_score: str = "Medium"
+    source: str = ""
+    note: str | None = None
+    industry_methodology: IndustryMethodology = Field(default_factory=IndustryMethodology)
+    methodology_sources: list[MethodologySource] = Field(default_factory=list)
+
+
 class IndustryAnalystInput(AgentInputModel):
     request_id: str | None = None
     company_name: str | None = None
@@ -130,7 +168,7 @@ class IndustryAnalystInput(AgentInputModel):
 class IndustryAnalystOutput(AgentOutputModel):
     ksic_code: str
     industry_summary: dict[str, Any] | str
-    industry_outlook: dict[str, Any]
+    industry_outlook: OutlookResult | dict[str, Any]
     business_cycle: BusinessCycle | dict[str, Any]
     macro_indicators: dict[str, Any]
     peer_comparison: dict[str, Any] | None = None

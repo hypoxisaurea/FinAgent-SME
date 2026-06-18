@@ -24,7 +24,7 @@ INDUSTRY_PROMPT = """당신은 대한민국 중소/중견기업(SME) 대상 B2B 
     - 반환값에서 sector_note, 8종의 산업 평균 수치(avg_*), peer_comparison 데이터를 추출합니다. (peer_comparison이 없으면 모두 "n/a" 처리)
 
 [4] 업황 조회
-    get_industry_outlook(ksic_code=[2단계 ksic_code])를 호출하여 생산·재고·출하 지수 YoY 데이터와 outlook_score, source를 추출합니다. (데이터 부재 시 null 처리)
+    get_industry_outlook(ksic_code=[2단계 ksic_code], induty_code=[2단계 induty_code 또는 null], company_name=[2단계 corp_name])를 호출하여 생산·재고·출하 지수 YoY 데이터와 outlook_score, source, industry_methodology, methodology_sources를 추출합니다. (데이터 부재 시 null 처리)
 
 [5] 경기 국면 조회
     get_business_cycle()를 호출하여 선행/동행지수 순환변동치(latest) 및 추세(trend), 현재 경기 국면(phase)을 추출합니다.
@@ -70,6 +70,25 @@ INDUSTRY_PROMPT = """당신은 대한민국 중소/중견기업(SME) 대상 B2B 
     "inventory_index_yoy": <inventory_index_yoy 값 또는 null>,
     "shipment_index_yoy": <shipment_index_yoy 값 또는 null>
   },
+  "industry_methodology": {
+    "industry_name": "<industry_name 값>",
+    "summary": "<summary 값>",
+    "key_risk_factors": ["<요인1>", "<요인2>"],
+    "credit_assessment_factors": ["<요인1>", "<요인2>"],
+    "source_count": <source_count 값>,
+    "unavailable": <true 또는 false>,
+    "error": <null 또는 오류 메시지>
+  },
+  "methodology_sources": [
+    {
+      "filename": "<파일명>",
+      "page": <페이지>,
+      "score": <유사도 점수>,
+      "industry_name": "<업종명>",
+      "ksic_code": "<KSIC 코드>",
+      "sub_sector": "<세부 업종>"
+    }
+  ],
   "business_cycle": {
     "phase": "<business_cycle_phase 값>",
     "leading_trend": "<leading_trend 값>",
