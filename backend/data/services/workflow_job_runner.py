@@ -177,19 +177,6 @@ class WorkflowJobRunner:
                 job_id,
                 company_name,
             )
-        except ValueError as exc:
-            await asyncio.to_thread(
-                workflow_job_service.fail_workflow_job,
-                job_id,
-                error_code="INVALID_INPUT",
-                error_message=str(exc),
-            )
-            logger.info(
-                "workflow_job_invalid_input job_id=%s company_name=%s error=%s",
-                job_id,
-                company_name,
-                exc,
-            )
         except TimeoutError as exc:
             self._record_error(exc)
             logger.exception(

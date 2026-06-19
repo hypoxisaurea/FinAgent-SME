@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 from backend.schemas.workflow import build_workflow_response
 
 
@@ -65,3 +67,24 @@ def test_build_workflow_response_accepts_structured_industry_context() -> None:
         "target_year": 2024,
         "grade_cap": "BB+",
     }
+
+
+def test_build_workflow_response_serializes_decision_processed_at_date() -> None:
+    response = build_workflow_response(
+        {
+            "request_id": "req-processed-at",
+            "company_name": "케이씨피드",
+            "status": "success",
+            "context": {
+                "company_name": "케이씨피드",
+                "decision": "approve",
+                "processed_at": date(2026, 6, 19),
+            },
+            "steps": [],
+        }
+    )
+
+    serialized = response.model_dump(mode="json")
+
+    assert serialized["context"]["processed_at"] == "2026-06-19"
+    assert serialized["context"]["decisioning"]["processed_at"] == "2026-06-19"

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from datetime import date, datetime
 from typing import Any, Literal
 
 from backend.schemas.agent_contracts import (
@@ -18,7 +19,7 @@ from backend.schemas.state import (
     RiskFilter,
     TrendAnalysis,
 )
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 WorkflowStatus = Literal["not_started", "success", "partial", "failed", "not_target"]
 AgentStepStatus = Literal["success", "partial", "failed", "skipped"]
@@ -144,6 +145,11 @@ class WorkflowDecisionSection(BaseModel):
     grade_detail: dict[str, Any] | None = None
     processed_at: str | None = None
 
+    @field_validator("processed_at", mode="before")
+    @classmethod
+    def _normalize_processed_at(cls, value: Any) -> Any:
+        return _normalize_iso_date(value)
+
 
 class WorkflowArtifactSection(BaseModel):
     """최종 산출물 및 문서 처리 결과 섹션."""
@@ -250,6 +256,11 @@ class WorkflowContext(BaseModel):
     risk: WorkflowRiskSection = Field(default_factory=WorkflowRiskSection)
     decisioning: WorkflowDecisionSection = Field(default_factory=WorkflowDecisionSection)
     artifacts: WorkflowArtifactSection = Field(default_factory=WorkflowArtifactSection)
+
+    @field_validator("processed_at", mode="before")
+    @classmethod
+    def _normalize_processed_at(cls, value: Any) -> Any:
+        return _normalize_iso_date(value)
 
     @model_validator(mode="after")
     def _populate_sections(self) -> WorkflowContext:
@@ -510,3 +521,9 @@ def _read_step_value(step: WorkflowStep | Mapping[str, Any], key: str) -> Any:
     if isinstance(step, WorkflowStep):
         return getattr(step, key)
     return step.get(key)
+
+
+def _normalize_iso_date(value: Any) -> Any:
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return value
