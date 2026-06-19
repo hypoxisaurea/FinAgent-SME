@@ -7,6 +7,8 @@ from typing import Any
 
 from backend.common.agent import Agent
 from backend.common.contracts import (
+    AgentInputValidationError,
+    AgentOutputValidationError,
     build_agent_failure_output,
     build_agent_output,
     classify_agent_error,
@@ -64,7 +66,7 @@ async def run_agent_step(agent: Agent, context: dict[str, Any]) -> StepResult:
             validated_input = _validate_agent_input(agent, context)
             raw_output = await asyncio.wait_for(agent.run(validated_input), timeout_seconds)
             if not isinstance(raw_output, dict):
-                raise TypeError(
+                raise AgentOutputValidationError(
                     f"{agent_name}.run() 반환값은 dict여야 합니다. "
                     f"실제 타입: {type(raw_output).__name__}"
                 )
@@ -151,7 +153,9 @@ def _validate_agent_input(agent: Agent, payload: dict[str, Any]) -> dict[str, An
     try:
         validated_model = model_type.model_validate(payload)
     except ValidationError as exc:
-        raise ValueError(_format_contract_error(agent, "input", exc)) from exc
+        raise AgentInputValidationError(
+            _format_contract_error(agent, "input", exc)
+        ) from exc
 
     return validated_model.model_dump(mode="python", exclude_none=True)
 
@@ -164,7 +168,9 @@ def _validate_agent_output(agent: Agent, payload: dict[str, Any]) -> dict[str, A
     try:
         validated_model = model_type.model_validate(payload)
     except ValidationError as exc:
-        raise TypeError(_format_contract_error(agent, "output", exc)) from exc
+        raise AgentOutputValidationError(
+            _format_contract_error(agent, "output", exc)
+        ) from exc
 
     return validated_model.model_dump(mode="python", exclude_none=True)
 

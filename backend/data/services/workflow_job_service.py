@@ -26,6 +26,7 @@ JOB_ERROR_MESSAGES = {
     "RESOURCE_NOT_FOUND": "심사에 필요한 리소스를 찾지 못해 작업이 중단되었습니다.",
     "UPSTREAM_UNAVAILABLE": "외부 연동 오류로 심사 작업이 중단되었습니다.",
     "AGENT_EXECUTION_FAILED": "심사 워크플로우 실행 중 오류가 발생했습니다.",
+    "WORKER_RESTARTED": "서버 재시작으로 이전 작업이 종료되었습니다. 다시 시도해주세요.",
 }
 
 
@@ -142,10 +143,14 @@ def fail_workflow_job(
     )
 
 
-def requeue_incomplete_workflow_jobs() -> int:
-    """미완료 상태로 남은 job을 재실행 대기 상태로 되돌린다."""
-    return workflow_job_repository.requeue_incomplete_workflow_jobs(
-        updated_at=_utcnow_isoformat()
+def fail_incomplete_workflow_jobs() -> int:
+    """미완료 상태로 남은 job을 서버 재시작 실패 상태로 종료한다."""
+    timestamp = _utcnow_isoformat()
+    return workflow_job_repository.fail_incomplete_workflow_jobs(
+        error_code="WORKER_RESTARTED",
+        error_message="workflow job interrupted by server restart",
+        finished_at=timestamp,
+        updated_at=timestamp,
     )
 
 

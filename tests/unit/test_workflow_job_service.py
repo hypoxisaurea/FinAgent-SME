@@ -55,3 +55,32 @@ def test_get_workflow_job_status_uses_generic_message_for_unknown_error_code(
 
     assert response is not None
     assert response.message == "워크플로우 job이 실패했습니다."
+
+
+def test_get_workflow_job_status_exposes_restart_failure_message(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        workflow_job_service.workflow_job_repository,
+        "get_workflow_job",
+        lambda job_id: {
+            "job_id": job_id,
+            "request_id": "req-789",
+            "company_name": "FinAgent",
+            "status": workflow_job_service.JOB_STATUS_FAILED,
+            "submitted_at": "2026-06-19T00:00:00+00:00",
+            "started_at": None,
+            "finished_at": "2026-06-19T00:00:03+00:00",
+            "error_code": "WORKER_RESTARTED",
+            "error_message": "workflow job interrupted by server restart",
+            "step_summary_json": None,
+        },
+    )
+
+    response = workflow_job_service.get_workflow_job_status("job-789")
+
+    assert response is not None
+    assert (
+        response.message
+        == "서버 재시작으로 이전 작업이 종료되었습니다. 다시 시도해주세요."
+    )

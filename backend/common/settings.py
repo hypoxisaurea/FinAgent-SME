@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    workflow_job_timeout_seconds: float = 300.0
 
     @property
     def cors_origin_list(self) -> list[str]:

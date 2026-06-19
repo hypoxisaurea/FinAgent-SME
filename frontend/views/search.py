@@ -1,9 +1,11 @@
+import json
 import logging
 import time
 from html import escape
 
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,146 @@ AGGREGATE_STEP_KEYS = {
     "pending",
 }
 
+_BROWSER_CONSOLE_DEDUPE_KEY = "_browser_console_emitted_events"
+_BROWSER_CONSOLE_QUEUE_KEY = "_browser_console_events"
+_BROWSER_CONSOLE_FLUSHED_COUNT_KEY = "_browser_console_flushed_count"
+_JOB_POLL_COUNT_KEY = "_pending_job_poll_count"
+_JOB_QUEUED_SINCE_KEY = "_pending_job_queued_since"
+_QUEUE_STALL_WARNING_INTERVAL = 5
+
+
+def _utc_timestamp() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def _emit_browser_console(
+    *,
+    level: str,
+    event: str,
+    payload: dict[str, object],
+    dedupe_key: str | None = None,
+) -> None:
+    emitted_events = st.session_state.setdefault(_BROWSER_CONSOLE_DEDUPE_KEY, {})
+    event_key = dedupe_key or f"{event}:{json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)}"
+    if emitted_events.get(event_key):
+        return
+
+    emitted_events[event_key] = True
+    st.session_state[_BROWSER_CONSOLE_DEDUPE_KEY] = emitted_events
+    event_queue = st.session_state.setdefault(_BROWSER_CONSOLE_QUEUE_KEY, [])
+    event_queue.append(
+        {
+            "timestamp": _utc_timestamp(),
+            "level": level,
+            "event": event,
+            **payload,
+        }
+    )
+    st.session_state[_BROWSER_CONSOLE_QUEUE_KEY] = event_queue[-50:]
+
+
+def _render_browser_console_bridge() -> None:
+    all_events = st.session_state.get(_BROWSER_CONSOLE_QUEUE_KEY) or []
+    flushed_count = int(st.session_state.get(_BROWSER_CONSOLE_FLUSHED_COUNT_KEY, 0))
+    events = all_events[flushed_count:]
+    if not events:
+        return
+
+    encoded_events = json.dumps(events, ensure_ascii=False, sort_keys=True, default=str)
+    components.html(
+        f"""
+        <script>
+        const events = {encoded_events};
+        const targets = [window, window.parent, window.top];
+        const prefix = "[FinAgent-SME]";
+
+        for (const payload of events) {{
+          const level = payload.level || "log";
+          const message = `${{prefix}} ${{payload.event}}`;
+          for (const target of targets) {{
+            try {{
+              const logger = target?.console ?? window.console;
+              if (typeof logger[level] === "function") {{
+                logger[level](message, payload);
+              }} else {{
+                logger.log(message, payload);
+              }}
+            }} catch (error) {{
+              window.console.warn(`${{prefix}} console_bridge_failed`, error);
+            }}
+          }}
+        }}
+        </script>
+        """,
+        height=1,
+        width=1,
+    )
+    st.session_state[_BROWSER_CONSOLE_FLUSHED_COUNT_KEY] = len(all_events)
+
+
+def _render_debug_trace_panel() -> None:
+    events = st.session_state.get(_BROWSER_CONSOLE_QUEUE_KEY) or []
+    pending_status = st.session_state.get("pending_job_status")
+    poll_count = st.session_state.get(_JOB_POLL_COUNT_KEY, 0)
+    queued_since = st.session_state.get(_JOB_QUEUED_SINCE_KEY)
+
+    with st.expander("Debug Trace", expanded=True):
+        st.caption("submit -> status poll -> result 흐름과 raw payload를 함께 표시합니다.")
+        if poll_count:
+            st.write(
+                {
+                    "poll_count": poll_count,
+                    "queued_since": queued_since,
+                    "pending_job_id": st.session_state.get("pending_job_id"),
+                }
+            )
+        if pending_status:
+            st.json(pending_status)
+        if events:
+            st.json(events[-10:])
+
+
+def _console_log_http_error(
+    *,
+    status_code: int,
+    code: str | None,
+    message: str | None,
+) -> None:
+    _emit_browser_console(
+        level="error",
+        event="workflow_api_http_error",
+        payload={
+            "status_code": status_code,
+            "code": code,
+            "message": message,
+        },
+    )
+
+
+def _console_log_job_status(status_payload: dict[str, object]) -> None:
+    job_id = str(status_payload.get("job_id") or "-")
+    status = str(status_payload.get("status") or "queued")
+    step_summary = status_payload.get("step_summary") or {}
+    level = "info"
+    if status == "failed":
+        level = "error"
+    elif status in {"queued", "running"}:
+        level = "info"
+
+    _emit_browser_console(
+        level=level,
+        event="workflow_job_status",
+        payload={
+            "job_id": job_id,
+            "status": status,
+            "company_name": status_payload.get("company_name"),
+            "error_code": status_payload.get("error_code"),
+            "message": status_payload.get("message"),
+            "step_summary": step_summary,
+        },
+        dedupe_key=f"workflow_job_status:{job_id}:{status}:{json.dumps(step_summary, ensure_ascii=False, sort_keys=True, default=str)}",
+    )
+
 
 def _render_http_error(response: requests.Response) -> None:
     try:
@@ -60,6 +202,11 @@ def _render_http_error(response: requests.Response) -> None:
 
     code = payload.get("code") if isinstance(payload, dict) else None
     message = payload.get("message") if isinstance(payload, dict) else None
+    _console_log_http_error(
+        status_code=response.status_code,
+        code=code if isinstance(code, str) else None,
+        message=message if isinstance(message, str) else None,
+    )
     st.error(message or "요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
     if code:
         st.caption(f"오류 코드: {code}")
@@ -72,6 +219,15 @@ def _render_transport_error(
     exc: Exception,
 ) -> None:
     logger.exception("%s error=%s", log_message, exc)
+    _emit_browser_console(
+        level="error",
+        event=log_message,
+        payload={
+            "error_type": type(exc).__name__,
+            "error_message": str(exc),
+            "user_message": user_message,
+        },
+    )
     st.error(user_message)
 
 
@@ -79,9 +235,32 @@ def submit_workflow_job(company_name: str) -> dict | None:
     try:
         url = f"{st.session_state.base_url}/api/v1/workflows/jobs"
         payload = {"company_name": company_name}
+        started_at = time.perf_counter()
+        _emit_browser_console(
+            level="info",
+            event="workflow_job_submit_requested",
+            payload={
+                "company_name": company_name,
+                "payload": payload,
+                "url": url,
+            },
+        )
         resp = requests.post(url, json=payload, timeout=30)
         resp.raise_for_status()
-        return resp.json()
+        job_payload = resp.json()
+        _emit_browser_console(
+            level="info",
+            event="workflow_job_submit_succeeded",
+            payload={
+                "company_name": company_name,
+                "job_id": job_payload.get("job_id"),
+                "status": job_payload.get("status"),
+                "latency_ms": int((time.perf_counter() - started_at) * 1000),
+                "response": job_payload,
+            },
+            dedupe_key=f"workflow_job_submit_succeeded:{job_payload.get('job_id')}",
+        )
+        return job_payload
     except requests.HTTPError as e:
         if e.response is not None:
             _render_http_error(e.response)
@@ -104,9 +283,33 @@ def submit_workflow_job(company_name: str) -> dict | None:
 def get_workflow_job_status(job_id: str) -> dict | None:
     try:
         url = f"{st.session_state.base_url}/api/v1/workflows/jobs/{job_id}"
+        started_at = time.perf_counter()
+        poll_count = int(st.session_state.get(_JOB_POLL_COUNT_KEY, 0)) + 1
+        st.session_state[_JOB_POLL_COUNT_KEY] = poll_count
+        _emit_browser_console(
+            level="info",
+            event="workflow_job_status_requested",
+            payload={
+                "job_id": job_id,
+                "poll_count": poll_count,
+                "url": url,
+            },
+        )
         resp = requests.get(url, timeout=10)
         resp.raise_for_status()
-        return resp.json()
+        status_payload = resp.json()
+        _emit_browser_console(
+            level="info",
+            event="workflow_job_status_received",
+            payload={
+                "job_id": job_id,
+                "poll_count": poll_count,
+                "latency_ms": int((time.perf_counter() - started_at) * 1000),
+                "response": status_payload,
+            },
+            dedupe_key=f"workflow_job_status_received:{job_id}:{poll_count}",
+        )
+        return status_payload
     except requests.HTTPError as e:
         if e.response is not None:
             _render_http_error(e.response)
@@ -129,9 +332,30 @@ def get_workflow_job_status(job_id: str) -> dict | None:
 def get_workflow_job_result(job_id: str) -> dict | None:
     try:
         url = f"{st.session_state.base_url}/api/v1/workflows/jobs/{job_id}/result"
+        started_at = time.perf_counter()
+        _emit_browser_console(
+            level="info",
+            event="workflow_job_result_requested",
+            payload={
+                "job_id": job_id,
+                "url": url,
+            },
+        )
         resp = requests.get(url, timeout=30)
         resp.raise_for_status()
-        return resp.json()
+        result_payload = resp.json()
+        _emit_browser_console(
+            level="info",
+            event="workflow_job_result_loaded",
+            payload={
+                "job_id": job_id,
+                "keys": sorted(result_payload.keys()) if isinstance(result_payload, dict) else [],
+                "latency_ms": int((time.perf_counter() - started_at) * 1000),
+                "response": result_payload,
+            },
+            dedupe_key=f"workflow_job_result_loaded:{job_id}",
+        )
+        return result_payload
     except requests.HTTPError as e:
         if e.response is not None:
             _render_http_error(e.response)
@@ -146,6 +370,29 @@ def get_workflow_job_result(job_id: str) -> dict | None:
         _render_transport_error(
             user_message="워크플로우 결과 조회 중 예상치 못한 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
             log_message="workflow_job_result_unexpected_failed",
+            exc=e,
+        )
+        return None
+
+
+def get_backend_health() -> dict | None:
+    try:
+        url = f"{st.session_state.base_url}/api/health"
+        resp = requests.get(url, timeout=5)
+        resp.raise_for_status()
+        payload = resp.json()
+        _emit_browser_console(
+            level="info",
+            event="backend_health_received",
+            payload={
+                "response": payload,
+            },
+        )
+        return payload
+    except Exception as e:
+        _render_transport_error(
+            user_message="백엔드 상태 확인 중 오류가 발생했습니다.",
+            log_message="backend_health_check_failed",
             exc=e,
         )
         return None
@@ -661,6 +908,8 @@ def _submit_pending_job() -> None:
     if not company_name:
         return
 
+    st.session_state[_JOB_POLL_COUNT_KEY] = 0
+    st.session_state[_JOB_QUEUED_SINCE_KEY] = None
     _render_loading_state(
         status="submitting",
         company_name=company_name,
@@ -690,6 +939,35 @@ def _render_job_progress() -> None:
     status = status_payload.get("status", "queued")
     company_name = status_payload.get("company_name", "-")
     step_summary = status_payload.get("step_summary") or {}
+    _console_log_job_status(status_payload)
+
+    if status == "queued":
+        queued_since = st.session_state.get(_JOB_QUEUED_SINCE_KEY)
+        if queued_since is None:
+            queued_since = _utc_timestamp()
+            st.session_state[_JOB_QUEUED_SINCE_KEY] = queued_since
+
+        poll_count = int(st.session_state.get(_JOB_POLL_COUNT_KEY, 0))
+        if poll_count >= _QUEUE_STALL_WARNING_INTERVAL and poll_count % _QUEUE_STALL_WARNING_INTERVAL == 0:
+            health_payload = get_backend_health()
+            _emit_browser_console(
+                level="warning",
+                event="workflow_job_queue_stalled",
+                payload={
+                    "job_id": job_id,
+                    "poll_count": poll_count,
+                    "queued_since": queued_since,
+                    "message": "job status가 queued에서 진행되지 않고 있습니다.",
+                    "status_payload": status_payload,
+                    "backend_health": health_payload,
+                },
+                dedupe_key=f"workflow_job_queue_stalled:{job_id}:{poll_count}",
+            )
+            st.warning(
+                f"작업이 아직 대기열에 머물고 있습니다. poll={poll_count}, queued_since={queued_since}"
+            )
+    else:
+        st.session_state[_JOB_QUEUED_SINCE_KEY] = None
 
     _render_loading_state(
         status=status,
@@ -697,6 +975,8 @@ def _render_job_progress() -> None:
         job_label="Active Job",
         step_summary=step_summary,
     )
+    _render_browser_console_bridge()
+    _render_debug_trace_panel()
 
     if status == "succeeded":
         result = get_workflow_job_result(job_id)
@@ -705,6 +985,8 @@ def _render_job_progress() -> None:
             st.session_state.pending_job_id = None
             st.session_state.pending_job_status = None
             st.session_state.submitting_company_name = None
+            st.session_state[_JOB_POLL_COUNT_KEY] = 0
+            st.session_state[_JOB_QUEUED_SINCE_KEY] = None
             st.session_state.page = "Report"
             st.rerun()
         return
@@ -720,6 +1002,8 @@ def _render_job_progress() -> None:
             st.caption(f"오류 코드: {status_payload['error_code']}")
         st.session_state.pending_job_id = None
         st.session_state.pending_job_status = None
+        st.session_state[_JOB_POLL_COUNT_KEY] = 0
+        st.session_state[_JOB_QUEUED_SINCE_KEY] = None
         return
 
     time.sleep(2)
@@ -728,6 +1012,7 @@ def _render_job_progress() -> None:
 
 def render() -> None:
     _inject_styles()
+    _render_browser_console_bridge()
 
     if st.session_state.submitting_company_name:
         _submit_pending_job()
@@ -750,4 +1035,9 @@ def render() -> None:
             st.warning("회사명을 입력하세요.")
         else:
             st.session_state.submitting_company_name = company_name
+            st.session_state[_BROWSER_CONSOLE_DEDUPE_KEY] = {}
+            st.session_state[_BROWSER_CONSOLE_QUEUE_KEY] = []
+            st.session_state[_BROWSER_CONSOLE_FLUSHED_COUNT_KEY] = 0
+            st.session_state[_JOB_POLL_COUNT_KEY] = 0
+            st.session_state[_JOB_QUEUED_SINCE_KEY] = None
             st.rerun()

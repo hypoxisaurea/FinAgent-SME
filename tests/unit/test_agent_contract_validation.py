@@ -36,6 +36,13 @@ class _BadOutputAgent(_ValidatingAgent):
         return {"recommended_limit": 1000}
 
 
+class _RuntimeTypeErrorAgent(_ValidatingAgent):
+    name = "runtime_type_error_agent"
+
+    async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
+        raise TypeError("unexpected keyword argument 'request_id'")
+
+
 def test_run_agent_step_returns_invalid_input_for_input_contract_violation() -> None:
     step = asyncio.run(
         run_agent_step(
@@ -67,6 +74,23 @@ def test_run_agent_step_returns_invalid_output_for_output_contract_violation() -
     assert step.status == "failed"
     assert step.error_code == "INVALID_OUTPUT"
     assert "output contract validation failed" in (step.error or "")
+
+
+def test_run_agent_step_does_not_mislabel_runtime_type_error_as_invalid_output() -> None:
+    step = asyncio.run(
+        run_agent_step(
+            _RuntimeTypeErrorAgent(),
+            {
+                "company_name": "테스트기업",
+                "corp_code": "00123456",
+            },
+        )
+    )
+
+    assert step.ok is False
+    assert step.status == "failed"
+    assert step.error_code == "AGENT_EXECUTION_FAILED"
+    assert "unexpected keyword argument" in (step.error or "")
 
 
 def test_run_agent_step_normalizes_validated_input_and_output() -> None:

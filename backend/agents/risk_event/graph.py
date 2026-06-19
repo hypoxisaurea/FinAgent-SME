@@ -49,16 +49,31 @@ async def _parallel_handlers(state: RiskEventState) -> RiskEventState:
     """
     company_name    = state["company_name"]
     corp_code       = state["corp_code"]
+    request_id      = state.get("request_id")
     news_data       = state.get("news_data", [])
     disclosure_data = state.get("disclosure_data", [])
     court_data      = state.get("court_data", [])
-    financial_rows  = get_financial_rows(corp_code)
+    logger.info(
+        "[%s] risk_event_parallel_handlers_started corp_code=%s news_count=%s disclosure_count=%s court_count=%s",
+        company_name,
+        corp_code,
+        len(news_data),
+        len(disclosure_data),
+        len(court_data),
+    )
+    financial_rows = await asyncio.to_thread(get_financial_rows, corp_code)
+    logger.info(
+        "[%s] risk_event_financial_rows_loaded corp_code=%s row_count=%s",
+        company_name,
+        corp_code,
+        len(financial_rows),
+    )
 
     results = await asyncio.gather(
         # 동기 함수 → 스레드풀
         asyncio.to_thread(detect_keywords, company_name, news_data, disclosure_data),
         # 비동기 함수 → 그대로
-        analyze_sentiment(company_name, news_data),
+        analyze_sentiment(company_name, news_data, request_id=request_id),
         # 동기 함수 → 스레드풀
         asyncio.to_thread(detect_disclosure_anomalies, company_name, corp_code, disclosure_data),
         asyncio.to_thread(detect_legal_risks, company_name, court_data),
@@ -87,8 +102,20 @@ async def _parallel_handlers(state: RiskEventState) -> RiskEventState:
             or getattr(result, "legal_risks", None)
             or []
         )
+        logger.info(
+            "[%s] risk_event_handler_completed handler=%s event_count=%s",
+            company_name,
+            label,
+            len(events),
+        )
         all_events.extend(events)
 
+    logger.info(
+        "[%s] risk_event_parallel_handlers_finished total_event_count=%s error_count=%s",
+        company_name,
+        len(all_events),
+        len(errors),
+    )
     return {
         **state,
         "keyword_result":    handler_results["keyword"],
@@ -105,6 +132,11 @@ async def _parallel_handlers(state: RiskEventState) -> RiskEventState:
 
 async def _classify_severity(state: RiskEventState) -> RiskEventState:
     classified = [classify_severity(ev) for ev in state.get("all_events", [])]
+    logger.info(
+        "[%s] risk_event_classify_severity_finished classified_count=%s",
+        state["company_name"],
+        len(classified),
+    )
     return {**state, "classified_events": classified}
 
 
@@ -112,6 +144,11 @@ async def _classify_severity(state: RiskEventState) -> RiskEventState:
 
 async def _build_timeline(state: RiskEventState) -> RiskEventState:
     timeline = build_timeline(state.get("classified_events", []))
+    logger.info(
+        "[%s] risk_event_timeline_finished timeline_count=%s",
+        state["company_name"],
+        len(timeline),
+    )
     return {**state, "timeline": timeline}
 
 
@@ -174,6 +211,13 @@ async def _aggregate(state: RiskEventState) -> RiskEventState:
         processed_at=date.today(),
         processing_errors=state.get("errors", []),
     )
+    logger.info(
+        "[%s] risk_event_aggregate_finished total_event_count=%s overall_risk_level=%s processing_error_count=%s",
+        state["company_name"],
+        result.total_event_count,
+        result.overall_risk_level.value,
+        len(result.processing_errors),
+    )
     return {**state, "final_result": result}
 
 
@@ -203,6 +247,7 @@ async def run_risk_event_agent(
     news_data:       list[dict],
     disclosure_data: list[dict],
     court_data:      list[dict],
+    request_id:      str | None = None,
 ) -> RiskEventResult:
     final_state = await risk_event_graph.ainvoke({
         "company_name":    company_name,
@@ -210,5 +255,6 @@ async def run_risk_event_agent(
         "news_data":       news_data,
         "disclosure_data": disclosure_data,
         "court_data":      court_data,
+        "request_id":      request_id,
     })
     return final_state["final_result"]

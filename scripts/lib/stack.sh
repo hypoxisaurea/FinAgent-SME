@@ -334,19 +334,58 @@ stack_is_pid_running() {
 }
 
 
+stack_find_listening_pids_by_port() {
+    local port="$1"
+
+    if ! stack_command_exists lsof; then
+        return
+    fi
+
+    lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true
+}
+
+
+stack_kill_listening_processes() {
+    local service_name="$1"
+    local port="$2"
+    local pid=""
+    local found="false"
+
+    while IFS= read -r pid; do
+        if [[ -z "$pid" ]]; then
+            continue
+        fi
+        found="true"
+        stack_log "Stopping $service_name listener on port $port (pid=$pid)"
+        kill "$pid" >/dev/null 2>&1 || true
+    done < <(stack_find_listening_pids_by_port "$port")
+
+    if [[ "$found" == "false" ]]; then
+        return
+    fi
+
+    sleep 1
+}
+
+
 stack_start_python_service() {
     local service_name="$1"
     local pid_file="$2"
     local log_file="$3"
     local working_directory="$4"
     local service_url="$5"
+    local service_port="$6"
     local venv_python
 
-    shift 5
+    shift 6
 
     if stack_is_pid_running "$pid_file"; then
         stack_log "$service_name is already running"
         return
+    fi
+
+    if [[ -n "$(stack_find_listening_pids_by_port "$service_port")" ]]; then
+        stack_fail "$service_name port $service_port is already in use. Run ./scripts/run-server.sh down first."
     fi
 
     venv_python="$(stack_resolve_venv_python_path)"
@@ -370,9 +409,11 @@ stack_start_python_service() {
 stack_stop_service() {
     local service_name="$1"
     local pid_file="$2"
+    local service_port="$3"
     local pid=""
 
     if ! stack_is_pid_running "$pid_file"; then
+        stack_kill_listening_processes "$service_name" "$service_port"
         stack_log "$service_name is not running"
         return
     fi
@@ -381,6 +422,7 @@ stack_stop_service() {
     stack_log "Stopping $service_name (pid=$pid)"
     kill "$pid" >/dev/null 2>&1 || true
     rm -f "$pid_file"
+    stack_kill_listening_processes "$service_name" "$service_port"
 }
 
 
@@ -419,6 +461,7 @@ stack_start_backend() {
         "$STACK_BACKEND_LOG_FILE" \
         "$STACK_BACKEND_DIR" \
         "http://$STACK_BACKEND_HOST:$STACK_BACKEND_PORT" \
+        "$STACK_BACKEND_PORT" \
         uvicorn backend.main:app --app-dir .. --host "$STACK_BACKEND_HOST" --port "$STACK_BACKEND_PORT"
 }
 
@@ -430,6 +473,7 @@ stack_start_frontend() {
         "$STACK_FRONTEND_LOG_FILE" \
         "$STACK_FRONTEND_DIR" \
         "http://$STACK_FRONTEND_HOST:$STACK_FRONTEND_PORT" \
+        "$STACK_FRONTEND_PORT" \
         streamlit run main.py --server.address "$STACK_FRONTEND_HOST" --server.port "$STACK_FRONTEND_PORT"
 }
 
@@ -444,8 +488,8 @@ stack_start_servers() {
 
 
 stack_stop_servers() {
-    stack_stop_service "frontend" "$STACK_FRONTEND_PID_FILE"
-    stack_stop_service "backend" "$STACK_BACKEND_PID_FILE"
+    stack_stop_service "frontend" "$STACK_FRONTEND_PID_FILE" "$STACK_FRONTEND_PORT"
+    stack_stop_service "backend" "$STACK_BACKEND_PID_FILE" "$STACK_BACKEND_PORT"
 }
 
 

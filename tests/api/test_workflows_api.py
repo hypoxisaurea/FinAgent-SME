@@ -170,3 +170,46 @@ def test_orchestrator_route_returns_500_when_orchestrator_fails(
     }
     assert response.json()["request_id"].startswith("req-")
     assert response.headers["x-request-id"] == response.json()["request_id"]
+
+
+def test_health_route_exposes_workflow_job_runner_status(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        main_module.workflow_job_runner,
+        "get_status",
+        lambda: {
+            "running": True,
+            "stop_requested": False,
+            "job_timeout_seconds": 300.0,
+            "last_error": None,
+            "last_error_at": None,
+            "current_job": {
+                "job_id": "job-123",
+                "company_name": "FinAgent",
+                "request_id": "req-123",
+                "started_at": "2026-06-19T12:00:00+00:00",
+            },
+        },
+    )
+
+    response = client.get("/api/health")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+        "workflow_job_runner": {
+            "running": True,
+            "stop_requested": False,
+            "job_timeout_seconds": 300.0,
+            "last_error": None,
+            "last_error_at": None,
+            "current_job": {
+                "job_id": "job-123",
+                "company_name": "FinAgent",
+                "request_id": "req-123",
+                "started_at": "2026-06-19T12:00:00+00:00",
+            },
+        },
+    }
