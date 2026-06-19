@@ -17,17 +17,24 @@ DEFAULT_DOCS_DIR = BACKEND_DIR / "rag_docs" / "industry_methodology"
 SOURCE_TYPE = "credit_rating_methodology"
 
 INDUSTRY_METHODOLOGY_MAPPING: dict[str, dict[str, str]] = {
-    "건설업": {"ksic_code": "F 건설업", "sub_sector": "건설"},
-    "반도체업": {"ksic_code": "C 제조업", "sub_sector": "반도체"},
-    "조선업": {"ksic_code": "C 제조업", "sub_sector": "조선"},
-    "철강업": {"ksic_code": "C 제조업", "sub_sector": "철강"},
-    "항공운송업": {"ksic_code": "H 운수 및 창고업", "sub_sector": "항공운송"},
-    "정유업": {"ksic_code": "C 제조업", "sub_sector": "정유"},
-    "호텔업": {"ksic_code": "I 숙박 및 음식점업", "sub_sector": "호텔"},
-    "SI업": {"ksic_code": "J 정보통신업", "sub_sector": "SI"},
-    "레미콘업": {"ksic_code": "C 제조업", "sub_sector": "레미콘"},
-    "방산업": {"ksic_code": "C 제조업", "sub_sector": "방산"},
-    "의류업": {"ksic_code": "C 제조업", "sub_sector": "의류"},
+    "건설업":       {"ksic_code": "F 건설업",              "sub_sector": "건설"},
+    "반도체업":     {"ksic_code": "C 제조업",              "sub_sector": "반도체"},
+    "조선업":       {"ksic_code": "C 제조업",              "sub_sector": "조선"},
+    "철강업":       {"ksic_code": "C 제조업",              "sub_sector": "철강"},
+    "항공운송업":   {"ksic_code": "H 운수 및 창고업",      "sub_sector": "항공운송"},
+    "정유업":       {"ksic_code": "C 제조업",              "sub_sector": "정유"},
+    "호텔업":       {"ksic_code": "I 숙박 및 음식점업",    "sub_sector": "호텔"},
+    "SI업":         {"ksic_code": "J 정보통신업",          "sub_sector": "SI"},
+    "레미콘업":     {"ksic_code": "C 제조업",              "sub_sector": "레미콘"},
+    "방산업":       {"ksic_code": "C 제조업",              "sub_sector": "방산"},
+    "의류업":       {"ksic_code": "C 제조업",              "sub_sector": "의류"},
+    "자동차부품업": {"ksic_code": "C 제조업",              "sub_sector": "자동차부품"},
+    "자동차업":     {"ksic_code": "C 제조업",              "sub_sector": "자동차"},
+    "전선업":       {"ksic_code": "C 제조업",              "sub_sector": "전선"},
+    "화섬업":       {"ksic_code": "C 제조업",              "sub_sector": "화섬"},
+    "제지업":       {"ksic_code": "C 제조업",              "sub_sector": "제지"},
+    "시멘트업":     {"ksic_code": "C 제조업",              "sub_sector": "시멘트"},
+    "음식료업":     {"ksic_code": "C 제조업",              "sub_sector": "식음료"},
 }
 
 _FILENAME_ALIASES: tuple[tuple[str, str], ...] = (
@@ -66,14 +73,13 @@ def parse_industry_doc_filename(path: Path | str) -> IndustryDocumentMetadata:
     """PDF 파일명에서 연도, 업종명, KSIC 코드, 세부 업종을 추출한다."""
     filename = normalize_filename(Path(path).name)
     year_match = re.search(r"(20\d{2})", filename)
-    if year_match is None:
-        raise ValueError(f"평가방법론 PDF 파일명에서 연도를 찾을 수 없습니다: {filename}")
+    year = int(year_match.group(1)) if year_match else 2024
 
     industry_name = _find_industry_name(filename)
     mapping = INDUSTRY_METHODOLOGY_MAPPING[industry_name]
     return IndustryDocumentMetadata(
         filename=filename,
-        year=int(year_match.group(1)),
+        year=year,
         industry_name=industry_name,
         ksic_code=mapping["ksic_code"],
         sub_sector=mapping["sub_sector"],
