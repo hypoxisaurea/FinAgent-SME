@@ -1,0 +1,2 @@
+{"case_id":"construction-01","user_input":"건설업 신용평가 시 핵심적으로 봐야 할 업황 요인을 설명해줘.","reference":"건설업은 수주잔고, PF 익스포저, 미분양 흐름, 원가율 변동을 중심으로 평가한다.","industry_name":"건설업","ksic_code":"F 건설업","sub_sector":"종합건설","top_k":5,"tags":["construction","methodology"]}
+{"case_id":"semiconductor-01","user_input":"반도체 업종 평가 시 어떤 산업 리스크를 봐야 하는지 정리해줘.","reference":"반도체 업종은 수요 사이클, 고객사 집중도, CAPEX 부담, 공정 경쟁력을 중심으로 평가한다.","industry_name":"반도체","ksic_code":"C 제조업","sub_sector":"반도체","top_k":5,"tags":["semiconductor","methodology"]}

@@ -4,6 +4,9 @@ import logging
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+from chromadb.api.types import EmbeddingFunction
+
 COLLECTION_NAME = "industry_knowledge"
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_PERSIST_DIR = BACKEND_DIR / "vectorstore" / "industry_knowledge"
@@ -30,24 +33,72 @@ def _load_sentence_transformer() -> Any:
     return _st_model
 
 
-class KoSRobertaEmbeddingFunction:
+class KoSRobertaEmbeddingFunction(EmbeddingFunction[list[str]]):
     """jhgan/ko-sroberta-multitask 기반 한국어 의미 임베딩 함수 (768차원)."""
 
     _MODEL_NAME = _ST_MODEL_NAME
     _DIMENSIONS = 768
 
-    def name(self) -> str:
+    def __init__(
+        self,
+        *,
+        model_name: str = _MODEL_NAME,
+        dimensions: int = _DIMENSIONS,
+    ) -> None:
+        self._model_name = model_name
+        self._dimensions = dimensions
+
+    @staticmethod
+    def name() -> str:
         return "finagent_ko_sroberta_embedding"
 
     def get_config(self) -> dict[str, Any]:
-        return {"model_name": self._MODEL_NAME, "dimensions": self._DIMENSIONS}
+        return {
+            "model_name": self._model_name,
+            "dimensions": self._dimensions,
+        }
 
-    def validate_config(self, config: dict[str, Any]) -> None:  # noqa: ARG002
-        pass
+    @staticmethod
+    def validate_config(config: dict[str, Any]) -> None:
+        model_name = config.get("model_name", _ST_MODEL_NAME)
+        dimensions = config.get("dimensions", KoSRobertaEmbeddingFunction._DIMENSIONS)
 
-    def __call__(self, input: list[str]) -> list[list[float]]:  # noqa: A002
-        vectors = _load_sentence_transformer().encode(input, normalize_embeddings=True)
-        return [v.tolist() for v in vectors]
+        if not isinstance(model_name, str) or not model_name.strip():
+            raise ValueError("model_name은 비어 있지 않은 문자열이어야 합니다.")
+        if not isinstance(dimensions, int) or dimensions <= 0:
+            raise ValueError("dimensions는 1 이상의 정수여야 합니다.")
+
+    def validate_config_update(
+        self,
+        old_config: dict[str, Any],
+        new_config: dict[str, Any],
+    ) -> None:
+        self.validate_config(old_config)
+        self.validate_config(new_config)
+        if old_config != new_config:
+            raise ValueError("임베딩 함수 설정은 생성 이후 변경할 수 없습니다.")
+
+    @staticmethod
+    def build_from_config(config: dict[str, Any]) -> "KoSRobertaEmbeddingFunction":
+        KoSRobertaEmbeddingFunction.validate_config(config)
+        return KoSRobertaEmbeddingFunction(
+            model_name=str(config.get("model_name", _ST_MODEL_NAME)),
+            dimensions=int(
+                config.get(
+                    "dimensions",
+                    KoSRobertaEmbeddingFunction._DIMENSIONS,
+                )
+            ),
+        )
+
+    def __call__(self, input: list[str]) -> np.ndarray[Any, Any]:  # noqa: A002
+        return _load_sentence_transformer().encode(
+            list(input),
+            normalize_embeddings=True,
+        )
+
+    def embed_query(self, input: list[str]) -> list[np.ndarray[Any, Any]]:
+        return self.__call__(input)
 
 
 def get_chroma_client(persist_dir: Path | str | None = None) -> Any:

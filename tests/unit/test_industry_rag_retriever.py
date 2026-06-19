@@ -34,6 +34,35 @@ class _FailingCollection:
         raise RuntimeError("vector store unavailable")
 
 
+class _FallbackCollection:
+    def __init__(self) -> None:
+        self.last_get: dict[str, Any] = {}
+
+    def query(self, **_: Any) -> dict[str, Any]:
+        raise RuntimeError("query embedding unavailable")
+
+    def get(self, **kwargs: Any) -> dict[str, Any]:
+        self.last_get = kwargs
+        return {
+            "documents": [
+                [
+                    "건설업은 수주잔고와 PF 우발채무를 중심으로 평가한다.",
+                ]
+            ],
+            "metadatas": [
+                [
+                    {
+                        "filename": "2025 건설업 신용평가방법론.pdf",
+                        "page": 9,
+                        "industry_name": "건설업",
+                        "ksic_code": "F 건설업",
+                        "sub_sector": "건설",
+                    }
+                ]
+            ],
+        }
+
+
 def test_retrieve_industry_methodology_returns_chunks_and_sources() -> None:
     collection = _FakeCollection()
 
@@ -58,6 +87,20 @@ def test_retrieve_industry_methodology_returns_chunks_and_sources() -> None:
             "ksic_code": "F 건설업",
             "sub_sector": "건설",
         }
+    ]
+
+
+def test_retrieve_industry_methodology_can_include_retrieved_contexts() -> None:
+    collection = _FakeCollection()
+
+    result = retrieve_industry_methodology(
+        industry_name="건설업",
+        collection=collection,
+        include_contexts=True,
+    )
+
+    assert result["retrieved_contexts"] == [
+        "건설업은 수주잔고, 원가율, PF 우발채무가 주요 리스크입니다."
     ]
 
 
@@ -152,6 +195,25 @@ def test_retrieve_industry_methodology_filters_by_industry_name() -> None:
 
     assert collection.last_query["where"] == {"industry_name": "반도체업"}
     assert collection.last_query["n_results"] == 5
+
+
+def test_retrieve_industry_methodology_falls_back_to_metadata_get() -> None:
+    collection = _FallbackCollection()
+
+    result = retrieve_industry_methodology(
+        ksic_code="F 건설업",
+        sub_sector="건설",
+        collection=collection,
+        include_contexts=True,
+    )
+
+    assert collection.last_get["where"] == {
+        "$and": [{"ksic_code": "F 건설업"}, {"sub_sector": "건설"}]
+    }
+    assert result["industry_methodology"]["unavailable"] is False
+    assert result["retrieved_contexts"] == [
+        "건설업은 수주잔고와 PF 우발채무를 중심으로 평가한다."
+    ]
 
 
 def test_retrieve_industry_methodology_filters_by_ksic_code() -> None:
@@ -285,6 +347,24 @@ def test_retrieve_industry_methodology_returns_unavailable_when_no_results() -> 
     assert result["industry_methodology"]["source_count"] == 0
     assert result["industry_methodology"]["error"] == "검색 결과 없음"
     assert result["methodology_sources"] == []
+
+
+def test_retrieve_industry_methodology_returns_empty_contexts_when_unavailable() -> None:
+    collection = _FakeCollection(
+        {
+            "documents": [[]],
+            "metadatas": [[]],
+            "distances": [[]],
+        }
+    )
+
+    result = retrieve_industry_methodology(
+        industry_name="레미콘업",
+        collection=collection,
+        include_contexts=True,
+    )
+
+    assert result["retrieved_contexts"] == []
 
 
 def test_retrieve_industry_methodology_returns_unavailable_on_failure() -> None:

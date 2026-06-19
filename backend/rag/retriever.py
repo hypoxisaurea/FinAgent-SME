@@ -82,6 +82,7 @@ def retrieve_industry_methodology(
     ksic_code: str | None = None,
     sub_sector: str | None = None,
     top_k: int = DEFAULT_TOP_K,
+    include_contexts: bool = False,
     collection: Any | None = None,
 ) -> dict[str, Any]:
     """업종 신용평가방법론 청크와 출처 메타데이터를 검색한다.
@@ -102,24 +103,28 @@ def retrieve_industry_methodology(
             ksic_code=ksic_code,
             sub_sector=sub_sector,
         )
-        result = target_collection.query(
-            query_texts=[query_text],
-            n_results=max(top_k, 1),
+        result = _query_or_fallback_get(
+            target_collection=target_collection,
+            query_text=query_text,
             where=where,
-            include=["documents", "metadatas", "distances"],
+            top_k=top_k,
         )
         documents = _first_list(result.get("documents"))
         metadatas = _first_list(result.get("metadatas"))
         distances = _first_list(result.get("distances"))
         sources = _build_sources(metadatas, distances)
         if not sources:
-            return _unavailable_payload(resolved_industry_name, "검색 결과 없음")
+            return _unavailable_payload(
+                resolved_industry_name,
+                "검색 결과 없음",
+                include_contexts=include_contexts,
+            )
         inferred_industry_name = _infer_industry_name(
             requested=resolved_industry_name,
             sources=sources,
         )
 
-        return {
+        payload = {
             "industry_methodology": {
                 "industry_name": inferred_industry_name,
                 "summary": _build_methodology_summary(documents),
@@ -135,13 +140,54 @@ def retrieve_industry_methodology(
             },
             "methodology_sources": sources,
         }
+        if include_contexts:
+            payload["retrieved_contexts"] = _build_retrieved_contexts(documents)
+        return payload
     except Exception as exc:  # noqa: BLE001
         logger.warning(
             "industry_rag_retrieval_failed industry_name=%s error=%s",
             resolved_industry_name,
             exc,
         )
-        return _unavailable_payload(resolved_industry_name, str(exc))
+        return _unavailable_payload(
+            resolved_industry_name,
+            str(exc),
+            include_contexts=include_contexts,
+        )
+
+
+def _query_or_fallback_get(
+    *,
+    target_collection: Any,
+    query_text: str,
+    where: dict[str, Any] | None,
+    top_k: int,
+) -> dict[str, Any]:
+    try:
+        return target_collection.query(
+            query_texts=[query_text],
+            n_results=max(top_k, 1),
+            where=where,
+            include=["documents", "metadatas", "distances"],
+        )
+    except Exception as exc:  # noqa: BLE001
+        if where is None or not hasattr(target_collection, "get"):
+            raise
+        logger.info(
+            "industry_rag_query_fallback_to_metadata where=%s error=%s",
+            where,
+            exc,
+        )
+        result = target_collection.get(
+            where=where,
+            limit=max(top_k, 1),
+            include=["documents", "metadatas"],
+        )
+        return {
+            "documents": result.get("documents", []),
+            "metadatas": result.get("metadatas", []),
+            "distances": [],
+        }
 
 
 def _build_query_text(
@@ -199,6 +245,15 @@ def _build_sources(
             }
         )
     return sources
+
+
+def _build_retrieved_contexts(documents: list[Any]) -> list[str]:
+    contexts: list[str] = []
+    for document in documents:
+        text = str(document).strip()
+        if text:
+            contexts.append(text)
+    return contexts
 
 
 def _build_methodology_summary(documents: list[Any]) -> str:
@@ -339,8 +394,13 @@ def _infer_industry_name(
     return ""
 
 
-def _unavailable_payload(industry_name: str, error: str) -> dict[str, Any]:
-    return {
+def _unavailable_payload(
+    industry_name: str,
+    error: str,
+    *,
+    include_contexts: bool = False,
+) -> dict[str, Any]:
+    payload = {
         "industry_methodology": {
             "industry_name": industry_name,
             "summary": "",
@@ -352,6 +412,9 @@ def _unavailable_payload(industry_name: str, error: str) -> dict[str, Any]:
         },
         "methodology_sources": [],
     }
+    if include_contexts:
+        payload["retrieved_contexts"] = []
+    return payload
 
 
 def _first_list(value: Any) -> list[Any]:
