@@ -11,6 +11,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+
 # ─── 열거형 ──────────────────────────────────────────────────────────────────
 
 class EventType(str, Enum):
@@ -18,14 +19,14 @@ class EventType(str, Enum):
     NEGATIVE_SENTIMENT = "negative_sentiment"   # R-002
     DISCLOSURE_ANOMALY = "disclosure_anomaly"   # R-003
     LEGAL_RISK         = "legal_risk"           # R-006
-    FINANCIAL_ANOMALY  = "financial_anomaly"    # 신규 (financial_features 테이블)
+    FINANCIAL_ANOMALY  = "financial_anomaly"    # 신규 (financial_features.csv)
 
 
 class EventSource(str, Enum):
     NEWS           = "news"
     DISCLOSURE     = "disclosure"
     COURT          = "court"
-    FINANCIAL_DATA = "financial_data"   # DB 재무 데이터
+    FINANCIAL_DATA = "financial_data"   # CSV / DB 재무 데이터
 
 
 class SeverityLevel(str, Enum):
@@ -91,7 +92,7 @@ class LegalRiskResult(BaseModel):
 
 
 class FinancialAnomalyResult(BaseModel):
-    """재무 이상 징후 탐지 결과 (financial_features 테이블 연동)"""
+    """재무 이상 징후 탐지 결과 (financial_features.csv 연동)"""
     company_name:           str
     corp_code:              str
     anomalies:              list[RiskEvent] = Field(default_factory=list)
@@ -144,6 +145,10 @@ class RiskEventResult(BaseModel):
     low_count:          int = 0
     total_event_count:  int = 0
     overall_risk_level: SeverityLevel = SeverityLevel.LOW
+
+    # CRITICAL 원인 추적 (신규)
+    critical_events:  list[SeverityClassifiedEvent] = Field(default_factory=list)
+    critical_reasons: list[str]                      = Field(default_factory=list)
 
     # 재무 요약 (Decision Agent 연동용)
     latest_debt_ratio:      Optional[float] = None
