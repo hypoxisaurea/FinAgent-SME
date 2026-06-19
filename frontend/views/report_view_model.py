@@ -32,6 +32,7 @@ def build_report_view_model(
     financial_flags = _as_list(context.get("financial_flags"))
     decision_reasons = _as_list(context.get("decision_reasons"))
     news_result = context.get("news_result", {}) if isinstance(context, dict) else {}
+    risk_event_result = context.get("risk_event_result", {}) if isinstance(context, dict) else {}
     api_warnings = _extract_api_warnings(news_result)
 
     return {
@@ -79,15 +80,21 @@ def build_report_view_model(
                 ],
                 "interpretation": _build_financial_interpretation(context),
                 "credit_impact": _build_financial_credit_impact(context),
+                "ratio_groups": _build_financial_ratio_groups(financial_ratios),
             },
             "growth_trend": {
                 "title": "3. 성장성 및 추세 분석",
                 "recent_trend": _build_recent_trend_summary(context),
                 "financial_flags": financial_flags,
                 "history_rows": _build_trend_history_rows(context),
+                "chart_rows": _build_trend_chart_rows(context),
+            },
+            "non_financial_events": {
+                "title": "4. 비금융 이벤트 분석",
+                **_build_non_financial_event_section(context, risk_event_result),
             },
             "default_risk": {
-                "title": "4. 부도위험 및 등급 제한 요인",
+                "title": "5. 부도위험 및 등급 제한 요인",
                 "z_score": _format_decimal(altman_z.get("z_prime")),
                 "zone": altman_z.get("zone") or "-",
                 "grade_cap": context.get("grade_cap") or risk_filters.get("grade_cap") or "-",
@@ -95,7 +102,7 @@ def build_report_view_model(
                 "filter_details": _flatten_filter_details(risk_filters.get("filter_detail")),
             },
             "decision_rationale": {
-                "title": "5. 종합 신용판단 근거",
+                "title": "6. 종합 신용판단 근거",
                 "summary": explanation.get("summary") or report_payload.get("summary") or "-",
                 "connected_reason": _build_connected_reason(context, explanation),
                 "reasons": decision_reasons,
@@ -103,7 +110,7 @@ def build_report_view_model(
                 "risk_factors": _as_list(explanation.get("key_risk_factors")),
             },
             "monitoring": {
-                "title": "6. 권고안 및 모니터링 포인트",
+                "title": "7. 권고안 및 모니터링 포인트",
                 "recommendation": report_payload.get("recommendation")
                 or explanation.get("recommendation")
                 or "-",
@@ -202,6 +209,185 @@ def _extract_api_warnings(news_result: dict[str, Any]) -> list[str]:
             continue
         warnings.append(f"뉴스 요약 API 상태: {text}")
     return warnings
+
+
+def _build_financial_ratio_groups(financial_ratios: dict[str, Any]) -> list[dict[str, Any]]:
+    if not isinstance(financial_ratios, dict):
+        financial_ratios = {}
+
+    return [
+        {
+            "title": "안정성",
+            "items": [
+                ("부채비율", _format_percent(financial_ratios.get("debt_ratio"))),
+                ("유동비율", _format_percent(financial_ratios.get("current_ratio"))),
+                ("당좌비율", _format_percent(financial_ratios.get("quick_ratio"))),
+                ("차입금의존도", _format_percent(financial_ratios.get("borrow_dep"))),
+                ("이자보상배율", _format_ratio(financial_ratios.get("interest_coverage"))),
+            ],
+        },
+        {
+            "title": "수익성",
+            "items": [
+                ("영업이익률", _format_percent(financial_ratios.get("op_margin"))),
+                ("ROA", _format_percent(financial_ratios.get("roa"))),
+                ("매출원가율", _format_percent(financial_ratios.get("cogs_ratio"))),
+            ],
+        },
+        {
+            "title": "활동성",
+            "items": [
+                ("매출채권회전율", _format_ratio(financial_ratios.get("receivable_turnover"))),
+                ("총자산회전율", _format_ratio(financial_ratios.get("asset_turnover"))),
+                ("매입채무회전율", _format_ratio(financial_ratios.get("payable_turnover"))),
+            ],
+        },
+        {
+            "title": "현금흐름",
+            "items": [
+                ("OCF/매출액", _format_percent(financial_ratios.get("ocf_to_sales"))),
+                ("OCF/순이익", _format_ratio(financial_ratios.get("ocf_to_net_income"))),
+                ("FCF", _format_currency(financial_ratios.get("fcf"))),
+                ("FCF/매출액", _format_percent(financial_ratios.get("fcf_to_sales"))),
+            ],
+        },
+    ]
+
+
+def _build_non_financial_event_section(
+    context: dict[str, Any],
+    risk_event_result: dict[str, Any],
+) -> dict[str, Any]:
+    timeline_events = _extract_timeline_event_items(context, limit=5)
+    severe_events = [item for item in timeline_events if item["severity_raw"] in {"critical", "high"}]
+    repeated_title_count = _count_repeated_titles(timeline_events)
+    overall_risk_level = _format_risk_level(context.get("overall_risk_level"))
+
+    sentiment_result = {}
+    if isinstance(risk_event_result, dict):
+        sentiment_result = risk_event_result.get("sentiment_result", {}) or {}
+
+    overall_sentiment = "-"
+    if isinstance(sentiment_result, dict):
+        overall_sentiment = _format_sentiment(sentiment_result.get("overall_sentiment"))
+
+    critical_count = int(context.get("critical_count", 0) or 0)
+    high_count = int(context.get("high_count", 0) or 0)
+    medium_count = int(context.get("medium_count", 0) or 0)
+    total_event_count = int(context.get("total_event_count", 0) or 0)
+
+    if critical_count > 0:
+        repayment_impact = "CRITICAL 이벤트가 확인되어 단기 상환능력과 거래 안정성에 직접적인 영향 가능성이 큽니다."
+    elif high_count > 0:
+        repayment_impact = "HIGH 이벤트가 확인되어 상환 재원 안정성 저하 가능성을 보수적으로 점검할 필요가 있습니다."
+    elif medium_count >= 2:
+        repayment_impact = "중간 수준 이벤트가 반복되어 비금융 요인이 상환능력에 간접 영향을 줄 수 있습니다."
+    else:
+        repayment_impact = "최근 비금융 이벤트가 상환능력에 미치는 직접 영향은 제한적으로 보입니다."
+
+    if repeated_title_count > 0:
+        repeat_summary = f"동일하거나 유사한 부정 이벤트가 최근 90일 내 {repeated_title_count}건 반복 관측되었습니다."
+    else:
+        repeat_summary = "최근 90일 기준 반복적으로 누적된 동일 이슈는 제한적입니다."
+
+    severity_summary = (
+        f"최근 90일 이벤트 {len(timeline_events)}건 중 "
+        f"CRITICAL {critical_count}건, HIGH {high_count}건, MEDIUM {medium_count}건으로 집계됩니다."
+        if timeline_events
+        else "최근 90일 내 표시할 비금융 이벤트가 없습니다."
+    )
+
+    key_event_lines = [
+        f"{item['date']} | {item['severity']} | {item['title']} | {item['impact']}"
+        for item in severe_events[:3]
+    ]
+    if not key_event_lines:
+        key_event_lines = [
+            f"{item['date']} | {item['severity']} | {item['title']} | {item['impact']}"
+            for item in timeline_events[:3]
+        ]
+
+    timeline_lines = [
+        f"{item['date']} | {item['severity']} | {item['title']} | {item['impact']}"
+        for item in timeline_events
+    ]
+
+    return {
+        "overall_risk_level": overall_risk_level,
+        "overall_sentiment": overall_sentiment,
+        "recentness_summary": severity_summary,
+        "repeat_summary": repeat_summary,
+        "repayment_impact": repayment_impact,
+        "critical_high_events": key_event_lines,
+        "timeline_lines": timeline_lines,
+        "timeline_items": timeline_events,
+        "key_event_items": severe_events[:3] if severe_events else timeline_events[:3],
+        "total_event_count": total_event_count,
+    }
+
+
+def _extract_timeline_event_items(context: dict[str, Any], limit: int = 5) -> list[dict[str, str]]:
+    timeline = context.get("timeline")
+    if not isinstance(timeline, list):
+        return []
+
+    cutoff = date.today() - timedelta(days=RISK_LOOKBACK_DAYS)
+    items: list[tuple[date, dict[str, str]]] = []
+
+    for entry in timeline:
+        if not isinstance(entry, dict):
+            continue
+        entry_date = _parse_date(entry.get("date"))
+        if entry_date is None or entry_date < cutoff:
+            continue
+        events = entry.get("events")
+        if not isinstance(events, list):
+            continue
+        for event_wrapper in events:
+            if not isinstance(event_wrapper, dict):
+                continue
+            event = event_wrapper.get("event", {})
+            if not isinstance(event, dict):
+                event = {}
+            severity_raw = str(event_wrapper.get("severity") or "").lower()
+            severity = _format_risk_level(severity_raw)
+            title = str(event.get("title") or event.get("description") or "-").strip()
+            rationale = str(event_wrapper.get("rationale") or "").strip()
+            description = str(event.get("description") or "").strip()
+            impact = rationale or description or "구체 영향 설명 정보가 없습니다."
+            items.append(
+                (
+                    entry_date,
+                    {
+                        "date": entry_date.isoformat(),
+                        "severity_raw": severity_raw,
+                        "severity": severity,
+                        "title": title or "-",
+                        "impact": impact,
+                    },
+                )
+            )
+
+    items.sort(key=lambda item: item[0], reverse=True)
+    return [payload for _, payload in items[:limit]]
+
+
+def _count_repeated_titles(items: list[dict[str, str]]) -> int:
+    counts: dict[str, int] = {}
+    for item in items:
+        title = item.get("title", "").strip()
+        if not title or title == "-":
+            continue
+        counts[title] = counts.get(title, 0) + 1
+    return sum(count - 1 for count in counts.values() if count > 1)
+
+
+def _format_sentiment(value: Any) -> str:
+    return {
+        "negative": "부정",
+        "neutral": "중립",
+        "positive": "긍정",
+    }.get(str(value).lower(), str(value or "-"))
 
 
 def _build_financial_interpretation(context: dict[str, Any]) -> str:
@@ -365,6 +551,36 @@ def _build_trend_history_rows(context: dict[str, Any]) -> list[tuple[str, str, s
     ]
 
 
+def _build_trend_chart_rows(context: dict[str, Any]) -> list[dict[str, Any]]:
+    trend = context.get("financial_trend", {})
+    if not isinstance(trend, dict):
+        trend = {}
+    history = trend.get("history", [])
+    if not isinstance(history, list):
+        return []
+
+    rows: list[dict[str, Any]] = []
+    for item in history:
+        if not isinstance(item, dict):
+            continue
+        year_value = item.get("year")
+        try:
+            year_int = int(year_value)
+        except (TypeError, ValueError):
+            continue
+        rows.append(
+            {
+                "year": year_int,
+                "revenue": _to_float(item.get("revenue")),
+                "operating_income": _to_float(item.get("operating_income")),
+                "net_income": _to_float(item.get("net_income")),
+                "total_assets": _to_float(item.get("total_assets")),
+                "total_equity": _to_float(item.get("total_equity")),
+            }
+        )
+    return sorted(rows, key=lambda row: row["year"])
+
+
 def _latest_number(value: Any) -> float | None:
     if not isinstance(value, list) or not value:
         return None
@@ -445,3 +661,12 @@ def _format_decimal(value: Any) -> str:
         return f"{float(value):,.2f}"
     except (TypeError, ValueError):
         return str(value)
+
+
+def _to_float(value: Any) -> float | None:
+    if value in (None, ""):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None

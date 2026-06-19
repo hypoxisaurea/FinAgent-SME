@@ -2,6 +2,8 @@ import json
 from html import escape
 from typing import Any
 
+import altair as alt
+import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -33,6 +35,7 @@ def render() -> None:
     _render_table_section(sections["company"])
     _render_financial_health_section(sections["financial_health"])
     _render_growth_trend_section(sections["growth_trend"])
+    _render_non_financial_events_section(sections["non_financial_events"])
     _render_default_risk_section(sections["default_risk"])
     _render_decision_rationale_section(sections["decision_rationale"])
     _render_monitoring_section(sections["monitoring"])
@@ -77,6 +80,20 @@ def _inject_styles() -> None:
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
             margin-bottom: 1rem;
         }
+        .st-key-overview-card-box,
+        .st-key-financial-health-card,
+        .st-key-non-financial-events-card {
+            background: #ffffff;
+            border: 1px solid #dbe4ef;
+            border-radius: 22px;
+            padding: 24px 24px 20px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+            margin-bottom: 1rem;
+        }
+        .st-key-overview-card-box {
+            background: linear-gradient(180deg, #f6fbff 0%, #eef5fb 100%);
+            border: 1px solid #d7e6f4;
+        }
         .st-key-growth-trend-card {
             background: #ffffff;
             border: 1px solid #dbe4ef;
@@ -84,6 +101,12 @@ def _inject_styles() -> None:
             padding: 24px 24px 20px;
             box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
             margin-bottom: 1rem;
+        }
+        .st-key-overview-card-box > div,
+        .st-key-financial-health-card > div,
+        .st-key-non-financial-events-card > div,
+        .st-key-growth-trend-card > div {
+            width: 100%;
         }
         .overview-card {
             background: linear-gradient(180deg, #f6fbff 0%, #eef5fb 100%);
@@ -207,6 +230,91 @@ def _inject_styles() -> None:
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 12px;
         }
+        .ratio-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 0.75rem;
+        }
+        .ratio-group {
+            border: 1px solid #dbe4ef;
+            border-radius: 16px;
+            padding: 14px 16px;
+            background: #f9fbfd;
+            margin-bottom: 12px;
+        }
+        .ratio-group-title {
+            color: #24405f;
+            font-size: 0.92rem;
+            font-weight: 800;
+            margin-bottom: 0.7rem;
+        }
+        .ratio-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 6px 0;
+            border-bottom: 1px solid #e6edf5;
+            font-size: 0.92rem;
+            color: #334155;
+        }
+        .ratio-row:last-child {
+            border-bottom: 0;
+        }
+        .ratio-name {
+            color: #627287;
+            font-weight: 700;
+        }
+        .ratio-value {
+            color: #1f2937;
+            font-weight: 700;
+            text-align: right;
+        }
+        .timeline-list {
+            margin-top: 0.75rem;
+        }
+        .timeline-item {
+            position: relative;
+            border: 1px solid #dbe4ef;
+            border-left: 5px solid #c8d5e6;
+            border-radius: 16px;
+            background: #f9fbfd;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+        }
+        .timeline-item.severity-critical {
+            border-left-color: #c23b49;
+            background: #fff5f6;
+        }
+        .timeline-item.severity-high {
+            border-left-color: #d06c2c;
+            background: #fff8f2;
+        }
+        .timeline-item.severity-medium {
+            border-left-color: #d0a52c;
+            background: #fffdf5;
+        }
+        .timeline-item.severity-low {
+            border-left-color: #4d8f63;
+            background: #f5fbf7;
+        }
+        .timeline-meta {
+            color: #627287;
+            font-size: 0.84rem;
+            font-weight: 700;
+            margin-bottom: 0.4rem;
+        }
+        .timeline-title {
+            color: #1f2937;
+            font-size: 0.98rem;
+            font-weight: 800;
+            margin-bottom: 0.35rem;
+        }
+        .timeline-impact {
+            color: #334155;
+            font-size: 0.92rem;
+            line-height: 1.65;
+        }
         .table-row {
             display: flex;
             gap: 12px;
@@ -265,7 +373,8 @@ def _inject_styles() -> None:
         @media (max-width: 900px) {
             .metrics-grid,
             .split-grid,
-            .table-grid {
+            .table-grid,
+            .ratio-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -276,16 +385,9 @@ def _inject_styles() -> None:
 
 
 def _render_overview_card(overview: dict[str, Any]) -> None:
-    key_reasons = _render_chip_list(overview.get("key_reasons"), "item-chip item-risk")
-    api_warning_block = ""
-    if overview.get("api_warnings"):
-        api_warning_block = (
-            '<div class="subsection-title" style="margin-top: 1rem;">외부 API 상태</div>'
-            + _render_chip_list(overview.get("api_warnings"), "item-chip item-risk")
-        )
-    st.markdown(
-        f"""
-        <div class="report-card overview-card">
+    with st.container(border=False, key="overview-card-box"):
+        st.markdown(
+            f"""
             <div class="company-name">{escape(str(overview["company_name"]))}</div>
             <div class="company-meta">
                 법인명: {escape(str(overview["corp_name"]))} | 법인코드: {escape(str(overview["corp_code"]))} |
@@ -297,6 +399,11 @@ def _render_overview_card(overview: dict[str, Any]) -> None:
                 <span class="badge badge-default">신용등급 {escape(str(overview["credit_grade"]))}</span>
                 <span class="badge badge-default">통합 리스크 {escape(str(overview["overall_risk_level"]))}</span>
             </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"""
             <div class="metrics-grid">
                 <div class="metric-box">
                     <div class="metric-label">최종 결정</div>
@@ -315,13 +422,23 @@ def _render_overview_card(overview: dict[str, Any]) -> None:
                     <div class="metric-value">{escape(str(overview["recommended_limit"]))}</div>
                 </div>
             </div>
-            {api_warning_block}
-            <div class="subsection-title" style="margin-top: 1rem;">핵심 리스크 및 판단 근거</div>
-            {key_reasons}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+            """,
+            unsafe_allow_html=True,
+        )
+        if overview.get("api_warnings"):
+            st.markdown(
+                '<div class="subsection-title" style="margin-top: 1rem;">외부 API 상태</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                _render_chip_list(overview.get("api_warnings"), "item-chip item-risk"),
+                unsafe_allow_html=True,
+            )
+        st.markdown(
+            '<div class="subsection-title" style="margin-top: 1rem;">핵심 리스크 및 판단 근거</div>',
+            unsafe_allow_html=True,
+        )
+        _render_chip_blocks(overview.get("key_reasons"), "item-chip item-risk")
 
 
 def _render_table_section(section: dict[str, Any]) -> None:
@@ -346,29 +463,37 @@ def _render_table_section(section: dict[str, Any]) -> None:
 
 
 def _render_financial_health_section(section: dict[str, Any]) -> None:
-    metrics = "".join(
-        f"""
-        <div class="mini-box">
-            <div class="mini-label">{escape(str(label))}</div>
-            <div class="mini-value">{escape(str(value))}</div>
-        </div>
-        """
-        for label, value in section.get("metrics", [])
-    )
-    st.markdown(
-        f"""
-        <div class="report-card">
-            <div class="card-title">{escape(str(section["title"]))}</div>
-            <div class="subsection-title">핵심 지표</div>
-            <div class="metrics-grid tight-values">{metrics}</div>
-            <div class="subsection-title" style="margin-top: 1rem;">해석</div>
-            <div class="item-chip">{escape(str(section.get("interpretation") or "-"))}</div>
-            <div class="subsection-title" style="margin-top: 1rem;">신용영향</div>
-            <div class="item-chip">{escape(str(section.get("credit_impact") or "-"))}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    with st.container(border=False, key="financial-health-card"):
+        st.markdown(
+            f'<div class="card-title">{escape(str(section["title"]))}</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<div class="subsection-title">핵심 지표</div>',
+            unsafe_allow_html=True,
+        )
+        _render_metric_boxes(section.get("metrics"), columns_per_row=4)
+        st.markdown(
+            '<div class="subsection-title" style="margin-top: 1rem;">주요 재무 비율</div>',
+            unsafe_allow_html=True,
+        )
+        _render_ratio_groups(section.get("ratio_groups"))
+        st.markdown(
+            '<div class="subsection-title" style="margin-top: 1rem;">해석</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div class="item-chip">{escape(str(section.get("interpretation") or "-"))}</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<div class="subsection-title" style="margin-top: 1rem;">신용영향</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div class="item-chip">{escape(str(section.get("credit_impact") or "-"))}</div>',
+            unsafe_allow_html=True,
+        )
 
 
 def _render_growth_trend_section(section: dict[str, Any]) -> None:
@@ -398,6 +523,7 @@ def _render_growth_trend_section(section: dict[str, Any]) -> None:
             '<div class="subsection-title" style="margin-top: 1rem;">최근 연도 추세</div>',
             unsafe_allow_html=True,
         )
+        _render_growth_chart(section.get("chart_rows"))
         if rows:
             st.table(
                 [
@@ -418,6 +544,195 @@ def _render_growth_trend_section(section: dict[str, Any]) -> None:
                 '<div class="item-chip">표시할 최근 연도 추세 데이터가 없습니다.</div>',
                 unsafe_allow_html=True,
             )
+
+
+def _render_non_financial_events_section(section: dict[str, Any]) -> None:
+    with st.container(border=False, key="non-financial-events-card"):
+        st.markdown(
+            f'<div class="card-title">{escape(str(section["title"]))}</div>',
+            unsafe_allow_html=True,
+        )
+        summary_col, event_col = st.columns(2)
+        with summary_col:
+            st.markdown('<div class="subsection-title">최근성 및 심각도 요약</div>', unsafe_allow_html=True)
+            _render_chip_blocks(
+                [
+                    f"통합 리스크 수준: {section.get('overall_risk_level') or '-'}",
+                    f"뉴스 감성 분석: {section.get('overall_sentiment') or '-'}",
+                    section.get("recentness_summary") or "-",
+                    section.get("repeat_summary") or "-",
+                    section.get("repayment_impact") or "-",
+                ],
+                "item-chip",
+            )
+        with event_col:
+            st.markdown('<div class="subsection-title">Critical / High 중심 핵심 이벤트</div>', unsafe_allow_html=True)
+            _render_timeline_items(section.get("key_event_items"))
+
+        st.markdown('<div class="subsection-title" style="margin-top: 1rem;">최근 90일 타임라인</div>', unsafe_allow_html=True)
+        _render_timeline_items(section.get("timeline_items"))
+
+
+def _render_ratio_groups(groups: list[dict[str, Any]] | None) -> None:
+    if not groups:
+        st.markdown(
+            '<div class="item-chip">표시할 주요 재무 비율이 없습니다.</div>',
+            unsafe_allow_html=True,
+        )
+        return
+
+    columns = st.columns(2)
+    for index, group in enumerate(groups):
+        with columns[index % 2]:
+            rows = "".join(
+                f'<div class="ratio-row"><div class="ratio-name">{escape(str(name))}</div><div class="ratio-value">{escape(str(value))}</div></div>'
+                for name, value in group.get("items", [])
+            )
+            st.markdown(
+                f'<div class="ratio-group"><div class="ratio-group-title">{escape(str(group.get("title") or "-"))}</div>{rows}</div>',
+                unsafe_allow_html=True,
+            )
+
+
+def _render_metric_boxes(metrics: list[tuple[Any, Any]] | None, columns_per_row: int = 4) -> None:
+    if not metrics:
+        st.markdown(
+            '<div class="item-chip">표시할 핵심 지표가 없습니다.</div>',
+            unsafe_allow_html=True,
+        )
+        return
+
+    for start in range(0, len(metrics), columns_per_row):
+        row = metrics[start : start + columns_per_row]
+        columns = st.columns(columns_per_row)
+        for index, column in enumerate(columns):
+            if index >= len(row):
+                continue
+            label, value = row[index]
+            with column:
+                st.markdown(
+                    f'<div class="mini-box"><div class="mini-label">{escape(str(label))}</div><div class="mini-value">{escape(str(value))}</div></div>',
+                    unsafe_allow_html=True,
+                )
+
+
+def _render_growth_chart(chart_rows: list[dict[str, Any]] | None) -> None:
+    if not chart_rows:
+        return
+
+    dataframe = pd.DataFrame(chart_rows)
+    if dataframe.empty:
+        return
+    dataframe = dataframe.set_index("year")
+    revenue_columns = [column for column in ["revenue"] if column in dataframe.columns]
+    profit_columns = [column for column in ["operating_income", "net_income"] if column in dataframe.columns]
+    if not revenue_columns and not profit_columns:
+        return
+
+    chart_col1, chart_col2 = st.columns(2)
+    with chart_col1:
+        st.markdown(
+            '<div class="subsection-title">매출액 추세</div>',
+            unsafe_allow_html=True,
+        )
+        if revenue_columns:
+            revenue_frame = (
+                dataframe[revenue_columns]
+                .rename(columns={"revenue": "매출액"})
+                .reset_index()
+                .melt(id_vars="year", var_name="지표", value_name="금액")
+            )
+            revenue_chart = (
+                alt.Chart(revenue_frame)
+                .mark_line(point=True, strokeWidth=3, color="#2E6F95")
+                .encode(
+                    x=alt.X("year:O", title="연도"),
+                    y=alt.Y("금액:Q", title="금액"),
+                    tooltip=[
+                        alt.Tooltip("year:O", title="연도"),
+                        alt.Tooltip("지표:N", title="지표"),
+                        alt.Tooltip("금액:Q", title="금액", format=",.0f"),
+                    ],
+                )
+                .properties(height=240)
+            )
+            st.altair_chart(
+                revenue_chart,
+                use_container_width=True,
+            )
+        else:
+            st.markdown('<div class="item-chip">매출액 그래프 데이터가 없습니다.</div>', unsafe_allow_html=True)
+    with chart_col2:
+        st.markdown(
+            '<div class="subsection-title">영업이익 / 당기순이익 추세</div>',
+            unsafe_allow_html=True,
+        )
+        if profit_columns:
+            profit_frame = (
+                dataframe[profit_columns]
+                .rename(
+                    columns={
+                        "operating_income": "영업이익",
+                        "net_income": "당기순이익",
+                    }
+                )
+                .reset_index()
+                .melt(id_vars="year", var_name="지표", value_name="금액")
+            )
+            profit_chart = (
+                alt.Chart(profit_frame)
+                .mark_line(point=True, strokeWidth=3)
+                .encode(
+                    x=alt.X("year:O", title="연도"),
+                    y=alt.Y("금액:Q", title="금액"),
+                    color=alt.Color(
+                        "지표:N",
+                        scale=alt.Scale(
+                            domain=["영업이익", "당기순이익"],
+                            range=["#4E79A7", "#E15759"],
+                        ),
+                        legend=alt.Legend(title=None, orient="top"),
+                    ),
+                    tooltip=[
+                        alt.Tooltip("year:O", title="연도"),
+                        alt.Tooltip("지표:N", title="지표"),
+                        alt.Tooltip("금액:Q", title="금액", format=",.0f"),
+                    ],
+                )
+                .properties(height=240)
+            )
+            st.altair_chart(
+                profit_chart,
+                use_container_width=True,
+            )
+        else:
+            st.markdown('<div class="item-chip">이익 그래프 데이터가 없습니다.</div>', unsafe_allow_html=True)
+
+
+def _render_timeline_items(items: list[dict[str, Any]] | None) -> None:
+    if not items:
+        st.markdown(
+            '<div class="item-chip">표시할 이벤트가 없습니다.</div>',
+            unsafe_allow_html=True,
+        )
+        return
+
+    for item in items:
+        severity_raw = str(item.get("severity_raw") or "").lower()
+        severity = escape(str(item.get("severity") or "-"))
+        date_text = escape(str(item.get("date") or "-"))
+        title = escape(str(item.get("title") or "-"))
+        impact = escape(str(item.get("impact") or "-"))
+        st.markdown(
+            f"""
+            <div class="timeline-item severity-{severity_raw}">
+                <div class="timeline-meta">{date_text} | {severity}</div>
+                <div class="timeline-title">{title}</div>
+                <div class="timeline-impact">{impact}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
 def _render_default_risk_section(section: dict[str, Any]) -> None:
@@ -590,12 +905,20 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
             for label, value in metrics
         )
 
-    def render_history_rows(rows: list[tuple[str, Any, Any, Any]]) -> str:
+    def render_history_rows(rows: list[tuple[str, Any, Any, Any, Any, Any, Any]]) -> str:
         if not rows:
-            return "<tr><td>-</td><td>-</td><td>-</td><td>-</td></tr>"
+            return "<tr><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr>"
         return "".join(
-            f"<tr><td>{escape(str(year))}</td><td>{escape(str(revenue))}</td><td>{escape(str(net_income))}</td><td>{escape(str(total_assets))}</td></tr>"
-            for year, revenue, net_income, total_assets in rows
+            (
+                f"<tr><td>{escape(str(year))}</td>"
+                f"<td>{escape(str(total_assets))}</td>"
+                f"<td>{escape(str(total_equity))}</td>"
+                f"<td>{escape(str(total_assets_statement))}</td>"
+                f"<td>{escape(str(revenue))}</td>"
+                f"<td>{escape(str(operating_income))}</td>"
+                f"<td>{escape(str(net_income))}</td></tr>"
+            )
+            for year, total_assets, total_equity, total_assets_statement, revenue, operating_income, net_income in rows
         )
 
     return f"""
@@ -765,13 +1088,33 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
           <thead>
             <tr>
               <th>연도</th>
-              <th>매출액</th>
-              <th>당기순이익</th>
               <th>총자산</th>
+              <th>자본총계</th>
+              <th>자산총계</th>
+              <th>매출액</th>
+              <th>영업이익</th>
+              <th>당기순이익</th>
             </tr>
           </thead>
           <tbody>{render_history_rows(sections["growth_trend"].get("history_rows", []))}</tbody>
         </table>
+      </div>
+
+      <div class="card">
+        <div class="section-title">{escape(str(sections["non_financial_events"]["title"]))}</div>
+        <div class="two-col">
+          <div>
+            <div class="box">통합 리스크 수준: {escape(str(sections["non_financial_events"].get("overall_risk_level") or "-"))}</div>
+            <div class="box">뉴스 감성 분석: {escape(str(sections["non_financial_events"].get("overall_sentiment") or "-"))}</div>
+            <div class="box">{escape(str(sections["non_financial_events"].get("recentness_summary") or "-"))}</div>
+            <div class="box">{escape(str(sections["non_financial_events"].get("repeat_summary") or "-"))}</div>
+            <div class="box">{escape(str(sections["non_financial_events"].get("repayment_impact") or "-"))}</div>
+          </div>
+          <div>
+            <div class="box"><ul>{render_list(sections["non_financial_events"].get("critical_high_events", []))}</ul></div>
+          </div>
+        </div>
+        <div class="box"><ul>{render_list(sections["non_financial_events"].get("timeline_lines", []))}</ul></div>
       </div>
 
       <div class="card">
@@ -837,6 +1180,20 @@ def _render_chip_list(items: list[Any] | None, css_class: str) -> str:
     return "".join(
         f'<div class="{css_class}">{escape(str(item))}</div>' for item in items
     )
+
+
+def _render_chip_blocks(items: list[Any] | None, css_class: str) -> None:
+    if not items:
+        st.markdown(
+            f'<div class="{css_class}">표시할 정보가 없습니다.</div>',
+            unsafe_allow_html=True,
+        )
+        return
+    for item in items:
+        st.markdown(
+            f'<div class="{css_class}">{escape(str(item))}</div>',
+            unsafe_allow_html=True,
+        )
 
 
 def _format_decision(decision: str) -> str:
