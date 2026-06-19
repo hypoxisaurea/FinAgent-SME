@@ -28,7 +28,8 @@ FinAgent-SME/
 ├── docs/        # 설계/규칙 문서
 ├── scripts/     # 로컬 실행/세팅 스크립트
 ├── tests/       # pytest 및 수동 검증 자료
-└── requirements.txt
+├── requirements.txt      # runtime 의존성
+└── requirements-dev.txt  # 개발용 추가 의존성 (`./scripts/setup-env.sh`가 기본 사용)
 ```
 
 ## 핵심 디렉터리
@@ -97,6 +98,12 @@ Python 실행/검증 명령은 모두 `.venv/bin/...` 기준으로 통일합니�
 
 ```bash
 ./scripts/setup-env.sh
+```
+
+기본값은 개발용 설치입니다. 배포 런타임만 맞추고 싶으면 아래처럼 실행할 수 있습니다.
+
+```bash
+./scripts/setup-env.sh --runtime
 ```
 
 ### 2. PostgreSQL 실행

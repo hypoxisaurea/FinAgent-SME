@@ -12,12 +12,9 @@ readonly STACK_RUN_DIR="$PROJECT_ROOT/.finagent"
 readonly STACK_LOG_DIR="$STACK_RUN_DIR/logs"
 readonly STACK_PID_DIR="$STACK_RUN_DIR/pids"
 readonly STACK_REQUIREMENTS_HASH_FILE="$STACK_RUN_DIR/requirements.sha256"
-readonly STACK_REQUIREMENT_FILES=(
-    "$PROJECT_ROOT/requirements.txt"
-    "$PROJECT_ROOT/requirements-backend.txt"
-    "$PROJECT_ROOT/requirements-frontend.txt"
-    "$PROJECT_ROOT/requirements-dev.txt"
-)
+readonly STACK_RUNTIME_REQUIREMENTS_FILE="$PROJECT_ROOT/requirements.txt"
+readonly STACK_DEV_REQUIREMENTS_FILE="$PROJECT_ROOT/requirements-dev.txt"
+readonly STACK_DEFAULT_DEPENDENCY_PROFILE="${FINAGENT_DEPENDENCY_PROFILE:-dev}"
 
 readonly STACK_BACKEND_PID_FILE="$STACK_PID_DIR/backend.pid"
 readonly STACK_FRONTEND_PID_FILE="$STACK_PID_DIR/frontend.pid"
@@ -102,18 +99,66 @@ stack_sha256_text() {
 }
 
 
+stack_normalize_dependency_profile() {
+    local profile="${1:-$STACK_DEFAULT_DEPENDENCY_PROFILE}"
+
+    case "$profile" in
+        runtime|dev)
+            printf '%s\n' "$profile"
+            ;;
+        *)
+            stack_fail "Unknown dependency profile: $profile (expected: runtime or dev)"
+            ;;
+    esac
+}
+
+
+stack_get_requirements_file() {
+    local profile
+    profile="$(stack_normalize_dependency_profile "${1:-}")"
+
+    case "$profile" in
+        runtime)
+            printf '%s\n' "$STACK_RUNTIME_REQUIREMENTS_FILE"
+            ;;
+        dev)
+            printf '%s\n' "$STACK_DEV_REQUIREMENTS_FILE"
+            ;;
+    esac
+}
+
+
+stack_list_requirements_files() {
+    local profile
+    profile="$(stack_normalize_dependency_profile "${1:-}")"
+
+    case "$profile" in
+        runtime)
+            printf '%s\n' "$STACK_RUNTIME_REQUIREMENTS_FILE"
+            ;;
+        dev)
+            printf '%s\n' "$STACK_RUNTIME_REQUIREMENTS_FILE"
+            printf '%s\n' "$STACK_DEV_REQUIREMENTS_FILE"
+            ;;
+    esac
+}
+
+
 stack_compute_requirements_hash() {
+    local profile
     local requirement_file
     local file_hashes=""
 
-    for requirement_file in "${STACK_REQUIREMENT_FILES[@]}"; do
+    profile="$(stack_normalize_dependency_profile "${1:-}")"
+
+    while IFS= read -r requirement_file; do
         if [[ ! -f "$requirement_file" ]]; then
             continue
         fi
 
         file_hashes+="$(stack_sha256_file "$requirement_file")"
         file_hashes+=$'\n'
-    done
+    done < <(stack_list_requirements_files "$profile")
 
     stack_sha256_text "$file_hashes"
 }
@@ -187,14 +232,18 @@ stack_ensure_venv() {
 
 
 stack_install_environment() {
+    local profile
     local current_hash
     local installed_hash=""
+    local requirements_file
     local venv_python
 
     stack_ensure_runtime_dirs
     stack_ensure_venv
 
-    current_hash="$(stack_compute_requirements_hash)"
+    profile="$(stack_normalize_dependency_profile "${1:-}")"
+    requirements_file="$(stack_get_requirements_file "$profile")"
+    current_hash="$(stack_compute_requirements_hash "$profile")"
     if [[ -f "$STACK_REQUIREMENTS_HASH_FILE" ]]; then
         installed_hash="$(cat "$STACK_REQUIREMENTS_HASH_FILE")"
     fi
@@ -204,10 +253,10 @@ stack_install_environment() {
         return
     fi
 
-    stack_log "Installing Python dependencies"
+    stack_log "Installing Python dependencies ($profile)"
     venv_python="$(stack_resolve_venv_python_path)"
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-        "$venv_python" -m pip install -r "$PROJECT_ROOT/requirements.txt"
+        "$venv_python" -m pip install -r "$requirements_file"
     printf '%s\n' "$current_hash" >"$STACK_REQUIREMENTS_HASH_FILE"
 }
 
@@ -307,6 +356,14 @@ stack_start_python_service() {
         nohup "$venv_python" -m "$@" >"$log_file" 2>&1 &
         echo $! >"$pid_file"
     )
+
+    sleep 1
+    if stack_is_pid_running "$pid_file"; then
+        return
+    fi
+
+    stack_show_service_log_excerpt "$service_name" "$log_file"
+    stack_fail "$service_name failed to start. See $log_file"
 }
 
 
@@ -338,6 +395,20 @@ stack_show_service_status() {
     fi
 
     stack_log "$service_label: stopped"
+}
+
+
+stack_show_service_log_excerpt() {
+    local service_name="$1"
+    local log_file="$2"
+
+    if [[ ! -f "$log_file" || ! -s "$log_file" ]]; then
+        stack_log "$service_name log is empty: $log_file"
+        return
+    fi
+
+    printf '[scripts] Last lines from %s log (%s):\n' "$service_name" "$log_file" >&2
+    tail -n 40 "$log_file" >&2
 }
 
 
