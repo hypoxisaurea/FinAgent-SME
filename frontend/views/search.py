@@ -1,8 +1,11 @@
+import logging
 import time
 from html import escape
 
 import requests
 import streamlit as st
+
+logger = logging.getLogger(__name__)
 
 
 STATUS_META: dict[str, dict[str, str | int]] = {
@@ -50,14 +53,26 @@ AGGREGATE_STEP_KEYS = {
 
 
 def _render_http_error(response: requests.Response) -> None:
-    status_code = response.status_code
     try:
         payload = response.json()
     except ValueError:
-        payload = {"raw": response.text}
+        payload = {}
 
-    st.error(f"워크플로우 호출 실패 ({status_code})")
-    st.json(payload)
+    code = payload.get("code") if isinstance(payload, dict) else None
+    message = payload.get("message") if isinstance(payload, dict) else None
+    st.error(message or "요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
+    if code:
+        st.caption(f"오류 코드: {code}")
+
+
+def _render_transport_error(
+    *,
+    user_message: str,
+    log_message: str,
+    exc: Exception,
+) -> None:
+    logger.exception("%s error=%s", log_message, exc)
+    st.error(user_message)
 
 
 def submit_workflow_job(company_name: str) -> dict | None:
@@ -71,12 +86,18 @@ def submit_workflow_job(company_name: str) -> dict | None:
         if e.response is not None:
             _render_http_error(e.response)
         else:
-            st.error("워크플로우 job 생성 실패")
-            st.exception(e)
+            _render_transport_error(
+                user_message="워크플로우 job 생성 중 통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                log_message="workflow_job_submit_transport_failed",
+                exc=e,
+            )
         return None
     except Exception as e:
-        st.error("워크플로우 job 생성 실패")
-        st.exception(e)
+        _render_transport_error(
+            user_message="워크플로우 job 생성 중 예상치 못한 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+            log_message="workflow_job_submit_unexpected_failed",
+            exc=e,
+        )
         return None
 
 
@@ -90,12 +111,18 @@ def get_workflow_job_status(job_id: str) -> dict | None:
         if e.response is not None:
             _render_http_error(e.response)
         else:
-            st.error("워크플로우 job 상태 조회 실패")
-            st.exception(e)
+            _render_transport_error(
+                user_message="워크플로우 상태 조회 중 통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                log_message="workflow_job_status_transport_failed",
+                exc=e,
+            )
         return None
     except Exception as e:
-        st.error("워크플로우 job 상태 조회 실패")
-        st.exception(e)
+        _render_transport_error(
+            user_message="워크플로우 상태 조회 중 예상치 못한 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+            log_message="workflow_job_status_unexpected_failed",
+            exc=e,
+        )
         return None
 
 
@@ -109,12 +136,18 @@ def get_workflow_job_result(job_id: str) -> dict | None:
         if e.response is not None:
             _render_http_error(e.response)
         else:
-            st.error("워크플로우 job 결과 조회 실패")
-            st.exception(e)
+            _render_transport_error(
+                user_message="워크플로우 결과 조회 중 통신 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+                log_message="workflow_job_result_transport_failed",
+                exc=e,
+            )
         return None
     except Exception as e:
-        st.error("워크플로우 job 결과 조회 실패")
-        st.exception(e)
+        _render_transport_error(
+            user_message="워크플로우 결과 조회 중 예상치 못한 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+            log_message="workflow_job_result_unexpected_failed",
+            exc=e,
+        )
         return None
 
 
@@ -677,7 +710,14 @@ def _render_job_progress() -> None:
         return
 
     if status == "failed":
-        st.error("심사 작업이 실패했습니다. 상태 정보를 확인해주세요.")
+        st.error(
+            str(
+                status_payload.get("message")
+                or "심사 작업이 실패했습니다. 잠시 후 다시 시도해주세요."
+            )
+        )
+        if status_payload.get("error_code"):
+            st.caption(f"오류 코드: {status_payload['error_code']}")
         st.session_state.pending_job_id = None
         st.session_state.pending_job_status = None
         return

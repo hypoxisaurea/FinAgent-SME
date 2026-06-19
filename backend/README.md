@@ -140,7 +140,7 @@ backend/
   "started_at": null,
   "finished_at": null,
   "error_code": null,
-  "error_message": null,
+  "message": null,
   "step_summary": null
 }
 ```

@@ -403,7 +403,7 @@ class WorkflowJobStatusResponse(BaseModel):
     started_at: str | None = None
     finished_at: str | None = None
     error_code: str | None = None
-    error_message: str | None = None
+    message: str | None = None
     step_summary: dict[str, int] | None = None
 
 

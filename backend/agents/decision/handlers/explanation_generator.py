@@ -17,7 +17,7 @@ from backend.agents.decision.models import (
     GradeCalculationResult,
     LimitRecommendationResult,
 )
-from utils.api_client import call_openai, get_client, parse_json_response
+from backend.common.api_client import call_openai, get_client, parse_json_response
 
 logger = logging.getLogger(__name__)
 

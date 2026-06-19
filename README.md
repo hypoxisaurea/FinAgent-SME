@@ -217,7 +217,7 @@ Python 실행/검증 명령은 모두 `.venv/bin/...` 기준으로 통일합니�
   "started_at": "2026-06-13T00:00:01+00:00",
   "finished_at": null,
   "error_code": null,
-  "error_message": null,
+  "message": null,
   "step_summary": null
 }
 ```

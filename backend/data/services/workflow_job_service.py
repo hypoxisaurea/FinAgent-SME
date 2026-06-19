@@ -19,6 +19,14 @@ JOB_STATUS_RUNNING = "running"
 JOB_STATUS_SUCCEEDED = "succeeded"
 JOB_STATUS_FAILED = "failed"
 JOB_TERMINAL_STATUSES = frozenset({JOB_STATUS_SUCCEEDED, JOB_STATUS_FAILED})
+JOB_ERROR_MESSAGES = {
+    "INVALID_INPUT": "입력값이 올바르지 않아 작업이 실패했습니다.",
+    "AGENT_TIMEOUT": "심사 작업이 시간 내에 완료되지 않아 중단되었습니다.",
+    "INVALID_OUTPUT": "심사 결과를 정리하는 중 오류가 발생했습니다.",
+    "RESOURCE_NOT_FOUND": "심사에 필요한 리소스를 찾지 못해 작업이 중단되었습니다.",
+    "UPSTREAM_UNAVAILABLE": "외부 연동 오류로 심사 작업이 중단되었습니다.",
+    "AGENT_EXECUTION_FAILED": "심사 워크플로우 실행 중 오류가 발생했습니다.",
+}
 
 
 def submit_workflow_job(
@@ -58,6 +66,7 @@ def get_workflow_job_status(job_id: str) -> WorkflowJobStatusResponse | None:
     if record is None:
         return None
     step_summary = _load_json_value(record.get("step_summary_json"))
+    error_code = _optional_str(record.get("error_code"))
     return WorkflowJobStatusResponse(
         job_id=str(record["job_id"]),
         request_id=str(record["request_id"]),
@@ -66,8 +75,11 @@ def get_workflow_job_status(job_id: str) -> WorkflowJobStatusResponse | None:
         submitted_at=str(record["submitted_at"]),
         started_at=_optional_str(record.get("started_at")),
         finished_at=_optional_str(record.get("finished_at")),
-        error_code=_optional_str(record.get("error_code")),
-        error_message=_optional_str(record.get("error_message")),
+        error_code=error_code,
+        message=_build_public_job_message(
+            status=str(record["status"]),
+            error_code=error_code,
+        ),
         step_summary=step_summary if isinstance(step_summary, dict) else None,
     )
 
@@ -153,3 +165,15 @@ def _load_json_value(value: Any) -> Any:
     if isinstance(value, (dict, list)):
         return value
     return json.loads(str(value))
+
+
+def _build_public_job_message(
+    *,
+    status: str,
+    error_code: str | None,
+) -> str | None:
+    if status != JOB_STATUS_FAILED:
+        return None
+    if error_code:
+        return JOB_ERROR_MESSAGES.get(error_code, "워크플로우 job이 실패했습니다.")
+    return "워크플로우 job이 실패했습니다."
