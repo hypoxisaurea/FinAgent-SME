@@ -37,6 +37,17 @@ def test_run_evaluation_builds_rows_and_writes_report(
 
     monkeypatch.setattr(
         evaluate_industry_rag,
+        "build_industry_ragas_eval_rows",
+        lambda cases: [
+            SimpleNamespace(
+                case_id=cases[0].case_id,
+                user_input=cases[0].user_input,
+                reference=cases[0].reference,
+            )
+        ],
+    )
+    monkeypatch.setattr(
+        evaluate_industry_rag,
         "run_industry_ragas_evaluation",
         lambda rows, model_name=None, evaluation_target="retriever": _fake_async_report(
             rows,
