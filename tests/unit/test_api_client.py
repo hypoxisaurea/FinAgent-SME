@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from backend.common import api_client
-from backend.tools import news
+import backend.common.api_client as api_client
+import backend.tools.news as news
 
 
 def _clear_llm_env(monkeypatch) -> None:

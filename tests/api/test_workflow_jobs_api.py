@@ -82,6 +82,37 @@ def test_get_workflow_job_status_returns_payload(
 
     assert response.status_code == 200
     assert response.json()["status"] == "running"
+    assert "error_message" not in response.json()
+
+
+def test_get_workflow_job_status_returns_public_failure_message_only(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        workflows,
+        "get_workflow_job_status",
+        lambda job_id: WorkflowJobStatusResponse(
+            job_id=job_id,
+            request_id="req-123",
+            company_name="FinAgent",
+            status="failed",
+            submitted_at="2026-06-13T00:00:00+00:00",
+            finished_at="2026-06-13T00:00:03+00:00",
+            error_code="AGENT_EXECUTION_FAILED",
+            message="심사 워크플로우 실행 중 오류가 발생했습니다.",
+        ),
+    )
+
+    response = client.get("/api/v1/workflows/jobs/job-123")
+
+    assert response.status_code == 200
+    assert response.json()["error_code"] == "AGENT_EXECUTION_FAILED"
+    assert (
+        response.json()["message"]
+        == "심사 워크플로우 실행 중 오류가 발생했습니다."
+    )
+    assert "error_message" not in response.json()
 
 
 def test_get_workflow_job_status_returns_404_when_missing(

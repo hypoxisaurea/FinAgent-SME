@@ -1,3 +1,1 @@
-from backend.agents.company_resolver.agent import CompanyResolverAgent
-
-__all__ = ["CompanyResolverAgent"]
+"""기업 식별 에이전트 패키지."""

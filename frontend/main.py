@@ -15,6 +15,8 @@ if "pending_job_id" not in st.session_state:
     st.session_state.pending_job_id = None
 if "pending_job_status" not in st.session_state:
     st.session_state.pending_job_status = None
+if "submitting_company_name" not in st.session_state:
+    st.session_state.submitting_company_name = None
 
 st.title("FinAgent-SME")
 

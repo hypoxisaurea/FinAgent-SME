@@ -5,7 +5,7 @@
   2. HIGH 이벤트 5건 이상 자동 거절
   3. 당기순손실 + 부채비율 300% 초과 동시 충족 시 자동 거절
   4. confidence 계산 경계값 보정
-  5. reasons 메시지 한국어 자연스럽게 개선
+  5. CRITICAL 거절 메시지에 구체적 원인(critical_reasons) 반영 (신규)
 """
 
 from __future__ import annotations
@@ -43,11 +43,13 @@ def make_decision(
     reasons    = _build_reasons(grade, score, context)
     confidence = _calc_confidence(score, result)
 
-    # ── 하드 거절 룰 1: CRITICAL 이벤트 ──
+    # ── 하드 거절 룰 1: CRITICAL 이벤트 (원인 포함) ──
     if int(context.get("critical_count", 0)) > 0 and result != DecisionResult.REJECT:
+        critical_reasons = context.get("critical_reasons") or []
+        detail = " / ".join(critical_reasons) if critical_reasons else "구체적 원인 미상"
         result, confidence, reasons = _override_reject(
             reasons,
-            "CRITICAL 등급 리스크 이벤트가 감지되어 자동 거절 처리됩니다.",
+            f"CRITICAL 등급 리스크 이벤트가 감지되어 자동 거절 처리됩니다. 원인: {detail}",
             context,
         )
 
@@ -96,7 +98,7 @@ def _override_reject(
     logger.warning(
         "decision_override_to_reject company=%s reason=%s",
         context.get("company_name", "unknown"),
-        override_msg[:50],
+        override_msg[:80],
     )
     return DecisionResult.REJECT, 0.95, reasons
 

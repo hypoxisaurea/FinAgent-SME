@@ -7,7 +7,8 @@ import pandas as pd
 
 import backend.opendartreader as opendartreader_shim
 from backend.opendartreader import OpenDartReader
-from backend.tools import financial, industry
+import backend.tools.financial as financial
+import backend.tools.industry as industry
 
 
 def test_opendartreader_shim_exposes_vendor_reader() -> None:

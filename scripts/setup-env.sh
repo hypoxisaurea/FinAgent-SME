@@ -12,27 +12,40 @@ source "$SCRIPT_DIR/lib/stack.sh"
 
 usage() {
     cat <<'EOF'
-Usage: ./scripts/setup-env.sh
+Usage: ./scripts/setup-env.sh [--dev|--runtime]
 
 Create the local Python virtual environment and install dependencies.
+Default profile: --dev
 EOF
 }
 
 
 main() {
-    if [[ $# -eq 0 ]]; then
-        stack_install_environment
-        return
+    local profile="dev"
+
+    if [[ $# -gt 1 ]]; then
+        scripts_fail_with_usage usage "Too many arguments"
     fi
 
     case "${1:-}" in
+        "")
+            ;;
+        --dev)
+            profile="dev"
+            ;;
+        --runtime)
+            profile="runtime"
+            ;;
         -h|--help|help)
             usage
+            return
             ;;
         *)
             scripts_fail_with_usage usage "Unknown argument: $1"
             ;;
     esac
+
+    stack_install_environment "$profile"
 }
 
 

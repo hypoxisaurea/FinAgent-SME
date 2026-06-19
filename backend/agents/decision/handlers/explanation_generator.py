@@ -1,7 +1,10 @@
 """D-004 | 판단 근거 자연어 설명 핸들러
 
-LLM API를 호출해 신용등급·승인 결정의 근거를
+OpenAI API를 호출해 신용등급·승인 결정의 근거를
 심사 담당자가 이해할 수 있는 자연어로 설명한다.
+
+변경 사항:
+  - 프롬프트에 CRITICAL 상세 원인 블록 추가 (신규)
 """
 
 from __future__ import annotations
@@ -39,7 +42,7 @@ async def generate_explanation(
     reasons: list[str],
     context: dict,
 ) -> DecisionExplanation:
-    """LLM API로 판단 근거 자연어 설명을 생성한다.
+    """OpenAI API로 판단 근거 자연어 설명을 생성한다.
 
     Args:
         company_name:  기업명
@@ -69,15 +72,6 @@ async def generate_explanation(
                 system=_SYSTEM_PROMPT,
                 max_tokens=1000,
                 response_format={"type": "json_object"},
-                observation_name="decision.explanation",
-                request_id=context.get("request_id"),
-                tags=["decision", "explanation"],
-                metadata={
-                    "agent_name": "decision",
-                    "company_name": company_name,
-                    "decision": decision.value,
-                    "grade": grade_result.grade.value,
-                },
             )
         parsed = parse_json_response(raw)
         if not isinstance(parsed, dict):
@@ -88,7 +82,6 @@ async def generate_explanation(
             key_risk_factors=parsed.get("key_risk_factors", []),
             key_positive_factors=parsed.get("key_positive_factors", []),
             recommendation=parsed.get("recommendation", ""),
-            fallback_used=False,
         )
 
     except Exception as exc:
@@ -131,6 +124,15 @@ def _build_prompt(
         f"  CRITICAL: {context.get('critical_count', 0)}건",
         f"  HIGH:     {context.get('high_count', 0)}건",
         f"  MEDIUM:   {context.get('medium_count', 0)}건",
+    ]
+
+    # CRITICAL 상세 원인 (신규)
+    critical_reasons = context.get("critical_reasons") or []
+    if critical_reasons:
+        lines.append("  CRITICAL 상세 원인:")
+        lines.extend(f"    · {r}" for r in critical_reasons)
+
+    lines += [
         "",
         "재무 요약:",
         f"  부채비율:   {context.get('latest_debt_ratio', 'N/A')}%",
@@ -166,7 +168,6 @@ def _fallback_explanation(
         ],
         key_positive_factors=[r for r in reasons if "없음" in r or "양호" in r],
         recommendation=grade_result.rationale,
-        fallback_used=True,
     )
 
 

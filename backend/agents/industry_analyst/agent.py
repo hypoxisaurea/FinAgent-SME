@@ -16,6 +16,10 @@ from backend.common.tool_runtime import (
     serialize_tool_runs,
     summarize_tool_runs,
 )
+from backend.schemas.agent_contracts import (
+    IndustryAnalystInput,
+    IndustryAnalystOutput,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +28,8 @@ class IndustryAnalystAgent(Agent):
     """오케스트레이터에서 직접 호출하는 산업 분석 에이전트."""
 
     name = "industry_analyst"
+    input_model = IndustryAnalystInput
+    output_model = IndustryAnalystOutput
 
     def __init__(self, provider: IndustryDataProvider | None = None) -> None:
         self._provider = provider or ToolIndustryDataProvider()
@@ -52,6 +58,7 @@ class IndustryAnalystAgent(Agent):
             )
             tool_runs.append(company_info_run)
             ksic_code = str(company_info.get("ksic_code", ""))
+            induty_code = str(company_info.get("induty_code", "")) or None
             company_ratios = payload.get("financial_ratios")
 
             industry_avg, industry_avg_run = execute_tool_step(
@@ -78,7 +85,11 @@ class IndustryAnalystAgent(Agent):
                 tool_name="get_industry_outlook",
                 request_id=request_id,
                 company_name=company_name,
-                runner=lambda: self._provider.get_industry_outlook(ksic_code),
+                runner=lambda: self._provider.get_industry_outlook(
+                    ksic_code,
+                    induty_code=induty_code,
+                    company_name=company_name,
+                ),
                 fallback_factory=lambda: _default_industry_outlook(ksic_code),
                 validate_dict=True,
             )
@@ -157,6 +168,16 @@ def _default_industry_outlook(ksic_code: str) -> dict[str, Any]:
         "ksic_code": ksic_code,
         "outlook_score": "Medium",
         "note": "업황 데이터를 불러오지 못해 중립값을 적용했습니다.",
+        "industry_methodology": {
+            "industry_name": "",
+            "summary": "",
+            "key_risk_factors": [],
+            "credit_assessment_factors": [],
+            "source_count": 0,
+            "unavailable": True,
+            "error": None,
+        },
+        "methodology_sources": [],
     }
 
 

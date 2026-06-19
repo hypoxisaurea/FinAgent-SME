@@ -1,3 +1,1 @@
-from backend.agents.news_collector.agent import NewsCollectorAgent, news_collection_node
-
-__all__ = ["NewsCollectorAgent", "news_collection_node"]
+"""뉴스 수집 에이전트 패키지."""

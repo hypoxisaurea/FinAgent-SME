@@ -19,6 +19,10 @@ from backend.common.contracts import (
     build_agent_output,
     elapsed_ms,
 )
+from backend.schemas.agent_contracts import (
+    DecisionInput,
+    DecisionOutputContract,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +31,8 @@ class DecisionAgent:
     """재무·리스크 데이터 종합 기반 신용 등급 산출 및 승인 판단 에이전트."""
 
     name: str = "decision"
+    input_model = DecisionInput
+    output_model = DecisionOutputContract
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Decision Agent 실행.

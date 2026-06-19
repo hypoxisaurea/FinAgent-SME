@@ -8,7 +8,7 @@
 - Main Goal: 더 빠르고 정확한 대출 심사, 리스크 관리 강화, 효율적인 의사 결정
 - 언어: Python
 - 프레임워크: FastAPI, Pydantic
-- 런타임: Python 3.13+, Node.js 20+
+- 런타임: Python 3.13+
 
 ## 코드 규칙
 
@@ -43,21 +43,23 @@
 ## 테스트
 
 - 테스트 파일 위치: `tests/` 디렉토리
-- 실행 명령: `pytest tests/`
+- 실행 명령: `.venv/bin/pytest -o cache_dir=.cache/pytest tests/`
 - 새 기능에는 반드시 테스트 추가
 - 버그 수정 시 회귀 테스트 추가
 - 외부 API 의존 로직은 mocking 또는 fixture로 고립 테스트
 
 ## 실행 명령
 
-- Backend 실행: `uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000`
-- Frontend 실행: `cd frontend && npm run dev`
+- 모든 Python 실행/검증 명령은 프로젝트 루트에서 `.venv/bin/...` 사용
+- Backend 실행: `.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000`
+- Frontend 실행: `.venv/bin/python -m streamlit run frontend/main.py --server.address 0.0.0.0 --server.port 8501`
 
 ## 품질 게이트
 
-- Backend lint: `ruff check backend`
-- Frontend lint: `cd frontend && npm run lint`
-- 병합 전 최소 검증: Backend lint, Frontend lint, 테스트
+- Backend lint: `.venv/bin/ruff check backend`
+- Frontend lint: `.venv/bin/ruff check frontend`
+- 테스트: `.venv/bin/pytest -o cache_dir=.cache/pytest tests/`
+- 병합 전 최소 검증: `.venv/bin/ruff check backend frontend tests` + `.venv/bin/pytest -o cache_dir=.cache/pytest tests/`
 
 ## API/에러 처리 규칙
 

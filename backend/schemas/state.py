@@ -181,9 +181,11 @@ class IndustryResult(BaseModel):
     outlook_score:   str                        # "Low" | "Medium" | "High"
     outlook_source:  str                        # 데이터 출처 (KOSIS 등)
     outlook_detail:  OutlookDetail
-    business_cycle:  BusinessCycle
-    macro_signals:   MacroSignals
-    summary_kor:     str    # 5개 태그 단락: [업종 소속][동종업계 비교][업황][경기 국면][거시환경]
+    business_cycle:       BusinessCycle
+    macro_signals:        MacroSignals
+    summary_kor:          str    # 5개 태그 단락: [업종 소속][동종업계 비교][업황][경기 국면][거시환경]
+    industry_methodology: dict[str, Any] = Field(default_factory=dict)
+    methodology_sources:  list[dict[str, Any]] = Field(default_factory=list)
 
 
 # 공유 State
@@ -315,7 +317,9 @@ def load_industry_result(state: CreditState, raw_json: dict) -> CreditState:
         outlook_detail  = OutlookDetail(**raw_json["outlook_detail"]),
         business_cycle  = BusinessCycle(**raw_json["business_cycle"]),
         macro_signals   = MacroSignals(**raw_json["macro_signals"]),
-        summary_kor     = raw_json["summary_kor"],
+        summary_kor             = raw_json["summary_kor"],
+        industry_methodology    = raw_json.get("industry_methodology", {}),
+        methodology_sources     = raw_json.get("methodology_sources", []),
     )
 
     state.industry_result  = ind

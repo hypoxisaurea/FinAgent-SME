@@ -45,7 +45,7 @@ frontend/
 - Job status: `GET /api/v1/workflows/jobs/{job_id}`
 - Job result: `GET /api/v1/workflows/jobs/{job_id}/result`
 - 최종 응답 구조: `status`, `context`, `steps`, `request_id`
-- 상태 응답 구조: `job_id`, `status`, `submitted_at`, `started_at`, `finished_at`, `error_code`, `error_message`, `step_summary`
+- 상태 응답 구조: `job_id`, `status`, `submitted_at`, `started_at`, `finished_at`, `error_code`, `message`, `step_summary`
 
 현재 UI는 `decision`, `credit_grade`, `recommended_limit`, `report`, `validation_result`가 `context` 안에 있다는 전제에 맞춰 작성되어 있습니다.
 
@@ -60,8 +60,7 @@ frontend/
 프론트만 직접 실행:
 
 ```bash
-cd frontend
-../.venv/bin/python -m streamlit run main.py --server.address 0.0.0.0 --server.port 8501
+.venv/bin/python -m streamlit run frontend/main.py --server.address 0.0.0.0 --server.port 8501
 ```
 
 ## 구현 메모

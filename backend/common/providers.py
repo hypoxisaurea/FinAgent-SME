@@ -43,7 +43,12 @@ class IndustryDataProvider(Protocol):
         company_ratios: Any,
     ) -> dict[str, Any]: ...
 
-    def get_industry_outlook(self, ksic_code: str) -> dict[str, Any]: ...
+    def get_industry_outlook(
+        self,
+        ksic_code: str,
+        induty_code: str | None = None,
+        company_name: str | None = None,
+    ) -> dict[str, Any]: ...
 
     def get_business_cycle(self) -> dict[str, Any]: ...
 
@@ -163,9 +168,12 @@ class DatabaseFinancialDataProvider:
                     "debt_ratio": ratios.get("debt_ratio"),
                     "op_margin": ratios.get("op_margin"),
                     "icr": ratios.get("interest_coverage"),
-                    "revenue": fs.get("매출액"),
-                    "net_income": fs.get("당기순이익"),
                     "total_assets": fs.get("총자산"),
+                    "total_equity": fs.get("자본총계"),
+                    "total_assets_statement": fs.get("total_assets_statement", fs.get("총자산")),
+                    "revenue": fs.get("매출액"),
+                    "operating_income": fs.get("영업이익"),
+                    "net_income": fs.get("당기순이익"),
                     "ocf": fs.get("영업현금흐름"),
                 }
             )
@@ -282,9 +290,16 @@ class ToolIndustryDataProvider:
             }
         )
 
-    def get_industry_outlook(self, ksic_code: str) -> dict[str, Any]:
+    def get_industry_outlook(
+        self,
+        ksic_code: str,
+        induty_code: str | None = None,
+        company_name: str | None = None,
+    ) -> dict[str, Any]:
         industry_tools = _load_industry_tools()
-        return industry_tools.get_industry_outlook.invoke({"ksic_code": ksic_code})
+        return industry_tools.get_industry_outlook.invoke(
+            {"ksic_code": ksic_code, "induty_code": induty_code, "company_name": company_name}
+        )
 
     def get_business_cycle(self) -> dict[str, Any]:
         industry_tools = _load_industry_tools()

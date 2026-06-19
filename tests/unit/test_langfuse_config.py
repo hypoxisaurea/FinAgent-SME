@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.common import langfuse as langfuse_module
+import backend.common.langfuse as langfuse_module
 
 
 def test_build_openai_trace_kwargs_returns_empty_when_langfuse_disabled(

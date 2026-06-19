@@ -2,7 +2,7 @@ from pathlib import Path
 
 import backend.backend_env as backend_env
 import pytest
-from backend.common import env as common_env
+import backend.common.env as common_env
 from backend.data.db import get_env_path, resolve_database_url
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]

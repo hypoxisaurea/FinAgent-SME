@@ -250,8 +250,14 @@ def fail_workflow_job(
         engine.dispose()
 
 
-def requeue_incomplete_workflow_jobs(updated_at: str) -> int:
-    """비정상 종료 등으로 남은 queued/running job을 queued로 재설정한다."""
+def fail_incomplete_workflow_jobs(
+    *,
+    error_code: str,
+    error_message: str,
+    finished_at: str,
+    updated_at: str,
+) -> int:
+    """비정상 종료 등으로 남은 queued/running job을 실패 상태로 종료한다."""
     engine = create_db_engine()
     try:
         with engine.begin() as connection:
@@ -261,19 +267,26 @@ def requeue_incomplete_workflow_jobs(updated_at: str) -> int:
                     f"""
                     UPDATE {WORKFLOW_JOB_TABLE_NAME}
                     SET
-                        status = 'queued',
-                        started_at = NULL,
+                        status = 'failed',
+                        error_code = :error_code,
+                        error_message = :error_message,
+                        finished_at = :finished_at,
                         updated_at = :updated_at
                     WHERE status IN ('queued', 'running')
                       AND finished_at IS NULL
                     """
                 ),
-                {"updated_at": updated_at},
+                {
+                    "error_code": error_code,
+                    "error_message": error_message,
+                    "finished_at": finished_at,
+                    "updated_at": updated_at,
+                },
             )
         return int(result.rowcount or 0)
     except Exception as exc:  # noqa: BLE001
-        logger.exception("workflow_job_requeue_failed")
-        raise RuntimeError("미완료 워크플로우 job 재설정에 실패했습니다.") from exc
+        logger.exception("workflow_job_fail_incomplete_failed")
+        raise RuntimeError("미완료 워크플로우 job 종료 처리에 실패했습니다.") from exc
     finally:
         engine.dispose()
 

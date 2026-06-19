@@ -12,12 +12,14 @@ from time import perf_counter
 from typing import Any
 
 from backend.agents.risk_event.graph import run_risk_event_agent
+from backend.agents.risk_event.models import RiskEventResult
 from backend.common.contracts import (
     AGENT_PARTIAL_STATUS,
     AGENT_SUCCESS_STATUS,
     build_agent_output,
     elapsed_ms,
 )
+from backend.schemas.agent_contracts import RiskEventInput
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +28,8 @@ class RiskEventAgent:
     """뉴스·공시·법원·재무 데이터 기반 리스크 이벤트 탐지 에이전트."""
 
     name: str = "risk_event"
+    input_model = RiskEventInput
+    output_model = RiskEventResult
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """Risk Event Agent 실행.

@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 
 from backend.agents.financial_analyst.agent import FinancialAnalystAgent
-from backend.common import providers
+import backend.common.providers as providers
 
 
 def test_database_financial_provider_reads_financial_features_rows(

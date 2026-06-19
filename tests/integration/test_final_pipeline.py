@@ -48,6 +48,13 @@ def run_pipeline(
     timeline   = build_timeline(classified)
     cnt        = Counter(e.severity for e in classified)
 
+    # CRITICAL 원인 추출 (risk_event/graph.py의 _extract_critical_info와 동일 로직)
+    critical_events = [e for e in classified if e.severity == SeverityLevel.CRITICAL]
+    critical_reasons = [
+        f"[{e.event.title}] {e.event.description} (근거: {e.rationale})"
+        for e in critical_events
+    ]
+
     ctx = {
         "company_name": company_name, "corp_code": corp_code,
         "critical_count": cnt[SeverityLevel.CRITICAL],
@@ -58,6 +65,8 @@ def run_pipeline(
         "latest_op_margin":       fin.latest_op_margin,
         "is_net_income_negative": fin.is_net_income_negative,
         "classified_events":      classified,
+        "critical_events":        critical_events,
+        "critical_reasons":       critical_reasons,
         **(extra_ctx or {}),
     }
 
@@ -111,6 +120,32 @@ class TestScenarios:
         assert r["ctx"]["critical_count"] >= 1
         assert r["decision"].result == DecisionResult.REJECT
         assert r["limit"].recommended_limit == 0
+
+    def test_S02b_critical_reason_propagates(self):
+        """S-02b: CRITICAL 원인이 decision.reasons[0]까지 구체적으로 전파되는지 확인"""
+        r = run_pipeline(
+            "파산기업", "00099999",
+            court_data=[{"title": "파산선고 결정",
+                         "content": "OO법원은 파산선고를 내렸다.",
+                         "announced_at": "2026-05-01", "url": None}],
+        )
+        assert r["decision"].result == DecisionResult.REJECT
+        assert "원인:" in r["decision"].reasons[0]
+        assert "파산선고" in r["decision"].reasons[0]
+
+    def test_S02c_no_critical_no_reason_text(self):
+        """S-02c: CRITICAL이 없는 정상 케이스는 '원인:' 문구 자체가 없어야 함"""
+        r = run_pipeline(
+            "우량주식회사", "00099998",
+            financial_rows=[
+                {"year": "2023", "revenue": "100000000000",
+                 "operating_income": "10000000000", "net_income": "7000000000",
+                 "total_assets_statement": "200000000000",
+                 "total_liabilities": "60000000000", "total_equity": "140000000000"},
+            ],
+        )
+        assert r["ctx"]["critical_count"] == 0
+        assert not any("원인:" in reason for reason in r["decision"].reasons)
 
     def test_S03_capital_impaired_grade_E(self):
         """S-03: 자본잠식 → 강제 E등급 → 거절"""
@@ -180,29 +215,29 @@ class TestScenarios:
         )
         assert r["decision"].result == DecisionResult.REJECT
 
-    def test_S07_review_grade_c(self):
-        """S-07: 중간 리스크 → C/D/E등급"""
+    def test_S07_review_grade(self):
+        """S-07: 중간~하위 리스크 → C/D/E등급"""
         r = run_pipeline(
             "중간기업", "00000007",
             news_data=[
                 {"title": "중간기업 소송 제기",
-                "content": "중간기업이 소송에 휘말렸다.",
-                "published_at": "2026-01-01", "url": None}
+                 "content": "중간기업이 소송에 휘말렸다.",
+                 "published_at": "2026-01-01", "url": None}
             ],
             disclosure_data=[
                 {"title": "단기차입금 증가 공시",
-                "content": "단기차입금을 증가하였습니다.",
-                "disclosed_at": "2026-02-01"}
+                 "content": "단기차입금을 증가하였습니다.",
+                 "disclosed_at": "2026-02-01"}
             ],
             financial_rows=[
                 {"year": "2022", "revenue": "50000000000",
-                "operating_income": "2000000000", "net_income": "1000000000",
-                "total_assets_statement": "80000000000",
-                "total_liabilities": "50000000000", "total_equity": "30000000000"},
+                 "operating_income": "2000000000", "net_income": "1000000000",
+                 "total_assets_statement": "80000000000",
+                 "total_liabilities": "50000000000", "total_equity": "30000000000"},
                 {"year": "2023", "revenue": "42000000000",
-                "operating_income": "-500000000", "net_income": "-2000000000",
-                "total_assets_statement": "78000000000",
-                "total_liabilities": "58000000000", "total_equity": "20000000000"},
+                 "operating_income": "-500000000", "net_income": "-2000000000",
+                 "total_assets_statement": "78000000000",
+                 "total_liabilities": "58000000000", "total_equity": "20000000000"},
             ],
             extra_ctx={"total_assets": 78_000_000_000, "revenue": 42_000_000_000},
         )
@@ -303,6 +338,27 @@ class TestInvariants:
             assert grade_scores[grade] < prev
             prev = grade_scores[grade]
 
+    def test_critical_reasons_format(self):
+        """CRITICAL 원인 문자열이 [제목] 설명 (근거: ...) 형식을 따르는지 확인"""
+        ev = RiskEvent(
+            event_type=EventType.LEGAL_RISK,
+            source=EventSource.COURT,
+            title="법적 리스크: 파산",
+            description="'파산선고' 관련 법원 공고가 감지되었습니다.",
+            detected_at=date.today(),
+        )
+        sce = SeverityClassifiedEvent(
+            event=ev, severity=SeverityLevel.CRITICAL, score=90,
+            rationale="즉각적인 채무불이행 또는 법적 절차 개시 위험",
+        )
+        critical_events = [sce]
+        critical_reasons = [
+            f"[{e.event.title}] {e.event.description} (근거: {e.rationale})"
+            for e in critical_events
+        ]
+        assert critical_reasons[0].startswith("[법적 리스크: 파산]")
+        assert "근거:" in critical_reasons[0]
+
 
 # ════════════════════════════════════════════════════════════════════════════
 # 엣지 케이스 테스트
@@ -366,3 +422,8 @@ class TestEdgeCases:
         ], [])
         if kw.detected_events:
             assert kw.detected_events[0].detected_at == date.today()
+
+    def test_critical_reasons_empty_when_no_critical(self):
+        """CRITICAL 이벤트가 없으면 critical_reasons도 빈 리스트"""
+        r = run_pipeline("정상기업", "00000095")
+        assert r["ctx"]["critical_reasons"] == []

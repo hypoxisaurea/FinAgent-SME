@@ -22,6 +22,14 @@ AGENT_METADATA_KEYS = frozenset(
 )
 
 
+class AgentInputValidationError(ValueError):
+    """에이전트 입력이 선언된 Pydantic 계약을 위반한 경우."""
+
+
+class AgentOutputValidationError(TypeError):
+    """에이전트 출력이 선언된 Pydantic 계약을 위반한 경우."""
+
+
 def elapsed_ms(started_at: float) -> int:
     """성능 측정용 monotonic 시작 시각을 밀리초 단위로 변환한다."""
     return max(int((perf_counter() - started_at) * 1000), 0)
@@ -81,9 +89,9 @@ def classify_agent_error(exc: Exception) -> str:
     """예외 타입을 공통 에러 코드로 정규화한다."""
     if isinstance(exc, asyncio.TimeoutError):
         return "AGENT_TIMEOUT"
-    if isinstance(exc, ValueError):
+    if isinstance(exc, AgentInputValidationError):
         return "INVALID_INPUT"
-    if isinstance(exc, TypeError):
+    if isinstance(exc, AgentOutputValidationError):
         return "INVALID_OUTPUT"
     if isinstance(exc, FileNotFoundError):
         return "RESOURCE_NOT_FOUND"

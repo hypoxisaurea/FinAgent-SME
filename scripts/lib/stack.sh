@@ -12,12 +12,9 @@ readonly STACK_RUN_DIR="$PROJECT_ROOT/.finagent"
 readonly STACK_LOG_DIR="$STACK_RUN_DIR/logs"
 readonly STACK_PID_DIR="$STACK_RUN_DIR/pids"
 readonly STACK_REQUIREMENTS_HASH_FILE="$STACK_RUN_DIR/requirements.sha256"
-readonly STACK_REQUIREMENT_FILES=(
-    "$PROJECT_ROOT/requirements.txt"
-    "$PROJECT_ROOT/requirements-backend.txt"
-    "$PROJECT_ROOT/requirements-frontend.txt"
-    "$PROJECT_ROOT/requirements-dev.txt"
-)
+readonly STACK_RUNTIME_REQUIREMENTS_FILE="$PROJECT_ROOT/requirements.txt"
+readonly STACK_DEV_REQUIREMENTS_FILE="$PROJECT_ROOT/requirements-dev.txt"
+readonly STACK_DEFAULT_DEPENDENCY_PROFILE="${FINAGENT_DEPENDENCY_PROFILE:-dev}"
 
 readonly STACK_BACKEND_PID_FILE="$STACK_PID_DIR/backend.pid"
 readonly STACK_FRONTEND_PID_FILE="$STACK_PID_DIR/frontend.pid"
@@ -102,18 +99,66 @@ stack_sha256_text() {
 }
 
 
+stack_normalize_dependency_profile() {
+    local profile="${1:-$STACK_DEFAULT_DEPENDENCY_PROFILE}"
+
+    case "$profile" in
+        runtime|dev)
+            printf '%s\n' "$profile"
+            ;;
+        *)
+            stack_fail "Unknown dependency profile: $profile (expected: runtime or dev)"
+            ;;
+    esac
+}
+
+
+stack_get_requirements_file() {
+    local profile
+    profile="$(stack_normalize_dependency_profile "${1:-}")"
+
+    case "$profile" in
+        runtime)
+            printf '%s\n' "$STACK_RUNTIME_REQUIREMENTS_FILE"
+            ;;
+        dev)
+            printf '%s\n' "$STACK_DEV_REQUIREMENTS_FILE"
+            ;;
+    esac
+}
+
+
+stack_list_requirements_files() {
+    local profile
+    profile="$(stack_normalize_dependency_profile "${1:-}")"
+
+    case "$profile" in
+        runtime)
+            printf '%s\n' "$STACK_RUNTIME_REQUIREMENTS_FILE"
+            ;;
+        dev)
+            printf '%s\n' "$STACK_RUNTIME_REQUIREMENTS_FILE"
+            printf '%s\n' "$STACK_DEV_REQUIREMENTS_FILE"
+            ;;
+    esac
+}
+
+
 stack_compute_requirements_hash() {
+    local profile
     local requirement_file
     local file_hashes=""
 
-    for requirement_file in "${STACK_REQUIREMENT_FILES[@]}"; do
+    profile="$(stack_normalize_dependency_profile "${1:-}")"
+
+    while IFS= read -r requirement_file; do
         if [[ ! -f "$requirement_file" ]]; then
             continue
         fi
 
         file_hashes+="$(stack_sha256_file "$requirement_file")"
         file_hashes+=$'\n'
-    done
+    done < <(stack_list_requirements_files "$profile")
 
     stack_sha256_text "$file_hashes"
 }
@@ -187,14 +232,18 @@ stack_ensure_venv() {
 
 
 stack_install_environment() {
+    local profile
     local current_hash
     local installed_hash=""
+    local requirements_file
     local venv_python
 
     stack_ensure_runtime_dirs
     stack_ensure_venv
 
-    current_hash="$(stack_compute_requirements_hash)"
+    profile="$(stack_normalize_dependency_profile "${1:-}")"
+    requirements_file="$(stack_get_requirements_file "$profile")"
+    current_hash="$(stack_compute_requirements_hash "$profile")"
     if [[ -f "$STACK_REQUIREMENTS_HASH_FILE" ]]; then
         installed_hash="$(cat "$STACK_REQUIREMENTS_HASH_FILE")"
     fi
@@ -204,10 +253,10 @@ stack_install_environment() {
         return
     fi
 
-    stack_log "Installing Python dependencies"
+    stack_log "Installing Python dependencies ($profile)"
     venv_python="$(stack_resolve_venv_python_path)"
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-        "$venv_python" -m pip install -r "$PROJECT_ROOT/requirements.txt"
+        "$venv_python" -m pip install -r "$requirements_file"
     printf '%s\n' "$current_hash" >"$STACK_REQUIREMENTS_HASH_FILE"
 }
 
@@ -285,19 +334,58 @@ stack_is_pid_running() {
 }
 
 
+stack_find_listening_pids_by_port() {
+    local port="$1"
+
+    if ! stack_command_exists lsof; then
+        return
+    fi
+
+    lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true
+}
+
+
+stack_kill_listening_processes() {
+    local service_name="$1"
+    local port="$2"
+    local pid=""
+    local found="false"
+
+    while IFS= read -r pid; do
+        if [[ -z "$pid" ]]; then
+            continue
+        fi
+        found="true"
+        stack_log "Stopping $service_name listener on port $port (pid=$pid)"
+        kill "$pid" >/dev/null 2>&1 || true
+    done < <(stack_find_listening_pids_by_port "$port")
+
+    if [[ "$found" == "false" ]]; then
+        return
+    fi
+
+    sleep 1
+}
+
+
 stack_start_python_service() {
     local service_name="$1"
     local pid_file="$2"
     local log_file="$3"
     local working_directory="$4"
     local service_url="$5"
+    local service_port="$6"
     local venv_python
 
-    shift 5
+    shift 6
 
     if stack_is_pid_running "$pid_file"; then
         stack_log "$service_name is already running"
         return
+    fi
+
+    if [[ -n "$(stack_find_listening_pids_by_port "$service_port")" ]]; then
+        stack_fail "$service_name port $service_port is already in use. Run ./scripts/run-server.sh down first."
     fi
 
     venv_python="$(stack_resolve_venv_python_path)"
@@ -307,15 +395,25 @@ stack_start_python_service() {
         nohup "$venv_python" -m "$@" >"$log_file" 2>&1 &
         echo $! >"$pid_file"
     )
+
+    sleep 1
+    if stack_is_pid_running "$pid_file"; then
+        return
+    fi
+
+    stack_show_service_log_excerpt "$service_name" "$log_file"
+    stack_fail "$service_name failed to start. See $log_file"
 }
 
 
 stack_stop_service() {
     local service_name="$1"
     local pid_file="$2"
+    local service_port="$3"
     local pid=""
 
     if ! stack_is_pid_running "$pid_file"; then
+        stack_kill_listening_processes "$service_name" "$service_port"
         stack_log "$service_name is not running"
         return
     fi
@@ -324,6 +422,7 @@ stack_stop_service() {
     stack_log "Stopping $service_name (pid=$pid)"
     kill "$pid" >/dev/null 2>&1 || true
     rm -f "$pid_file"
+    stack_kill_listening_processes "$service_name" "$service_port"
 }
 
 
@@ -341,6 +440,20 @@ stack_show_service_status() {
 }
 
 
+stack_show_service_log_excerpt() {
+    local service_name="$1"
+    local log_file="$2"
+
+    if [[ ! -f "$log_file" || ! -s "$log_file" ]]; then
+        stack_log "$service_name log is empty: $log_file"
+        return
+    fi
+
+    printf '[scripts] Last lines from %s log (%s):\n' "$service_name" "$log_file" >&2
+    tail -n 40 "$log_file" >&2
+}
+
+
 stack_start_backend() {
     stack_start_python_service \
         "backend" \
@@ -348,6 +461,7 @@ stack_start_backend() {
         "$STACK_BACKEND_LOG_FILE" \
         "$STACK_BACKEND_DIR" \
         "http://$STACK_BACKEND_HOST:$STACK_BACKEND_PORT" \
+        "$STACK_BACKEND_PORT" \
         uvicorn backend.main:app --app-dir .. --host "$STACK_BACKEND_HOST" --port "$STACK_BACKEND_PORT"
 }
 
@@ -359,6 +473,7 @@ stack_start_frontend() {
         "$STACK_FRONTEND_LOG_FILE" \
         "$STACK_FRONTEND_DIR" \
         "http://$STACK_FRONTEND_HOST:$STACK_FRONTEND_PORT" \
+        "$STACK_FRONTEND_PORT" \
         streamlit run main.py --server.address "$STACK_FRONTEND_HOST" --server.port "$STACK_FRONTEND_PORT"
 }
 
@@ -373,8 +488,8 @@ stack_start_servers() {
 
 
 stack_stop_servers() {
-    stack_stop_service "frontend" "$STACK_FRONTEND_PID_FILE"
-    stack_stop_service "backend" "$STACK_BACKEND_PID_FILE"
+    stack_stop_service "frontend" "$STACK_FRONTEND_PID_FILE" "$STACK_FRONTEND_PORT"
+    stack_stop_service "backend" "$STACK_BACKEND_PID_FILE" "$STACK_BACKEND_PORT"
 }
 
 

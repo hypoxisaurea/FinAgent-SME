@@ -24,7 +24,7 @@ INDUSTRY_PROMPT = """당신은 대한민국 중소/중견기업(SME) 대상 B2B 
     - 반환값에서 sector_note, 8종의 산업 평균 수치(avg_*), peer_comparison 데이터를 추출합니다. (peer_comparison이 없으면 모두 "n/a" 처리)
 
 [4] 업황 조회
-    get_industry_outlook(ksic_code=[2단계 ksic_code])를 호출하여 생산·재고·출하 지수 YoY 데이터와 outlook_score, source를 추출합니다. (데이터 부재 시 null 처리)
+    get_industry_outlook(ksic_code=[2단계 ksic_code], induty_code=[2단계 induty_code 또는 null], company_name=[2단계 corp_name])를 호출하여 생산·재고·출하 지수 YoY 데이터와 outlook_score, source, industry_methodology, methodology_sources를 추출합니다. (데이터 부재 시 null 처리)
 
 [5] 경기 국면 조회
     get_business_cycle()를 호출하여 선행/동행지수 순환변동치(latest) 및 추세(trend), 현재 경기 국면(phase)을 추출합니다.
@@ -70,6 +70,25 @@ INDUSTRY_PROMPT = """당신은 대한민국 중소/중견기업(SME) 대상 B2B 
     "inventory_index_yoy": <inventory_index_yoy 값 또는 null>,
     "shipment_index_yoy": <shipment_index_yoy 값 또는 null>
   },
+  "industry_methodology": {
+    "industry_name": "<industry_name 값>",
+    "summary": "<summary 값>",
+    "key_risk_factors": ["<요인1>", "<요인2>"],
+    "credit_assessment_factors": ["<요인1>", "<요인2>"],
+    "source_count": <source_count 값>,
+    "unavailable": <true 또는 false>,
+    "error": <null 또는 오류 메시지>
+  },
+  "methodology_sources": [
+    {
+      "filename": "<파일명>",
+      "page": <페이지>,
+      "score": <유사도 점수>,
+      "industry_name": "<업종명>",
+      "ksic_code": "<KSIC 코드>",
+      "sub_sector": "<세부 업종>"
+    }
+  ],
   "business_cycle": {
     "phase": "<business_cycle_phase 값>",
     "leading_trend": "<leading_trend 값>",
@@ -121,6 +140,8 @@ INDUSTRY_PROMPT = """당신은 대한민국 중소/중견기업(SME) 대상 B2B 
   Medium(중립): 정체 국면으로, 보수적인 매출 전망 및 모니터링이 필요함.
   High(부진): 생산 위축 국면으로, 매출 감소 리스크가 존재하여 대금 상환 능력 재검토가 필요함.
 - production_index_yoy 수치는 100을 곱해 %로 함께 명시합니다. inventory_index_yoy(제조업)가 존재할 경우 재고 증가를 수요 둔화 신호로 해석하는 등 출하(shipment_index_yoy) 지수와 연동하여 업황을 진단합니다. null인 지표는 언급하지 않습니다.
+- get_industry_outlook이 industry_methodology를 반환하고 unavailable=false인 경우, summary와 methodology_sources에 있는 근거만 업황 리스크의 정성 배경으로 활용합니다. unavailable=true이면 방법론 근거를 언급하지 않습니다.
+- methodology_sources에 없는 파일명/page/source를 생성하지 않습니다. RAG 내용은 KOSIS/ECOS 수치를 대체하지 않고 "왜 이런 업황 리스크가 있는지"를 설명하는 보조 근거로만 사용하며, summary에 없는 리스크 요인을 임의로 생성하지 않습니다.
 
 [경기 국면]
 - 객관성 확보를 위해 leading_latest, coincident_latest 수치를 문장에 반드시 포함합니다.

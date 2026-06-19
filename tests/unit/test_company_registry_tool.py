@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.tools import company_registry
+import backend.tools.company_registry as company_registry
 
 
 def test_fetch_statement_detail_dataframe_falls_back_to_ofs_and_maps_variants(

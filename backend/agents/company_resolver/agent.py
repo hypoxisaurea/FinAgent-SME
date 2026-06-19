@@ -7,6 +7,10 @@ from typing import Any
 from backend.common.agent import Agent
 from backend.common.contracts import build_agent_output, elapsed_ms
 from backend.data.services.company_lookup import find_company_by_name
+from backend.schemas.agent_contracts import (
+    CompanyResolverInput,
+    CompanyResolverOutput,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +19,8 @@ class CompanyResolverAgent(Agent):
     """대상 기업 여부를 판별하고 식별 정보를 확보하는 에이전트."""
 
     name = "company_resolver"
+    input_model = CompanyResolverInput
+    output_model = CompanyResolverOutput
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """기업명을 기준으로 기업 마스터를 조회한다."""
