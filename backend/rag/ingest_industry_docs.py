@@ -42,6 +42,18 @@ _FILENAME_ALIASES: tuple[tuple[str, str], ...] = (
     ("SI", "SI업"),
 )
 
+# 섹션 헤딩 패턴: 로마숫자+점 / 숫자+점 / 숫자+괄호 / 괄호숫자
+_SECTION_HEADING_RE = re.compile(
+    r"^(?:"
+    r"[IVX]{1,6}\."   # I., II., III., IV. …
+    r"|\d{1,2}\."     # 1., 2., 10.
+    r"|\d{1,2}\)"     # 1), 2)
+    r"|\(\d{1,2}\)"   # (1), (2)
+    r")\s*\S"
+)
+# [표 N] / [그림 N] — 표·그림 단일 청크 보호
+_TABLE_FIGURE_RE = re.compile(r"^\[(?:표|그림)\s+\d+\]")
+
 
 @dataclass(frozen=True)
 class IndustryDocumentMetadata:
@@ -86,7 +98,7 @@ def parse_industry_doc_filename(path: Path | str) -> IndustryDocumentMetadata:
     )
 
 
-def chunk_text(text: str, chunk_size: int = 1200, overlap: int = 200) -> list[str]:
+def chunk_text(text: str, chunk_size: int = 800, overlap: int = 100) -> list[str]:
     """추출된 PDF 텍스트를 오버랩 방식으로 분할한다."""
     normalized_text = re.sub(r"\s+", " ", text).strip()
     if not normalized_text:
@@ -107,18 +119,75 @@ def chunk_text(text: str, chunk_size: int = 1200, overlap: int = 200) -> list[st
     return chunks
 
 
+def chunk_page_by_section(
+    page_text: str,
+    *,
+    chunk_size: int = 800,
+    overlap: int = 100,
+) -> list[str]:
+    """섹션 경계 인식 청킹.
+
+    섹션 헤딩(I., 1., 1), (1) 등) 기준으로 페이지를 분리하고,
+    [표 N]/[그림 N] 섹션은 분할 없이 단일 청크로 보호한다.
+    각 청크 앞에 소속 섹션 제목을 prefix로 포함하여 검색 컨텍스트를 강화한다.
+    섹션 내용이 chunk_size를 초과할 경우 overlap 슬라이딩 윈도우로 추가 분할한다.
+    섹션 헤딩이 감지되지 않으면 chunk_text()로 폴백한다.
+    """
+    lines = page_text.splitlines()
+
+    sections: list[tuple[str, list[str]]] = []
+    current_title = ""
+    current_lines: list[str] = []
+
+    for raw_line in lines:
+        line = raw_line.strip()
+        if not line:
+            continue
+        if _SECTION_HEADING_RE.match(line) or _TABLE_FIGURE_RE.match(line):
+            if current_lines:
+                sections.append((current_title, current_lines))
+            current_title = line
+            current_lines = []
+        else:
+            current_lines.append(line)
+
+    if current_lines:
+        sections.append((current_title, current_lines))
+
+    if not sections:
+        return chunk_text(page_text, chunk_size=chunk_size, overlap=overlap)
+
+    result: list[str] = []
+    for title, content_lines in sections:
+        content = " ".join(content_lines).strip()
+        if not content:
+            continue
+
+        is_protected = bool(title and _TABLE_FIGURE_RE.match(title))
+        prefix = f"[{title}] " if title else ""
+        full = prefix + content
+
+        if is_protected or len(full) <= chunk_size:
+            result.append(full.strip())
+        else:
+            for sub in chunk_text(content, chunk_size=chunk_size, overlap=overlap):
+                result.append((prefix + sub).strip())
+
+    return result or chunk_text(page_text, chunk_size=chunk_size, overlap=overlap)
+
+
 def build_document_chunks(
     pages: list[tuple[int, str]],
     metadata: IndustryDocumentMetadata,
     *,
-    chunk_size: int = 1200,
-    overlap: int = 200,
+    chunk_size: int = 800,
+    overlap: int = 100,
 ) -> list[DocumentChunk]:
     """페이지 단위 PDF 텍스트로 결정론적 Chroma 문서를 생성한다."""
     document_chunks: list[DocumentChunk] = []
     for page_number, page_text in pages:
         for chunk_index, chunk in enumerate(
-            chunk_text(page_text, chunk_size=chunk_size, overlap=overlap)
+            chunk_page_by_section(page_text, chunk_size=chunk_size, overlap=overlap)
         ):
             chunk_hash = hashlib.sha256(chunk.encode("utf-8")).hexdigest()[:16]
             chunk_id = (
@@ -163,8 +232,8 @@ def ingest_industry_docs(
     docs_dir: Path | str = DEFAULT_DOCS_DIR,
     *,
     collection: Any | None = None,
-    chunk_size: int = 1200,
-    overlap: int = 200,
+    chunk_size: int = 800,
+    overlap: int = 100,
 ) -> dict[str, int]:
     """업종 신용평가방법론 PDF를 Chroma industry_knowledge 컬렉션에 적재한다."""
     resolved_docs_dir = Path(docs_dir)
