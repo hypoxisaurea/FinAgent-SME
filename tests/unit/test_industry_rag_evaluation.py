@@ -12,6 +12,31 @@ from typing import Any
 from backend.rag import evaluation
 
 
+def test_repo_sample_datasets_use_index_metadata_values() -> None:
+    retriever_cases = evaluation.load_industry_ragas_eval_cases(
+        "backend/rag/eval_datasets/industry_methodology.sample.jsonl"
+    )
+    agent_cases = evaluation.load_industry_agent_ragas_eval_cases(
+        "backend/rag/eval_datasets/industry_agent.sample.jsonl"
+    )
+
+    assert len(retriever_cases) == 8
+    assert len(agent_cases) == 8
+    assert {case.sub_sector for case in retriever_cases} == {
+        "건설",
+        "반도체",
+        "조선",
+        "정유",
+        "자동차",
+        "철강",
+        "의류",
+        "항공운송",
+    }
+    assert {case.sub_sector for case in agent_cases} == {
+        case.sub_sector for case in retriever_cases
+    }
+
+
 def test_load_industry_ragas_eval_cases_reads_jsonl(tmp_path: Path) -> None:
     dataset_path = tmp_path / "industry_eval.jsonl"
     dataset_path.write_text(
@@ -352,6 +377,26 @@ def test_summarize_case_results_ignores_skipped_metrics() -> None:
         "scored_cases": 1,
         "skipped_cases": 1,
     }
+    assert evaluation._summarize_metric_coverage(summary) == {
+        "status": "partial",
+        "scored_metric_count": 8,
+        "skipped_metric_count": 2,
+    }
+
+
+def test_summarize_metric_coverage_marks_complete_report() -> None:
+    coverage = evaluation._summarize_metric_coverage(
+        {
+            "context_precision": {"scored_cases": 2, "skipped_cases": 0},
+            "context_recall": {"scored_cases": 2, "skipped_cases": 0},
+        }
+    )
+
+    assert coverage == {
+        "status": "complete",
+        "scored_metric_count": 4,
+        "skipped_metric_count": 0,
+    }
 
 
 def test_load_ragas_runtime_error_guides_installation(monkeypatch) -> None:
@@ -426,6 +471,32 @@ def test_evaluate_row_with_ragas_skips_missing_contexts() -> None:
     assert result.metric_scores["factual_correctness"].skipped == "response 비어 있음"
 
 
+def test_evaluate_row_with_ragas_only_scores_supplied_target_metrics() -> None:
+    class FakeMetric:
+        async def ascore(self, **_: Any) -> Any:
+            return SimpleNamespace(value=0.9, reason=None)
+
+    row = evaluation.IndustryRagasEvalRow(
+        case_id="case-1",
+        user_input="건설업 평가요소를 설명해줘",
+        reference="수주잔고와 PF 리스크를 본다.",
+        response="건설업 평가 요약",
+        retrieved_contexts=["건설업은 수주잔고와 PF 리스크를 평가한다."],
+    )
+
+    result = asyncio.run(
+        evaluation._evaluate_row_with_ragas(
+            row=row,
+            metrics={
+                "context_precision": FakeMetric(),
+                "context_recall": FakeMetric(),
+            },
+        )
+    )
+
+    assert set(result.metric_scores) == {"context_precision", "context_recall"}
+
+
 def test_run_metric_normalizes_value_and_reason() -> None:
     async def fake_coroutine() -> Any:
         return SimpleNamespace(value=0.81234, reason="  grounded  ")
@@ -440,6 +511,46 @@ def test_run_metric_normalizes_value_and_reason() -> None:
 
     assert score.value == 0.8123
     assert score.reason == "grounded"
+
+
+def test_run_metric_skips_non_finite_value() -> None:
+    async def fake_coroutine() -> Any:
+        return SimpleNamespace(value=float("nan"), reason=None)
+
+    score = asyncio.run(
+        evaluation._run_metric(
+            "response_groundedness",
+            fake_coroutine(),
+            "case-1",
+        )
+    )
+
+    assert score.value is None
+    assert score.skipped == "metric이 유효한 숫자 점수를 반환하지 않음"
+
+
+def test_ensure_any_metric_succeeded_raises_when_all_metrics_skipped() -> None:
+    case_results = [
+        evaluation.IndustryRagasCaseResult(
+            case_id="case-1",
+            user_input="q1",
+            response="r1",
+            reference="ref1",
+            metric_scores={
+                "faithfulness": evaluation.IndustryRagasMetricScore(
+                    skipped="Connection error."
+                )
+            },
+        )
+    ]
+
+    try:
+        evaluation._ensure_any_metric_succeeded(case_results)
+    except RuntimeError as exc:
+        assert "점수를 하나도 생성하지 못했습니다" in str(exc)
+        assert "Connection error." in str(exc)
+    else:
+        raise AssertionError("RuntimeError was not raised")
 
 
 def test_validate_rag_eval_rows_raises_when_all_contexts_missing() -> None:

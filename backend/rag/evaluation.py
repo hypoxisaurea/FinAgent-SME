@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib
 import json
 import logging
+import math
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -22,6 +23,17 @@ logger = logging.getLogger(__name__)
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 EvaluationTarget = Literal["retriever", "agent"]
+RAGAS_METRIC_NAMES = (
+    "context_precision",
+    "context_recall",
+    "faithfulness",
+    "response_groundedness",
+    "factual_correctness",
+)
+RAGAS_TARGET_METRICS: dict[EvaluationTarget, tuple[str, ...]] = {
+    "retriever": ("context_precision", "context_recall"),
+    "agent": RAGAS_METRIC_NAMES,
+}
 
 
 class IndustryRagasEvalCase(BaseModel):
@@ -305,12 +317,16 @@ async def run_industry_ragas_evaluation(
         provider="openai",
         client=client,
     )
-    metrics = {
+    available_metrics = {
         "context_precision": runtime.context_precision_cls(llm=llm),
         "context_recall": runtime.context_recall_cls(llm=llm),
         "faithfulness": runtime.faithfulness_cls(llm=llm),
         "response_groundedness": runtime.response_groundedness_cls(llm=llm),
         "factual_correctness": runtime.factual_correctness_cls(llm=llm),
+    }
+    metrics = {
+        name: available_metrics[name]
+        for name in RAGAS_TARGET_METRICS[evaluation_target]
     }
     try:
         logger.info(
@@ -327,14 +343,21 @@ async def run_industry_ragas_evaluation(
                     metrics=metrics,
                 )
             )
+        _ensure_any_metric_succeeded(case_results)
+        summary = _summarize_case_results(case_results)
+        coverage = _summarize_metric_coverage(summary)
         report = {
+            "status": coverage["status"],
             "evaluation_target": evaluation_target,
             "model_name": resolved_model_name,
+            "metrics": list(metrics),
             "case_count": len(case_results),
+            "scored_metric_count": coverage["scored_metric_count"],
+            "skipped_metric_count": coverage["skipped_metric_count"],
             "unavailable_case_count": sum(
                 1 for result in case_results if result.unavailable
             ),
-            "summary": _summarize_case_results(case_results),
+            "summary": summary,
             "cases": [result.model_dump(mode="json", exclude_none=True) for result in case_results],
         }
         logger.info(
@@ -353,7 +376,7 @@ def write_industry_ragas_report(report: dict[str, Any], output_path: str | Path)
     path = Path(output_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        json.dumps(report, ensure_ascii=False, indent=2),
+        json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False),
         encoding="utf-8",
     )
 
@@ -611,28 +634,32 @@ async def _evaluate_row_with_ragas(
         len(row.retrieved_contexts),
         row.unavailable,
     )
-    metric_scores = {
-        "context_precision": await _score_context_precision(
+    metric_scores: dict[str, IndustryRagasMetricScore] = {}
+    if "context_precision" in metrics:
+        metric_scores["context_precision"] = await _score_context_precision(
             metrics["context_precision"],
             row,
-        ),
-        "context_recall": await _score_context_recall(
+        )
+    if "context_recall" in metrics:
+        metric_scores["context_recall"] = await _score_context_recall(
             metrics["context_recall"],
             row,
-        ),
-        "faithfulness": await _score_faithfulness(
+        )
+    if "faithfulness" in metrics:
+        metric_scores["faithfulness"] = await _score_faithfulness(
             metrics["faithfulness"],
             row,
-        ),
-        "response_groundedness": await _score_response_groundedness(
+        )
+    if "response_groundedness" in metrics:
+        metric_scores["response_groundedness"] = await _score_response_groundedness(
             metrics["response_groundedness"],
             row,
-        ),
-        "factual_correctness": await _score_factual_correctness(
+        )
+    if "factual_correctness" in metrics:
+        metric_scores["factual_correctness"] = await _score_factual_correctness(
             metrics["factual_correctness"],
             row,
-        ),
-    }
+        )
     logger.info(
         "industry_ragas_case_evaluation_finished case_id=%s scored_metrics=%s skipped_metrics=%s",
         row.case_id,
@@ -757,6 +784,15 @@ async def _run_metric(
 
     normalized_value = _normalize_metric_value(getattr(result, "value", None))
     normalized_reason = _normalize_optional_str(getattr(result, "reason", None))
+    if normalized_value is None:
+        reason = normalized_reason or "metric이 유효한 숫자 점수를 반환하지 않음"
+        logger.warning(
+            "industry_ragas_metric_invalid case_id=%s metric_name=%s reason=%s",
+            case_id,
+            metric_name,
+            reason,
+        )
+        return IndustryRagasMetricScore(skipped=reason)
     logger.info(
         "industry_ragas_metric_finished case_id=%s metric_name=%s value=%s has_reason=%s",
         case_id,
@@ -786,11 +822,9 @@ def _skip_metric(
 
 def _summarize_case_results(case_results: list[IndustryRagasCaseResult]) -> dict[str, Any]:
     metric_names = [
-        "context_precision",
-        "context_recall",
-        "faithfulness",
-        "response_groundedness",
-        "factual_correctness",
+        metric_name
+        for metric_name in RAGAS_METRIC_NAMES
+        if any(metric_name in result.metric_scores for result in case_results)
     ]
     summary: dict[str, Any] = {}
     for metric_name in metric_names:
@@ -808,10 +842,54 @@ def _summarize_case_results(case_results: list[IndustryRagasCaseResult]) -> dict
     return summary
 
 
+def _ensure_any_metric_succeeded(
+    case_results: list[IndustryRagasCaseResult],
+) -> None:
+    if any(
+        score.value is not None
+        for result in case_results
+        for score in result.metric_scores.values()
+    ):
+        return
+
+    reasons = sorted(
+        {
+            score.skipped
+            for result in case_results
+            for score in result.metric_scores.values()
+            if score.skipped
+        }
+    )
+    details = "; ".join(reasons) if reasons else "metric 결과 없음"
+    raise RuntimeError(
+        "RAGAS metric 점수를 하나도 생성하지 못했습니다. "
+        f"evaluator 연결과 모델 설정을 확인해 주세요. details={details}"
+    )
+
+
+def _summarize_metric_coverage(summary: dict[str, Any]) -> dict[str, Any]:
+    scored_metric_count = sum(
+        int(metric_summary.get("scored_cases", 0))
+        for metric_summary in summary.values()
+    )
+    skipped_metric_count = sum(
+        int(metric_summary.get("skipped_cases", 0))
+        for metric_summary in summary.values()
+    )
+    return {
+        "status": "complete" if skipped_metric_count == 0 else "partial",
+        "scored_metric_count": scored_metric_count,
+        "skipped_metric_count": skipped_metric_count,
+    }
+
+
 def _normalize_metric_value(value: Any) -> float | None:
     if value is None:
         return None
-    return round(float(value), 4)
+    normalized = float(value)
+    if not math.isfinite(normalized):
+        return None
+    return round(normalized, 4)
 
 
 def _normalize_optional_str(value: Any) -> str | None:
