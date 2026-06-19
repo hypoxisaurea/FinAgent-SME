@@ -195,3 +195,61 @@ def parse_json_response(raw: str) -> dict | list:
         .strip()
     )
     return json.loads(clean)
+
+
+def describe_llm_error(exc: Exception) -> str:
+    if isinstance(exc, RateLimitError):
+        message = _extract_error_message(exc)
+        if _is_openrouter_credit_issue(message):
+            return "OpenRouter 크레딧 부족 또는 한도 초과"
+        return "LLM 요청 제한 초과"
+    if isinstance(exc, APIStatusError):
+        message = _extract_error_message(exc)
+        if getattr(exc, "status_code", None) == 402 or _is_openrouter_credit_issue(message):
+            return "OpenRouter 크레딧 부족 또는 한도 초과"
+        if getattr(exc, "status_code", None) == 429:
+            return "LLM 요청 제한 초과"
+        if message:
+            return f"LLM API 오류: {message}"
+        return f"LLM API 오류(status={getattr(exc, 'status_code', 'unknown')})"
+    if isinstance(exc, APITimeoutError):
+        return "LLM 요청 시간 초과"
+    if isinstance(exc, APIConnectionError):
+        return "LLM 연결 실패"
+    message = str(exc).strip()
+    return message or exc.__class__.__name__
+
+
+def _extract_error_message(exc: Exception) -> str:
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        error = body.get("error")
+        if isinstance(error, dict):
+            message = error.get("message")
+            if isinstance(message, str) and message.strip():
+                return message.strip()
+        message = body.get("message")
+        if isinstance(message, str) and message.strip():
+            return message.strip()
+    response = getattr(exc, "response", None)
+    if response is not None:
+        text = getattr(response, "text", None)
+        if isinstance(text, str) and text.strip():
+            return text.strip()
+    return str(exc).strip()
+
+
+def _is_openrouter_credit_issue(message: str) -> bool:
+    normalized = message.lower()
+    return any(
+        token in normalized
+        for token in [
+            "credit",
+            "credits",
+            "insufficient_quota",
+            "quota",
+            "payment required",
+            "402",
+            "balance",
+        ]
+    )

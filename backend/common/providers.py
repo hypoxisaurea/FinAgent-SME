@@ -168,9 +168,12 @@ class DatabaseFinancialDataProvider:
                     "debt_ratio": ratios.get("debt_ratio"),
                     "op_margin": ratios.get("op_margin"),
                     "icr": ratios.get("interest_coverage"),
-                    "revenue": fs.get("매출액"),
-                    "net_income": fs.get("당기순이익"),
                     "total_assets": fs.get("총자산"),
+                    "total_equity": fs.get("자본총계"),
+                    "total_assets_statement": fs.get("total_assets_statement", fs.get("총자산")),
+                    "revenue": fs.get("매출액"),
+                    "operating_income": fs.get("영업이익"),
+                    "net_income": fs.get("당기순이익"),
                     "ocf": fs.get("영업현금흐름"),
                 }
             )

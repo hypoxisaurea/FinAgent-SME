@@ -277,6 +277,12 @@ def _inject_styles() -> None:
 
 def _render_overview_card(overview: dict[str, Any]) -> None:
     key_reasons = _render_chip_list(overview.get("key_reasons"), "item-chip item-risk")
+    api_warning_block = ""
+    if overview.get("api_warnings"):
+        api_warning_block = (
+            '<div class="subsection-title" style="margin-top: 1rem;">외부 API 상태</div>'
+            + _render_chip_list(overview.get("api_warnings"), "item-chip item-risk")
+        )
     st.markdown(
         f"""
         <div class="report-card overview-card">
@@ -309,6 +315,7 @@ def _render_overview_card(overview: dict[str, Any]) -> None:
                     <div class="metric-value">{escape(str(overview["recommended_limit"]))}</div>
                 </div>
             </div>
+            {api_warning_block}
             <div class="subsection-title" style="margin-top: 1rem;">핵심 리스크 및 판단 근거</div>
             {key_reasons}
         </div>
@@ -396,11 +403,14 @@ def _render_growth_trend_section(section: dict[str, Any]) -> None:
                 [
                     {
                         "연도": year,
-                        "매출액": revenue,
-                        "당기순이익": net_income,
                         "총자산": total_assets,
+                        "자본총계": total_equity,
+                        "자산총계": total_assets_statement,
+                        "매출액": revenue,
+                        "영업이익": operating_income,
+                        "당기순이익": net_income,
                     }
-                    for year, revenue, net_income, total_assets in rows
+                    for year, total_assets, total_equity, total_assets_statement, revenue, operating_income, net_income in rows
                 ]
             )
         else:

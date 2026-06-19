@@ -75,8 +75,8 @@ class NewsCollectorInput(AgentInputModel):
     company_name: str | None = None
     corp_name: str | None = None
     stock_code: str | None = None
-    lookback_days: int = 30
-    max_articles: int = 20
+    lookback_days: int = 90
+    max_articles: int = 5
     company_limit: int | None = None
     summarize: bool = True
     model_name: str | None = None

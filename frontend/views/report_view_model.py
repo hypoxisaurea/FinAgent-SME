@@ -31,6 +31,8 @@ def build_report_view_model(
     recent_risk_events = _extract_recent_risk_events(context)
     financial_flags = _as_list(context.get("financial_flags"))
     decision_reasons = _as_list(context.get("decision_reasons"))
+    news_result = context.get("news_result", {}) if isinstance(context, dict) else {}
+    api_warnings = _extract_api_warnings(news_result)
 
     return {
         "overview": {
@@ -46,6 +48,7 @@ def build_report_view_model(
             "recommended_limit": _format_currency(recommended_limit),
             "overall_risk_level": _format_risk_level(context.get("overall_risk_level")),
             "key_reasons": decision_reasons[:3],
+            "api_warnings": api_warnings,
         },
         "sections": {
             "company": {
@@ -189,6 +192,18 @@ def _flatten_filter_details(value: Any) -> list[str]:
     return items
 
 
+def _extract_api_warnings(news_result: dict[str, Any]) -> list[str]:
+    if not isinstance(news_result, dict):
+        return []
+    warnings: list[str] = []
+    for reason in news_result.get("summary_error_reasons", []) or []:
+        text = str(reason).strip()
+        if not text:
+            continue
+        warnings.append(f"뉴스 요약 API 상태: {text}")
+    return warnings
+
+
 def _build_financial_interpretation(context: dict[str, Any]) -> str:
     ratios = context.get("financial_ratios", {})
     if not isinstance(ratios, dict):
@@ -307,7 +322,7 @@ def _build_recent_trend_summary(context: dict[str, Any]) -> str:
     return " ".join(pieces) or "최근 성장 및 추세를 해석할 수 있는 전년 대비 데이터가 충분하지 않습니다."
 
 
-def _build_trend_history_rows(context: dict[str, Any]) -> list[tuple[str, str, str, str]]:
+def _build_trend_history_rows(context: dict[str, Any]) -> list[tuple[str, str, str, str, str, str, str]]:
     trend = context.get("financial_trend", {})
     if not isinstance(trend, dict):
         trend = {}
@@ -315,19 +330,39 @@ def _build_trend_history_rows(context: dict[str, Any]) -> list[tuple[str, str, s
     if not isinstance(history, list):
         return []
 
-    rows: list[tuple[str, str, str, str]] = []
-    for item in history[-3:]:
+    normalized_rows: list[tuple[int, str, str, str, str, str, str]] = []
+    for item in history:
         if not isinstance(item, dict):
             continue
-        rows.append(
+        year_value = item.get("year")
+        try:
+            year_int = int(year_value)
+        except (TypeError, ValueError):
+            year_int = -1
+        normalized_rows.append(
             (
-                str(item.get("year") or "-"),
-                _format_currency(item.get("revenue")),
-                _format_currency(item.get("net_income")),
+                year_int,
                 _format_currency(item.get("total_assets")),
+                _format_currency(item.get("total_equity")),
+                _format_currency(item.get("total_assets_statement", item.get("total_assets"))),
+                _format_currency(item.get("revenue")),
+                _format_currency(item.get("operating_income")),
+                _format_currency(item.get("net_income")),
             )
         )
-    return rows
+    sorted_rows = sorted(normalized_rows, key=lambda item: item[0], reverse=True)
+    return [
+        (
+            str(year),
+            total_assets,
+            total_equity,
+            total_assets_statement,
+            revenue,
+            operating_income,
+            net_income,
+        )
+        for year, total_assets, total_equity, total_assets_statement, revenue, operating_income, net_income in sorted_rows[:3]
+    ]
 
 
 def _latest_number(value: Any) -> float | None:

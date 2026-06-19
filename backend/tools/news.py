@@ -12,6 +12,7 @@ from urllib.parse import quote_plus
 import requests
 from backend.common.api_client import (
     build_llm_client_kwargs,
+    describe_llm_error,
     get_llm_client_config,
 )
 from backend.common.env import load_backend_env
@@ -492,9 +493,9 @@ def get_llm_summary(
     *,
     corp_name: str | None = None,
     request_id: str | None = None,
-) -> tuple[str, float]:
+) -> tuple[str, float, str | None]:
     if not text or len(text.strip()) < 50:
-        return "본문이 너무 짧습니다.", 0.0
+        return "본문이 너무 짧습니다.", 0.0, None
 
     summary_client = client or get_openai_client()
     prompt = NEWS_SUMMARY_PROMPT_TEMPLATE.format(text=text)
@@ -529,14 +530,16 @@ def get_llm_summary(
             len(text),
             latency,
         )
-        return summary_result, latency
-    except Exception:  # noqa: BLE001
+        return summary_result, latency, None
+    except Exception as exc:  # noqa: BLE001
+        reason = describe_llm_error(exc)
         logger.exception(
-            "daum_news_summary_failed model=%s input_length=%s",
+            "daum_news_summary_failed model=%s input_length=%s reason=%s",
             model_name,
             len(text),
+            reason,
         )
-        return "요약 실패", 0.0
+        return f"요약 실패 ({reason})", 0.0, reason
 
 
 def build_article_payload(
@@ -548,13 +551,14 @@ def build_article_payload(
     summary_client: Any | None = None,
     model_name: str = DEFAULT_SUMMARY_MODEL,
     request_id: str | None = None,
-) -> dict[str, Any]:
+) -> tuple[dict[str, Any], str | None]:
     article_content = (news.get("content") or "").strip()
     stored_content = article_content
     content_type = "full_text"
+    summary_error: str | None = None
 
     if summarize:
-        summary_text, _ = get_llm_summary(
+        summary_text, _, summary_error = get_llm_summary(
             article_content,
             client=summary_client,
             model_name=model_name,
@@ -564,17 +568,20 @@ def build_article_payload(
         stored_content = summary_text
         content_type = "summary"
 
-    return {
-        "stock_code": stock_code.strip(),
-        "corp_name": corp_name.strip(),
-        "news_title": (news.get("title") or "").strip(),
-        "press_name": (news.get("press") or "").strip(),
-        "published_at": news.get("published_at")
-        or _parse_created_at(news.get("date", "")),
-        "url": (news.get("url") or "").strip(),
-        "content": stored_content,
-        "content_type": content_type,
-    }
+    return (
+        {
+            "stock_code": stock_code.strip(),
+            "corp_name": corp_name.strip(),
+            "news_title": (news.get("title") or "").strip(),
+            "press_name": (news.get("press") or "").strip(),
+            "published_at": news.get("published_at")
+            or _parse_created_at(news.get("date", "")),
+            "url": (news.get("url") or "").strip(),
+            "content": stored_content,
+            "content_type": content_type,
+        },
+        summary_error,
+    )
 
 
 def build_risk_event_news_item(article: dict[str, Any]) -> dict[str, Any]:
@@ -652,6 +659,8 @@ def execute_news_pipeline(
         "article_limit": max_articles,
         "inserted_count": 0,
         "updated_count": 0,
+        "summary_error_count": 0,
+        "summary_error_reasons": [],
         "target_company_count": 0,
         "collected_news_data": [],
         "status": "success",
@@ -704,8 +713,11 @@ def execute_news_pipeline(
                 leave_progress=False,
             )
 
-            articles = [
-                build_article_payload(
+            articles: list[dict[str, Any]] = []
+            for news in news_list:
+                if not (news.get("title") or "").strip() or not (news.get("url") or "").strip():
+                    continue
+                article, summary_error = build_article_payload(
                     stock_code=company.stock_code,
                     corp_name=company.corp_name,
                     news=news,
@@ -714,9 +726,11 @@ def execute_news_pipeline(
                     model_name=model_name,
                     request_id=request_id,
                 )
-                for news in news_list
-                if (news.get("title") or "").strip() and (news.get("url") or "").strip()
-            ]
+                articles.append(article)
+                if summary_error:
+                    stats["summary_error_count"] += 1
+                    if summary_error not in stats["summary_error_reasons"]:
+                        stats["summary_error_reasons"].append(summary_error)
 
             result = upsert_news_articles(session, articles)
             stats["collected_news_data"].extend(
@@ -741,5 +755,7 @@ def execute_news_pipeline(
             logger.info("%s", "=" * 80)
 
     engine.dispose()
+    if stats["summary_error_count"] > 0:
+        stats["status"] = "partial"
     logger.info("daum_news_pipeline_finished stats=%s", stats)
     return stats
