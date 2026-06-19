@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import hashlib
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -8,43 +8,46 @@ COLLECTION_NAME = "industry_knowledge"
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_PERSIST_DIR = BACKEND_DIR / "vectorstore" / "industry_knowledge"
 
+logger = logging.getLogger(__name__)
 
-class HashEmbeddingFunction:
-    """외부 API 없이 동작하는 결정론적 해시 기반 로컬 임베딩 함수."""
+_ST_MODEL_NAME = "jhgan/ko-sroberta-multitask"
+_st_model: Any = None
 
-    def __init__(self, dimensions: int = 384) -> None:
-        self._dimensions = dimensions
+
+def _load_sentence_transformer() -> Any:
+    """jhgan/ko-sroberta-multitask 모델을 최초 1회만 로딩한 뒤 모듈 수준에서 캐싱한다."""
+    global _st_model
+    if _st_model is None:
+        try:
+            from sentence_transformers import SentenceTransformer
+        except ImportError as exc:
+            raise RuntimeError(
+                "sentence-transformers is required: pip install sentence-transformers"
+            ) from exc
+        logger.info("rag_embedding_model_loading model=%s", _ST_MODEL_NAME)
+        _st_model = SentenceTransformer(_ST_MODEL_NAME)
+        logger.info("rag_embedding_model_loaded model=%s", _ST_MODEL_NAME)
+    return _st_model
+
+
+class KoSRobertaEmbeddingFunction:
+    """jhgan/ko-sroberta-multitask 기반 한국어 의미 임베딩 함수 (768차원)."""
+
+    _MODEL_NAME = _ST_MODEL_NAME
+    _DIMENSIONS = 768
 
     def name(self) -> str:
-        return "finagent_hash_embedding"
+        return "finagent_ko_sroberta_embedding"
 
-    def get_config(self) -> dict[str, int]:
-        return {"dimensions": self._dimensions}
+    def get_config(self) -> dict[str, Any]:
+        return {"model_name": self._MODEL_NAME, "dimensions": self._DIMENSIONS}
 
-    def validate_config(self, config: dict[str, Any]) -> None:
-        dimensions = config.get("dimensions")
-        if dimensions is not None and int(dimensions) <= 0:
-            raise ValueError("dimensions must be positive")
+    def validate_config(self, config: dict[str, Any]) -> None:  # noqa: ARG002
+        pass
 
     def __call__(self, input: list[str]) -> list[list[float]]:  # noqa: A002
-        return [self._embed(text) for text in input]
-
-    def _embed(self, text: str) -> list[float]:
-        vector = [0.0] * self._dimensions
-        tokens = text.lower().split()
-        if not tokens:
-            return vector
-
-        for token in tokens:
-            digest = hashlib.sha256(token.encode("utf-8")).digest()
-            index = int.from_bytes(digest[:4], "big") % self._dimensions
-            sign = 1.0 if digest[4] % 2 == 0 else -1.0
-            vector[index] += sign
-
-        norm = sum(value * value for value in vector) ** 0.5
-        if norm == 0:
-            return vector
-        return [value / norm for value in vector]
+        vectors = _load_sentence_transformer().encode(input, normalize_embeddings=True)
+        return [v.tolist() for v in vectors]
 
 
 def get_chroma_client(persist_dir: Path | str | None = None) -> Any:
@@ -71,6 +74,6 @@ def get_industry_collection(
     client = get_chroma_client(persist_dir)
     return client.get_or_create_collection(
         name=collection_name,
-        embedding_function=HashEmbeddingFunction(),
+        embedding_function=KoSRobertaEmbeddingFunction(),
         metadata={"description": "Industry credit rating methodology PDFs"},
     )
