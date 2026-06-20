@@ -34,6 +34,7 @@ RAGAS_TARGET_METRICS: dict[EvaluationTarget, tuple[str, ...]] = {
     "retriever": ("context_precision", "context_recall"),
     "agent": RAGAS_METRIC_NAMES,
 }
+RAGAS_EVALUATOR_MAX_TOKENS = 4096
 
 
 class IndustryRagasEvalCase(BaseModel):
@@ -323,6 +324,7 @@ async def run_industry_ragas_evaluation(
         resolved_model_name,
         provider="openai",
         client=client,
+        max_tokens=RAGAS_EVALUATOR_MAX_TOKENS,
     )
     available_metrics = {
         "context_precision": runtime.context_precision_cls(llm=llm),

@@ -417,6 +417,70 @@ def test_load_ragas_runtime_error_guides_installation(monkeypatch) -> None:
         raise AssertionError("RuntimeError was not raised")
 
 
+def test_run_industry_ragas_evaluation_allows_long_structured_outputs(
+    monkeypatch,
+) -> None:
+    captured_llm_kwargs: dict[str, Any] = {}
+
+    class FakeClient:
+        def __init__(self, **_: Any) -> None:
+            pass
+
+        async def close(self) -> None:
+            pass
+
+    class FakeMetric:
+        def __init__(self, *, llm: Any) -> None:
+            assert llm == "fake-llm"
+
+        async def ascore(self, **_: Any) -> Any:
+            return SimpleNamespace(value=0.5, reason=None)
+
+    def fake_llm_factory(model: str, **kwargs: Any) -> str:
+        assert model == "test-model"
+        captured_llm_kwargs.update(kwargs)
+        return "fake-llm"
+
+    monkeypatch.setattr(
+        evaluation,
+        "_load_ragas_runtime",
+        lambda: evaluation.RagasRuntime(
+            llm_factory=fake_llm_factory,
+            context_precision_cls=FakeMetric,
+            context_recall_cls=FakeMetric,
+            faithfulness_cls=FakeMetric,
+            factual_correctness_cls=FakeMetric,
+            response_groundedness_cls=FakeMetric,
+        ),
+    )
+    monkeypatch.setattr(evaluation, "get_async_openai_class", lambda: FakeClient)
+    monkeypatch.setattr(evaluation, "build_llm_client_kwargs", lambda **_: {})
+
+    report = asyncio.run(
+        evaluation.run_industry_ragas_evaluation(
+            [
+                evaluation.IndustryRagasEvalRow(
+                    case_id="case-1",
+                    user_input="건설업 평가요소를 설명해줘",
+                    reference="수주잔고와 PF 리스크를 본다.",
+                    response="수주잔고와 PF 리스크가 핵심이다.",
+                    retrieved_contexts=["수주잔고와 PF 리스크를 점검한다."],
+                )
+            ],
+            model_name="test-model",
+            evaluation_target="agent",
+        )
+    )
+
+    assert report["status"] == "complete"
+    assert captured_llm_kwargs["provider"] == "openai"
+    assert isinstance(captured_llm_kwargs["client"], FakeClient)
+    assert (
+        captured_llm_kwargs["max_tokens"]
+        == evaluation.RAGAS_EVALUATOR_MAX_TOKENS
+    )
+
+
 def test_ensure_ragas_langchain_compatibility_registers_shim(monkeypatch) -> None:
     sys.modules.pop("langchain_community.chat_models.vertexai", None)
 
