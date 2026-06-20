@@ -285,6 +285,55 @@ def test_default_credit_workflow_includes_validation_agent() -> None:
     ]
 
 
+def test_orchestrator_returns_warning_when_validation_fails(caplog: Any) -> None:
+    resolver = _FakeAgent(
+        "company_resolver",
+        {
+            "company_found": True,
+            "corp_code": "00123456",
+            "corp_name": "테스트기업",
+        },
+    )
+    report = _FakeAgent("report", {"report": {"summary": "검증 전 보고서"}})
+    validation = _FakeAgent(
+        "validation",
+        {
+            "status": "partial",
+            "error_code": "VALIDATION_WARNING",
+            "validation_result": {
+                "validation_passed": False,
+                "pass_rate": 0.8,
+                "passed_checks": 4,
+                "total_checks": 5,
+                "failed_checks": ["reject_limit_rule"],
+                "checks": [],
+            },
+        },
+    )
+    orchestrator = WorkflowOrchestrator(
+        resolver_agent=resolver,
+        sequential_agents=[report, validation],
+    )
+
+    with caplog.at_level(logging.WARNING):
+        result = asyncio.run(orchestrator.run({"company_name": "테스트기업"}))
+
+    assert result["status"] == "partial"
+    assert result["code"] == "VALIDATION_WARNING"
+    assert result["message"] == "최종 결과 검증에서 경고가 발생했습니다."
+    assert result["context"]["report"] == {"summary": "검증 전 보고서"}
+    assert result["context"]["validation_result"]["validation_passed"] is False
+    validation_step = next(
+        step for step in result["steps"] if step["agent_name"] == "validation"
+    )
+    assert validation_step["ok"] is True
+    assert validation_step["status"] == "partial"
+    assert validation_step["error_code"] == "VALIDATION_WARNING"
+    assert any(
+        "workflow_validation_warning" in record.message for record in caplog.records
+    )
+
+
 def test_orchestrator_marks_failed_contract_output_as_step_failure() -> None:
     resolver = _FakeAgent(
         "company_resolver",

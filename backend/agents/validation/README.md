@@ -51,6 +51,9 @@
 
 - 모든 검증이 통과하면 `status=success`
 - 하나라도 실패하면 `status=partial`, `error_code=VALIDATION_WARNING`
+- 검증 실패가 최종 오케스트레이터 결과에 반영되면 workflow는
+  `status=partial`, `code=VALIDATION_WARNING`을 반환한다.
+- 보고서와 `validation_result`는 원인 확인과 감사 추적을 위해 응답에 유지한다.
 
 ## 관측성
 
