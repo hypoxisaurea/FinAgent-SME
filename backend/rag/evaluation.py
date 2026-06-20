@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from statistics import fmean
 from types import ModuleType
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, TypeVar
 
 from backend.agents.industry_analyst.agent import IndustryAnalystAgent
 from backend.common.api_client import build_llm_client_kwargs, get_model_name
@@ -67,6 +67,13 @@ class IndustryAgentRagasEvalCase(BaseModel):
     financial_ratios: dict[str, Any] | None = None
     target_year: int = 2024
     tags: list[str] = Field(default_factory=list)
+
+
+_EvalCaseT = TypeVar(
+    "_EvalCaseT",
+    IndustryRagasEvalCase,
+    IndustryAgentRagasEvalCase,
+)
 
 
 class IndustryRagasEvalRow(BaseModel):
@@ -422,7 +429,7 @@ def _ensure_ragas_langchain_compatibility() -> None:
 
     vertex_ai_cls = _resolve_vertex_ai_chat_model()
     shim_module = ModuleType(module_name)
-    shim_module.ChatVertexAI = vertex_ai_cls
+    setattr(shim_module, "ChatVertexAI", vertex_ai_cls)
     sys.modules[module_name] = shim_module
     logger.info(
         "ragas_langchain_vertexai_shim_enabled shim_module=%s shim_class=%s",
@@ -433,13 +440,19 @@ def _ensure_ragas_langchain_compatibility() -> None:
 
 def _resolve_vertex_ai_chat_model() -> type[Any]:
     try:
-        from langchain_google_vertexai import ChatVertexAI
+        vertex_ai_module = importlib.import_module("langchain_google_vertexai")
     except ImportError:
         class ChatVertexAI:  # noqa: N801
             """ragas import 호환용 최소 stub."""
 
         return ChatVertexAI
-    return ChatVertexAI
+
+    chat_vertex_ai = getattr(vertex_ai_module, "ChatVertexAI", None)
+    if not isinstance(chat_vertex_ai, type):
+        raise RuntimeError(
+            "langchain_google_vertexai.ChatVertexAI 클래스를 찾을 수 없습니다."
+        )
+    return chat_vertex_ai
 
 
 def build_industry_agent_response_text(business_output: dict[str, Any]) -> str:
@@ -919,8 +932,8 @@ def _ensure_dict(value: Any) -> dict[str, Any]:
 
 def _load_jsonl_cases(
     dataset_path: str | Path,
-    model_class: type[IndustryRagasEvalCase] | type[IndustryAgentRagasEvalCase],
-) -> list[IndustryRagasEvalCase] | list[IndustryAgentRagasEvalCase]:
+    model_class: type[_EvalCaseT],
+) -> list[_EvalCaseT]:
     path = _resolve_dataset_path(dataset_path)
     if not path.exists():
         raise FileNotFoundError(
@@ -930,7 +943,7 @@ def _load_jsonl_cases(
             "`backend/rag/eval_datasets/industry_agent.sample.jsonl` 를 참고해 주세요."
         )
     lines = path.read_text(encoding="utf-8").splitlines()
-    cases: list[IndustryRagasEvalCase] | list[IndustryAgentRagasEvalCase] = []
+    cases: list[_EvalCaseT] = []
     for line_number, line in enumerate(lines, start=1):
         stripped = line.strip()
         if not stripped:
