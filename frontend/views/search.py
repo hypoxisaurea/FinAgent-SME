@@ -130,28 +130,6 @@ def _render_browser_console_bridge() -> None:
     st.session_state[_BROWSER_CONSOLE_FLUSHED_COUNT_KEY] = len(all_events)
 
 
-def _render_debug_trace_panel() -> None:
-    events = st.session_state.get(_BROWSER_CONSOLE_QUEUE_KEY) or []
-    pending_status = st.session_state.get("pending_job_status")
-    poll_count = st.session_state.get(_JOB_POLL_COUNT_KEY, 0)
-    queued_since = st.session_state.get(_JOB_QUEUED_SINCE_KEY)
-
-    with st.expander("Debug Trace", expanded=True):
-        st.caption("submit -> status poll -> result 흐름과 raw payload를 함께 표시합니다.")
-        if poll_count:
-            st.write(
-                {
-                    "poll_count": poll_count,
-                    "queued_since": queued_since,
-                    "pending_job_id": st.session_state.get("pending_job_id"),
-                }
-            )
-        if pending_status:
-            st.json(pending_status)
-        if events:
-            st.json(events[-10:])
-
-
 def _console_log_http_error(
     *,
     status_code: int,
@@ -976,7 +954,6 @@ def _render_job_progress() -> None:
         step_summary=step_summary,
     )
     _render_browser_console_bridge()
-    _render_debug_trace_panel()
 
     if status == "succeeded":
         result = get_workflow_job_result(job_id)

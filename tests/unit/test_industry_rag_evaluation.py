@@ -12,15 +12,15 @@ from typing import Any
 from backend.rag import evaluation
 
 
-def test_repo_sample_datasets_use_index_metadata_values() -> None:
+def test_repo_datasets_use_index_metadata_values() -> None:
     retriever_cases = evaluation.load_industry_ragas_eval_cases(
-        "backend/rag/eval_datasets/industry_methodology.sample.jsonl"
+        "backend/rag/eval_datasets/industry_methodology.jsonl"
     )
     agent_cases = evaluation.load_industry_agent_ragas_eval_cases(
-        "backend/rag/eval_datasets/industry_agent.sample.jsonl"
+        "backend/rag/eval_datasets/industry_agent.jsonl"
     )
 
-    assert len(retriever_cases) == 8
+    assert len(retriever_cases) == 9
     assert len(agent_cases) == 8
     assert {case.sub_sector for case in retriever_cases} == {
         "건설",
@@ -31,9 +31,17 @@ def test_repo_sample_datasets_use_index_metadata_values() -> None:
         "철강",
         "의류",
         "항공운송",
+        "전선",
     }
     assert {case.sub_sector for case in agent_cases} == {
-        case.sub_sector for case in retriever_cases
+        "건설",
+        "반도체",
+        "조선",
+        "정유",
+        "자동차",
+        "철강",
+        "의류",
+        "항공운송",
     }
 
 
@@ -145,14 +153,14 @@ def test_load_industry_agent_ragas_eval_cases_reads_jsonl(tmp_path: Path) -> Non
     assert cases[0].financial_ratios == {"debt_ratio": 1.2}
 
 
-def test_load_jsonl_cases_missing_file_guides_sample_paths(tmp_path: Path) -> None:
+def test_load_jsonl_cases_missing_file_guides_dataset_paths(tmp_path: Path) -> None:
     missing_path = tmp_path / "missing.jsonl"
 
     try:
         evaluation.load_industry_agent_ragas_eval_cases(missing_path)
     except FileNotFoundError as exc:
-        assert "industry_agent.sample.jsonl" in str(exc)
-        assert "industry_methodology.sample.jsonl" in str(exc)
+        assert "industry_agent.jsonl" in str(exc)
+        assert "industry_methodology.jsonl" in str(exc)
     else:
         raise AssertionError("FileNotFoundError was not raised")
 
@@ -415,6 +423,70 @@ def test_load_ragas_runtime_error_guides_installation(monkeypatch) -> None:
         assert "RAGAS import에 실패했습니다." in str(exc)
     else:
         raise AssertionError("RuntimeError was not raised")
+
+
+def test_run_industry_ragas_evaluation_allows_long_structured_outputs(
+    monkeypatch,
+) -> None:
+    captured_llm_kwargs: dict[str, Any] = {}
+
+    class FakeClient:
+        def __init__(self, **_: Any) -> None:
+            pass
+
+        async def close(self) -> None:
+            pass
+
+    class FakeMetric:
+        def __init__(self, *, llm: Any) -> None:
+            assert llm == "fake-llm"
+
+        async def ascore(self, **_: Any) -> Any:
+            return SimpleNamespace(value=0.5, reason=None)
+
+    def fake_llm_factory(model: str, **kwargs: Any) -> str:
+        assert model == "test-model"
+        captured_llm_kwargs.update(kwargs)
+        return "fake-llm"
+
+    monkeypatch.setattr(
+        evaluation,
+        "_load_ragas_runtime",
+        lambda: evaluation.RagasRuntime(
+            llm_factory=fake_llm_factory,
+            context_precision_cls=FakeMetric,
+            context_recall_cls=FakeMetric,
+            faithfulness_cls=FakeMetric,
+            factual_correctness_cls=FakeMetric,
+            response_groundedness_cls=FakeMetric,
+        ),
+    )
+    monkeypatch.setattr(evaluation, "get_async_openai_class", lambda: FakeClient)
+    monkeypatch.setattr(evaluation, "build_llm_client_kwargs", lambda **_: {})
+
+    report = asyncio.run(
+        evaluation.run_industry_ragas_evaluation(
+            [
+                evaluation.IndustryRagasEvalRow(
+                    case_id="case-1",
+                    user_input="건설업 평가요소를 설명해줘",
+                    reference="수주잔고와 PF 리스크를 본다.",
+                    response="수주잔고와 PF 리스크가 핵심이다.",
+                    retrieved_contexts=["수주잔고와 PF 리스크를 점검한다."],
+                )
+            ],
+            model_name="test-model",
+            evaluation_target="agent",
+        )
+    )
+
+    assert report["status"] == "complete"
+    assert captured_llm_kwargs["provider"] == "openai"
+    assert isinstance(captured_llm_kwargs["client"], FakeClient)
+    assert (
+        captured_llm_kwargs["max_tokens"]
+        == evaluation.RAGAS_EVALUATOR_MAX_TOKENS
+    )
 
 
 def test_ensure_ragas_langchain_compatibility_registers_shim(monkeypatch) -> None:

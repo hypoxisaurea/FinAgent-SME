@@ -34,6 +34,7 @@ RAGAS_TARGET_METRICS: dict[EvaluationTarget, tuple[str, ...]] = {
     "retriever": ("context_precision", "context_recall"),
     "agent": RAGAS_METRIC_NAMES,
 }
+RAGAS_EVALUATOR_MAX_TOKENS = 4096
 
 
 class IndustryRagasEvalCase(BaseModel):
@@ -323,6 +324,7 @@ async def run_industry_ragas_evaluation(
         resolved_model_name,
         provider="openai",
         client=client,
+        max_tokens=RAGAS_EVALUATOR_MAX_TOKENS,
     )
     available_metrics = {
         "context_precision": runtime.context_precision_cls(llm=llm),
@@ -939,8 +941,8 @@ def _load_jsonl_cases(
         raise FileNotFoundError(
             f"평가셋 파일을 찾을 수 없습니다: {path}. "
             "실행 가능한 예시는 "
-            "`backend/rag/eval_datasets/industry_methodology.sample.jsonl` 또는 "
-            "`backend/rag/eval_datasets/industry_agent.sample.jsonl` 를 참고해 주세요."
+            "`backend/rag/eval_datasets/industry_methodology.jsonl` 또는 "
+            "`backend/rag/eval_datasets/industry_agent.jsonl` 를 참고해 주세요."
         )
     lines = path.read_text(encoding="utf-8").splitlines()
     cases: list[_EvalCaseT] = []

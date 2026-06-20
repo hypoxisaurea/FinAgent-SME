@@ -153,6 +153,7 @@ Langfuse 활성화 시 아래 score를 기록한다.
 - `sme_list`
 - `company_profiles`
 - `financial_features`
+- `financial_statement_details`
 - `financial_error_logs`
 
 ## 5. 비기능 요구사항

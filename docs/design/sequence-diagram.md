@@ -52,7 +52,7 @@ sequenceDiagram
             NEWS-->>ORCH: news_data, news_result
         and
             ORCH->>FIN: run(payload)
-            FIN->>DB: financial_features
+            FIN->>DB: financial_statement_details (우선) / financial_features (보조)
             FIN->>EXT: DART/OpenDART
             FIN-->>ORCH: financial_ratios, grade_cap
         end
@@ -130,6 +130,7 @@ sequenceDiagram
     SVC->>DB: sme_list 저장
     SVC->>DB: company_profiles 저장
     SVC->>DB: financial_features 저장
+    SVC->>DB: financial_statement_details 저장
     SVC->>DB: financial_error_logs 저장
     SVC-->>CLI: 통계 반환
 ```
