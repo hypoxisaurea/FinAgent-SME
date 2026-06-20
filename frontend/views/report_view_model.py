@@ -106,8 +106,11 @@ def build_report_view_model(
                 "summary": explanation.get("summary") or report_payload.get("summary") or "-",
                 "connected_reason": _build_connected_reason(context, explanation),
                 "reasons": decision_reasons,
-                "positive_factors": _as_list(explanation.get("key_positive_factors")),
-                "risk_factors": _as_list(explanation.get("key_risk_factors")),
+                "positive_factors": _build_decision_event_factors(
+                    context,
+                    explanation.get("key_positive_factors"),
+                ),
+                "risk_factors": _build_decision_risk_factors(context, explanation),
             },
             "monitoring": {
                 "title": "7. 권고안 및 모니터링 포인트",
@@ -476,6 +479,49 @@ def _build_monitoring_points(
     if not points:
         points.append("추가 정성 자료와 최근 현금흐름 자료를 받아 재확인하는 것을 권고합니다.")
     return points
+
+
+def _build_decision_risk_factors(
+    context: dict[str, Any],
+    explanation: dict[str, Any],
+) -> list[str]:
+    return _build_decision_event_factors(context, explanation.get("key_risk_factors"))
+
+
+def _build_decision_event_factors(
+    context: dict[str, Any],
+    factors: Any,
+) -> list[str]:
+    base_factors = _as_list(factors)
+    if not base_factors:
+        return []
+
+    recent_event_items = _extract_timeline_event_items(context, limit=20)
+    severity_examples: dict[str, list[str]] = {"critical": [], "high": [], "medium": [], "low": []}
+    for item in recent_event_items:
+        severity_raw = str(item.get("severity_raw") or "").lower()
+        title = str(item.get("title") or "-").strip()
+        if severity_raw not in severity_examples or not title or title == "-":
+            continue
+        if title not in severity_examples[severity_raw]:
+            severity_examples[severity_raw].append(title)
+
+    enriched: list[str] = []
+    for factor in base_factors:
+        updated = factor
+        upper_text = factor.upper()
+        if "MEDIUM 리스크 이벤트" in factor and severity_examples["medium"]:
+            updated = f"{factor}\n" + "\n".join(severity_examples["medium"][:3])
+        elif "HIGH 리스크 이벤트" in factor and severity_examples["high"]:
+            updated = f"{factor}\n" + "\n".join(severity_examples["high"][:3])
+        elif "CRITICAL 리스크 이벤트" in factor and severity_examples["critical"]:
+            updated = f"{factor}\n" + "\n".join(severity_examples["critical"][:3])
+        elif "LOW 리스크 이벤트" in factor and severity_examples["low"]:
+            updated = f"{factor}\n" + "\n".join(severity_examples["low"][:3])
+        elif "리스크 이벤트" in factor and "MEDIUM" in upper_text and severity_examples["medium"]:
+            updated = f"{factor}\n" + "\n".join(severity_examples["medium"][:3])
+        enriched.append(updated)
+    return enriched
 
 
 def _build_recent_trend_summary(context: dict[str, Any]) -> str:

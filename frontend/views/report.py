@@ -82,7 +82,8 @@ def _inject_styles() -> None:
         }
         .st-key-overview-card-box,
         .st-key-financial-health-card,
-        .st-key-non-financial-events-card {
+        .st-key-non-financial-events-card,
+        .st-key-decision-rationale-card {
             background: #ffffff;
             border: 1px solid #dbe4ef;
             border-radius: 22px;
@@ -105,6 +106,7 @@ def _inject_styles() -> None:
         .st-key-overview-card-box > div,
         .st-key-financial-health-card > div,
         .st-key-non-financial-events-card > div,
+        .st-key-decision-rationale-card > div,
         .st-key-growth-trend-card > div {
             width: 100%;
         }
@@ -438,7 +440,7 @@ def _render_overview_card(overview: dict[str, Any]) -> None:
             '<div class="subsection-title" style="margin-top: 1rem;">핵심 리스크 및 판단 근거</div>',
             unsafe_allow_html=True,
         )
-        _render_chip_blocks(overview.get("key_reasons"), "item-chip item-risk")
+        _render_key_reason_blocks(overview.get("key_reasons"), "item-chip item-risk")
 
 
 def _render_table_section(section: dict[str, Any]) -> None:
@@ -761,30 +763,31 @@ def _render_default_risk_section(section: dict[str, Any]) -> None:
 
 
 def _render_decision_rationale_section(section: dict[str, Any]) -> None:
-    st.markdown(
-        f"""
-        <div class="report-card">
-            <div class="card-title">{escape(str(section["title"]))}</div>
-            <div class="subsection-title">연결 요약</div>
-            <div class="item-chip">{escape(str(section.get("connected_reason") or "-"))}</div>
-            <div class="split-grid" style="margin-top: 1rem;">
-                <div>
-                    <div class="subsection-title">최종 요약</div>
-                    <div class="item-chip">{escape(str(section.get("summary") or "-"))}</div>
-                    <div class="subsection-title" style="margin-top: 1rem;">판단 사유</div>
-                    {_render_chip_list(section.get("reasons"), "item-chip")}
-                </div>
-                <div>
-                    <div class="subsection-title">긍정 요인</div>
-                    {_render_chip_list(section.get("positive_factors"), "item-chip item-good")}
-                    <div class="subsection-title" style="margin-top: 1rem;">리스크 요인</div>
-                    {_render_chip_list(section.get("risk_factors"), "item-chip item-risk")}
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    with st.container(border=False, key="decision-rationale-card"):
+        st.markdown(
+            f'<div class="card-title">{escape(str(section["title"]))}</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="subsection-title">연결 요약</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="item-chip">{escape(str(section.get("connected_reason") or "-"))}</div>',
+            unsafe_allow_html=True,
+        )
+        factor_col1, factor_col2 = st.columns(2)
+        with factor_col1:
+            st.markdown('<div class="subsection-title" style="margin-top: 1rem;">긍정 요인</div>', unsafe_allow_html=True)
+            _render_event_factor_blocks(section.get("positive_factors"), "item-chip item-good")
+        with factor_col2:
+            st.markdown('<div class="subsection-title" style="margin-top: 1rem;">리스크 요인</div>', unsafe_allow_html=True)
+            _render_event_factor_blocks(section.get("risk_factors"), "item-chip item-risk")
+
+        st.markdown('<div class="subsection-title" style="margin-top: 1rem;">최종 요약</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div class="item-chip">{escape(str(section.get("summary") or "-"))}</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="subsection-title" style="margin-top: 1rem;">판단 사유</div>', unsafe_allow_html=True)
+        _render_key_reason_blocks(section.get("reasons"), "item-chip")
 
 
 def _render_monitoring_section(section: dict[str, Any]) -> None:
@@ -1191,9 +1194,59 @@ def _render_chip_blocks(items: list[Any] | None, css_class: str) -> None:
         return
     for item in items:
         st.markdown(
-            f'<div class="{css_class}">{escape(str(item))}</div>',
+            f'<div class="{css_class}">{_format_multiline_text(item)}</div>',
             unsafe_allow_html=True,
         )
+
+
+def _render_key_reason_blocks(items: list[Any] | None, css_class: str) -> None:
+    if not items:
+        st.markdown(
+            f'<div class="{css_class}">표시할 정보가 없습니다.</div>',
+            unsafe_allow_html=True,
+        )
+        return
+    for item in items:
+        st.markdown(
+            f'<div class="{css_class}">{_format_key_reason_text(item)}</div>',
+            unsafe_allow_html=True,
+        )
+
+
+def _render_event_factor_blocks(items: list[Any] | None, css_class: str) -> None:
+    if not items:
+        st.markdown(
+            f'<div class="{css_class}">표시할 정보가 없습니다.</div>',
+            unsafe_allow_html=True,
+        )
+        return
+    for item in items:
+        st.markdown(
+            f'<div class="{css_class}">{_format_risk_factor_text(item)}</div>',
+            unsafe_allow_html=True,
+        )
+
+
+def _format_key_reason_text(item: Any) -> str:
+    text = _format_multiline_text(item)
+    text = text.replace(" 원인:", ".<br>원인:")
+    text = text.replace(" (근거:", "<br>근거:")
+    return text
+
+
+def _format_multiline_text(item: Any) -> str:
+    return escape(str(item)).replace("\n", "<br>")
+
+
+def _format_risk_factor_text(item: Any) -> str:
+    raw_lines = str(item).splitlines() or [str(item)]
+    first_line = escape(raw_lines[0].strip())
+    rest_lines = [escape(line.strip()) for line in raw_lines[1:] if line.strip()]
+    if "리스크 이벤트" in raw_lines[0]:
+        first_line = f"<strong>{first_line}</strong>"
+    if rest_lines:
+        return first_line + "<br>" + "<br>".join(rest_lines)
+    return first_line
 
 
 def _format_decision(decision: str) -> str:
