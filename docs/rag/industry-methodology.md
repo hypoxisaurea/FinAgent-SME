@@ -30,7 +30,7 @@ flowchart LR
 | `backend/rag/retriever.py` | metadata filter, 의미 검색, 요약과 출처 조립 |
 | `backend/rag/evaluation.py` | JSONL 검증, 평가 row 생성, RAGAS 실행과 집계 |
 | `backend/scripts/evaluate_industry_rag.py` | retriever/agent 평가 CLI |
-| `backend/rag/eval_datasets/` | 샘플 평가셋 |
+| `backend/rag/eval_datasets/` | 평가 데이터셋 |
 
 벡터 데이터는 기본적으로 `backend/vectorstore/industry_knowledge/`에 영구 저장됩니다. 컬렉션 이름은 `industry_knowledge`, 임베딩 모델은 `jhgan/ko-sroberta-multitask`입니다.
 
@@ -83,7 +83,7 @@ JSONL은 한 줄에 하나의 JSON 객체를 둡니다. 알 수 없는 필드는
 
 선택 필드: `industry_name`, `ksic_code`, `sub_sector`, `top_k`, `tags`
 
-샘플: `backend/rag/eval_datasets/industry_methodology.sample.jsonl`
+데이터셋: `backend/rag/eval_datasets/industry_methodology.jsonl`
 
 ### Agent target
 
@@ -91,7 +91,7 @@ JSONL은 한 줄에 하나의 JSON 객체를 둡니다. 알 수 없는 필드는
 
 선택 필드: `ksic_code`, `induty_code`, `sub_sector`, `financial_ratios`, `target_year`, `tags`
 
-샘플: `backend/rag/eval_datasets/industry_agent.sample.jsonl`
+데이터셋: `backend/rag/eval_datasets/industry_agent.jsonl`
 
 실제 기업의 민감정보를 평가셋이나 리포트에 넣지 않습니다. 테스트용 식별자와 합성 재무비율을 사용합니다.
 
@@ -101,7 +101,7 @@ Retriever 품질:
 
 ```bash
 .venv/bin/python -m backend.scripts.evaluate_industry_rag \
-  backend/rag/eval_datasets/industry_methodology.sample.jsonl \
+  backend/rag/eval_datasets/industry_methodology.jsonl \
   --target retriever \
   --output-path artifacts/industry_rag_eval/retriever-report.json
 ```
@@ -110,7 +110,7 @@ IndustryAnalystAgent end-to-end 품질:
 
 ```bash
 .venv/bin/python -m backend.scripts.evaluate_industry_rag \
-  backend/rag/eval_datasets/industry_agent.sample.jsonl \
+  backend/rag/eval_datasets/industry_agent.jsonl \
   --target agent \
   --output-path artifacts/industry_rag_eval/agent-report.json
 ```

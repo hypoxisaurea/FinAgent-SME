@@ -369,7 +369,7 @@ Python 실행/검증 명령은 모두 `.venv/bin/...` 기준으로 통일합니�
 
 ```bash
 .venv/bin/python -m backend.scripts.evaluate_industry_rag \
-  backend/rag/eval_datasets/industry_methodology.sample.jsonl \
+  backend/rag/eval_datasets/industry_methodology.jsonl \
   --target retriever
 ```
 

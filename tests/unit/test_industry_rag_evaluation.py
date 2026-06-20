@@ -12,15 +12,15 @@ from typing import Any
 from backend.rag import evaluation
 
 
-def test_repo_sample_datasets_use_index_metadata_values() -> None:
+def test_repo_datasets_use_index_metadata_values() -> None:
     retriever_cases = evaluation.load_industry_ragas_eval_cases(
-        "backend/rag/eval_datasets/industry_methodology.sample.jsonl"
+        "backend/rag/eval_datasets/industry_methodology.jsonl"
     )
     agent_cases = evaluation.load_industry_agent_ragas_eval_cases(
-        "backend/rag/eval_datasets/industry_agent.sample.jsonl"
+        "backend/rag/eval_datasets/industry_agent.jsonl"
     )
 
-    assert len(retriever_cases) == 8
+    assert len(retriever_cases) == 9
     assert len(agent_cases) == 8
     assert {case.sub_sector for case in retriever_cases} == {
         "건설",
@@ -31,9 +31,17 @@ def test_repo_sample_datasets_use_index_metadata_values() -> None:
         "철강",
         "의류",
         "항공운송",
+        "전선",
     }
     assert {case.sub_sector for case in agent_cases} == {
-        case.sub_sector for case in retriever_cases
+        "건설",
+        "반도체",
+        "조선",
+        "정유",
+        "자동차",
+        "철강",
+        "의류",
+        "항공운송",
     }
 
 
@@ -145,14 +153,14 @@ def test_load_industry_agent_ragas_eval_cases_reads_jsonl(tmp_path: Path) -> Non
     assert cases[0].financial_ratios == {"debt_ratio": 1.2}
 
 
-def test_load_jsonl_cases_missing_file_guides_sample_paths(tmp_path: Path) -> None:
+def test_load_jsonl_cases_missing_file_guides_dataset_paths(tmp_path: Path) -> None:
     missing_path = tmp_path / "missing.jsonl"
 
     try:
         evaluation.load_industry_agent_ragas_eval_cases(missing_path)
     except FileNotFoundError as exc:
-        assert "industry_agent.sample.jsonl" in str(exc)
-        assert "industry_methodology.sample.jsonl" in str(exc)
+        assert "industry_agent.jsonl" in str(exc)
+        assert "industry_methodology.jsonl" in str(exc)
     else:
         raise AssertionError("FileNotFoundError was not raised")
 

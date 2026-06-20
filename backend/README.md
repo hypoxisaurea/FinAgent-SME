@@ -262,7 +262,7 @@ Retriever 평가:
 
 ```bash
 .venv/bin/python -m backend.scripts.evaluate_industry_rag \
-  backend/rag/eval_datasets/industry_methodology.sample.jsonl \
+  backend/rag/eval_datasets/industry_methodology.jsonl \
   --target retriever \
   --output-path artifacts/industry_rag_eval/retriever-report.json
 ```

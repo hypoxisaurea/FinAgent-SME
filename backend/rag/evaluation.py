@@ -941,8 +941,8 @@ def _load_jsonl_cases(
         raise FileNotFoundError(
             f"평가셋 파일을 찾을 수 없습니다: {path}. "
             "실행 가능한 예시는 "
-            "`backend/rag/eval_datasets/industry_methodology.sample.jsonl` 또는 "
-            "`backend/rag/eval_datasets/industry_agent.sample.jsonl` 를 참고해 주세요."
+            "`backend/rag/eval_datasets/industry_methodology.jsonl` 또는 "
+            "`backend/rag/eval_datasets/industry_agent.jsonl` 를 참고해 주세요."
         )
     lines = path.read_text(encoding="utf-8").splitlines()
     cases: list[_EvalCaseT] = []
