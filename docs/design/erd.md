@@ -11,6 +11,7 @@
 erDiagram
     SME_LIST ||--o| COMPANY_PROFILES : enriches
     SME_LIST ||--o{ FINANCIAL_FEATURES : has
+    SME_LIST ||--o{ FINANCIAL_STATEMENT_DETAILS : has
     SME_LIST ||--o{ DAUM_NEWS_ARTICLES : collects
     SME_LIST ||--o{ FINANCIAL_ERROR_LOGS : may_log
 
@@ -25,9 +26,11 @@ erDiagram
 
     COMPANY_PROFILES {
         string corp_code PK
-        string corp_name
+        string corp_cls
+        string stock_name
         string stock_code
         string ceo_name
+        string address
         string homepage_url
         string industry_code
         datetime created_at
@@ -38,12 +41,34 @@ erDiagram
         string corp_name
         string stock_code
         int year
+        float avg_revenue_last_3y
+        float total_assets
         float revenue
         float operating_income
         float net_income
-        float total_assets
+        float total_assets_statement
         float total_liabilities
         float total_equity
+        datetime created_at
+    }
+
+    FINANCIAL_STATEMENT_DETAILS {
+        string corp_code
+        string corp_name
+        string stock_code
+        int year
+        float current_assets
+        float current_liabilities
+        float total_assets_statement
+        float total_liabilities
+        float total_equity
+        float revenue
+        float operating_income
+        float net_income
+        float operating_cashflow
+        float capital_expenditure
+        string audit_opinion
+        boolean is_external_audit
         datetime created_at
     }
 
@@ -61,10 +86,11 @@ erDiagram
     }
 
     FINANCIAL_ERROR_LOGS {
+        datetime error_datetime
         string corp_code
+        string corp_name
         string error_type
         string message
-        datetime created_at
     }
 
     WORKFLOW_JOBS {
@@ -110,14 +136,18 @@ erDiagram
 대표 컬럼:
 
 - `corp_code`
-- `corp_name`
+- `corp_cls`
+- `stock_name`
 - `stock_code`
 - `ceo_name`
 - `address`
 - `homepage_url`
 - `ir_url`
 - `phone_number`
+- `fax_number`
 - `industry_code`
+- `established_date`
+- `settlement_month`
 - `created_at`
 
 ### `financial_features`
@@ -128,6 +158,41 @@ erDiagram
 대표 키 성격:
 
 - `corp_code + stock_code + year`
+
+대표 컬럼:
+
+- `avg_revenue_last_3y`
+- `total_assets`
+- `revenue`
+- `operating_income`
+- `net_income`
+- `total_assets_statement`
+- `total_liabilities`
+- `total_equity`
+- `created_at`
+
+`total_assets`는 SME 대상 판별에 사용한 기업 개요 자산총액이고,
+`total_assets_statement`는 재무제표 계정에서 추출한 자산총계다.
+
+### `financial_statement_details`
+
+- 심사 지표 계산용 연도별 상세 재무 스냅샷
+- `FinancialDataProvider`가 이 테이블을 우선 사용하고 `financial_features`를 보조 데이터로 사용
+
+키 성격:
+
+- `corp_code + stock_code + year`
+
+대표 컬럼:
+
+- `avg_revenue_last_3y`
+- `current_assets`, `current_liabilities`
+- `total_assets_statement`, `total_liabilities`, `total_equity`
+- `retained_earnings`, `inventory`, `accounts_receivable`, `accounts_payable`
+- `short_term_borrowings`, `current_portion_long_term_borrowings`, `long_term_borrowings`, `bonds`
+- `tangible_assets`, `revenue`, `cost_of_goods_sold`, `operating_income`, `net_income`
+- `interest_expense`, `operating_cashflow`, `capital_expenditure`
+- `audit_opinion`, `is_external_audit`, `created_at`
 
 ### `daum_news_articles`
 
@@ -149,6 +214,14 @@ erDiagram
 ### `financial_error_logs`
 
 - DB 구축 파이프라인 실패 이력 저장
+
+대표 컬럼:
+
+- `error_datetime`
+- `corp_code`
+- `corp_name`
+- `error_type`
+- `message`
 
 키 성격:
 
@@ -182,6 +255,7 @@ stateDiagram-v2
 | --- | --- | --- | --- |
 | `sme_list` | `company_profiles` | 1:0..1 | 기업개황 보강 |
 | `sme_list` | `financial_features` | 1:N | 연도별 재무 피처 |
+| `sme_list` | `financial_statement_details` | 1:N | 연도별 상세 재무 스냅샷 |
 | `sme_list` | `daum_news_articles` | 1:N | 수집된 뉴스 기사 |
 | `sme_list` | `financial_error_logs` | 1:N | 배치 오류 로그 |
 
@@ -192,9 +266,9 @@ stateDiagram-v2
 | 시나리오 | 읽기/쓰기 |
 | --- | --- |
 | 대상 기업 판별 | `sme_list` 읽기, `company_profiles` 읽기 |
-| 재무 분석 | `financial_features` 읽기 |
+| 재무 분석 | `financial_statement_details` 우선 읽기, `financial_features` 보조 읽기 |
 | 뉴스 수집 | `sme_list` 읽기, `daum_news_articles` 쓰기 |
-| DB 구축 | `sme_list`, `company_profiles`, `financial_features`, `financial_error_logs` 쓰기 |
+| DB 구축 | `sme_list`, `company_profiles`, `financial_features`, `financial_statement_details`, `financial_error_logs` 쓰기 |
 | 비동기 심사 | `workflow_jobs` 생성, claim, 상태/결과 갱신 |
 
 ## 6. 설계 메모

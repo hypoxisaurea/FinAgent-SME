@@ -247,6 +247,7 @@ LANGFUSE_SECRET_KEY=...
 - `sme_list`
 - `company_profiles`
 - `financial_features`
+- `financial_statement_details`
 - `financial_error_logs`
 - `daum_news_articles`
 

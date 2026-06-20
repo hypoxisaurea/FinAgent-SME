@@ -25,9 +25,38 @@
 
 ```json
 {
-  "status": "ok"
+  "status": "ok",
+  "workflow_job_runner": {
+    "running": true,
+    "stop_requested": false,
+    "job_timeout_seconds": 300.0,
+    "last_error": null,
+    "last_error_at": null,
+    "current_job": {
+      "job_id": "job-...",
+      "company_name": "회사명",
+      "request_id": "req-...",
+      "started_at": "2026-06-19T12:00:00+00:00"
+    }
+  }
 }
 ```
+
+응답 필드:
+
+| 필드 | 타입 | 설명 |
+| --- | --- | --- |
+| `status` | `string` | API 프로세스 상태. 현재 정상 응답은 `ok` |
+| `workflow_job_runner.running` | `boolean` | worker loop 실행 여부 |
+| `workflow_job_runner.stop_requested` | `boolean` | worker 종료 요청 여부 |
+| `workflow_job_runner.job_timeout_seconds` | `number` | job당 제한 시간(초) |
+| `workflow_job_runner.last_error` | `string \| null` | runner가 마지막으로 기록한 오류 메시지 |
+| `workflow_job_runner.last_error_at` | `string \| null` | 마지막 오류 발생 시각(ISO 8601) |
+| `workflow_job_runner.current_job` | `object \| null` | 현재 실행 중인 job. 없으면 `null` |
+
+`current_job`이 존재하면 `job_id`, `company_name`, `request_id`, `started_at`을 포함한다.
+`status`는 API 응답 가능 여부를 나타내며, runner의 가동 여부는
+`workflow_job_runner.running`에서 별도로 확인한다.
 
 ### `POST /api/v1/workflows/orchestrator`
 
@@ -229,8 +258,10 @@ class Agent(Protocol):
 - `sme_list`
 - `company_profiles`
 - `financial_features`
+- `financial_statement_details`
 - `financial_error_logs`
 - `daum_news_articles`
+- `workflow_jobs`
 
 ## 8. 외부 연동
 
