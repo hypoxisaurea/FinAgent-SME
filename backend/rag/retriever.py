@@ -112,6 +112,7 @@ def retrieve_industry_methodology(
     sub_sector: str | None = None,
     top_k: int = DEFAULT_TOP_K,
     include_contexts: bool = False,
+    use_hybrid: bool = False,
     collection: Any | None = None,
 ) -> dict[str, Any]:
     """업종 신용평가방법론 청크와 출처 메타데이터를 검색한다.
@@ -143,26 +144,26 @@ def retrieve_industry_methodology(
         distances = _first_list(result.get("distances"))
         dense_ids = _first_list(result.get("ids"))
 
-        # BM25: 전체 후보에서 dense top-k에 없는 키워드 매칭 문서를 추가
         bm25_extra_docs: list[str] = []
-        try:
-            all_result = target_collection.get(where=where, include=["documents"])
-            all_docs = all_result.get("documents", [])
-            all_ids = all_result.get("ids", [])
-            if all_docs and query_text.strip():
-                bm25_index = _build_bm25_index(all_docs)
-                raw_scores = bm25_index.get_scores(_tokenize_for_bm25(query_text))
-                if max(raw_scores, default=0.0) > 0:
-                    all_doc_map = dict(zip(all_ids, all_docs))
-                    dense_id_set = set(dense_ids)
-                    ranked = sorted(zip(all_ids, raw_scores), key=lambda x: -x[1])
-                    bm25_extra_docs = [
-                        all_doc_map[did]
-                        for did, _ in ranked[:top_k]
-                        if did not in dense_id_set and did in all_doc_map
-                    ]
-        except Exception as bm25_exc:  # noqa: BLE001
-            logger.warning("bm25_search_failed error=%s", bm25_exc)
+        if use_hybrid:
+            try:
+                all_result = target_collection.get(where=where, include=["documents"])
+                all_docs = all_result.get("documents", [])
+                all_ids = all_result.get("ids", [])
+                if all_docs and query_text.strip():
+                    bm25_index = _build_bm25_index(all_docs)
+                    raw_scores = bm25_index.get_scores(_tokenize_for_bm25(query_text))
+                    if max(raw_scores, default=0.0) > 0:
+                        all_doc_map = dict(zip(all_ids, all_docs))
+                        dense_id_set = set(dense_ids)
+                        ranked = sorted(zip(all_ids, raw_scores), key=lambda x: -x[1])
+                        bm25_extra_docs = [
+                            all_doc_map[did]
+                            for did, _ in ranked[:top_k]
+                            if did not in dense_id_set and did in all_doc_map
+                        ]
+            except Exception as bm25_exc:  # noqa: BLE001
+                logger.warning("bm25_search_failed error=%s", bm25_exc)
 
         sources = _build_sources(metadatas, distances)
         if not sources:

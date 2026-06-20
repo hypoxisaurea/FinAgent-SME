@@ -472,6 +472,7 @@ def test_retrieve_hybrid_surfaces_keyword_match() -> None:
         industry_name="건설업",
         top_k=2,
         collection=_HybridFakeCollection(),
+        use_hybrid=True,
     )
 
     all_factors = (
@@ -479,3 +480,51 @@ def test_retrieve_hybrid_surfaces_keyword_match() -> None:
         + result["industry_methodology"]["credit_assessment_factors"]
     )
     assert any("EBITDA" in f for f in all_factors)
+
+
+# ── use_hybrid=False 기본값 검증 ───────────────────────────────────────────────
+
+
+def test_use_hybrid_false_skips_bm25_get_call() -> None:
+    """use_hybrid=False(기본값)이면 collection.get()을 호출하지 않는다."""
+
+    class _TrackingCollection:
+        def __init__(self) -> None:
+            self.get_called = False
+
+        def query(self, **_: Any) -> dict[str, Any]:
+            return {
+                "documents": [["사업위험 분석 문서."]],
+                "metadatas": [[{"filename": "f.pdf", "page": 1,
+                                "industry_name": "건설업", "ksic_code": "F 건설업",
+                                "sub_sector": "건설"}]],
+                "distances": [[0.3]],
+                "ids": [["dense_0"]],
+            }
+
+        def get(self, **_: Any) -> dict[str, Any]:
+            self.get_called = True
+            return {"ids": [], "documents": []}
+
+    col = _TrackingCollection()
+    retrieve_industry_methodology(
+        query="건설업 평가요소",
+        industry_name="건설업",
+        collection=col,
+        use_hybrid=False,
+    )
+    assert not col.get_called, "use_hybrid=False이면 get()을 호출하면 안 됨"
+
+
+def test_use_hybrid_false_default_matches_dense_only_result() -> None:
+    """use_hybrid 미지정(기본값 False)과 명시적 False가 동일한 결과를 반환한다."""
+    collection = _FakeCollection()
+
+    result_default = retrieve_industry_methodology(
+        industry_name="건설업", collection=collection
+    )
+    result_explicit = retrieve_industry_methodology(
+        industry_name="건설업", collection=collection, use_hybrid=False
+    )
+
+    assert result_default == result_explicit
