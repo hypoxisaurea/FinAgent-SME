@@ -103,7 +103,7 @@ Retriever 품질:
 .venv/bin/python -m backend.scripts.evaluate_industry_rag \
   backend/rag/eval_datasets/industry_methodology.jsonl \
   --target retriever \
-  --output-path artifacts/industry_rag_eval/retriever-report.json
+  --output-path backend/rag/artifacts/industry_rag_eval/report.json
 ```
 
 IndustryAnalystAgent end-to-end 품질:
@@ -112,7 +112,7 @@ IndustryAnalystAgent end-to-end 품질:
 .venv/bin/python -m backend.scripts.evaluate_industry_rag \
   backend/rag/eval_datasets/industry_agent.jsonl \
   --target agent \
-  --output-path artifacts/industry_rag_eval/agent-report.json
+  --output-path backend/rag/artifacts/industry_rag_eval/agent_report.json
 ```
 
 `--model`로 evaluator 모델을 덮어쓸 수 있습니다. 지정하지 않으면 프로젝트 LLM 설정을 사용하므로 `backend/.env`의 `OPEN_ROUTER_API_KEY`와 모델 설정이 필요합니다. Agent 평가는 실제 provider 경로에 따라 DB 또는 외부 연동도 요구할 수 있습니다.

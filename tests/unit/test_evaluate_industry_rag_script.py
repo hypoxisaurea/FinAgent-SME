@@ -12,7 +12,10 @@ def test_evaluate_industry_rag_parser_defaults() -> None:
     args = parser.parse_args(["dataset.jsonl"])
 
     assert args.dataset_path == "dataset.jsonl"
-    assert args.output_path == "artifacts/industry_rag_eval/report.json"
+    assert (
+        args.output_path
+        == "backend/rag/artifacts/industry_rag_eval/report.json"
+    )
     assert args.model is None
     assert args.target == "retriever"
 

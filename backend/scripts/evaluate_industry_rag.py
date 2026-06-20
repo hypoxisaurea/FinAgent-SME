@@ -29,7 +29,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--output-path",
-        default="artifacts/industry_rag_eval/report.json",
+        default="backend/rag/artifacts/industry_rag_eval/report.json",
         help="평가 리포트 JSON 저장 경로",
     )
     parser.add_argument(
