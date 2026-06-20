@@ -75,6 +75,35 @@ _FACTOR_MAX_LEN = 120
 _FACTOR_MAX_COUNT = 5
 
 
+def _tokenize_for_bm25(text: str) -> list[str]:
+    """BM25용 텍스트 토큰화: 공백·구두점 기준 분리, 1자 이하 제거."""
+    return [t for t in re.split(r"[\s\[\]\(\).,·×÷!?。：:;]+", text) if len(t) > 1]
+
+
+def _build_bm25_index(documents: list[str]) -> Any:
+    """BM25Okapi 인덱스를 생성한다. rank-bm25 미설치 시 RuntimeError."""
+    try:
+        from rank_bm25 import BM25Okapi  # noqa: PLC0415
+    except ImportError as exc:
+        raise RuntimeError("rank-bm25 is required: pip install rank-bm25") from exc
+    return BM25Okapi([_tokenize_for_bm25(doc) for doc in documents])
+
+
+def _rrf_merge(
+    dense_ids: list[str],
+    bm25_ids: list[str],
+    *,
+    k: int = 60,
+) -> list[str]:
+    """Reciprocal Rank Fusion: RRF(d) = Σ 1/(k + rank_i(d)), 내림차순 반환."""
+    scores: dict[str, float] = {}
+    for rank, doc_id in enumerate(dense_ids, start=1):
+        scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (k + rank)
+    for rank, doc_id in enumerate(bm25_ids, start=1):
+        scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (k + rank)
+    return sorted(scores, key=lambda did: -scores[did])
+
+
 def retrieve_industry_methodology(
     *,
     query: str | None = None,
@@ -112,6 +141,29 @@ def retrieve_industry_methodology(
         documents = _first_list(result.get("documents"))
         metadatas = _first_list(result.get("metadatas"))
         distances = _first_list(result.get("distances"))
+        dense_ids = _first_list(result.get("ids"))
+
+        # BM25: 전체 후보에서 dense top-k에 없는 키워드 매칭 문서를 추가
+        bm25_extra_docs: list[str] = []
+        try:
+            all_result = target_collection.get(where=where, include=["documents"])
+            all_docs = all_result.get("documents", [])
+            all_ids = all_result.get("ids", [])
+            if all_docs and query_text.strip():
+                bm25_index = _build_bm25_index(all_docs)
+                raw_scores = bm25_index.get_scores(_tokenize_for_bm25(query_text))
+                if max(raw_scores, default=0.0) > 0:
+                    all_doc_map = dict(zip(all_ids, all_docs))
+                    dense_id_set = set(dense_ids)
+                    ranked = sorted(zip(all_ids, raw_scores), key=lambda x: -x[1])
+                    bm25_extra_docs = [
+                        all_doc_map[did]
+                        for did, _ in ranked[:top_k]
+                        if did not in dense_id_set and did in all_doc_map
+                    ]
+        except Exception as bm25_exc:  # noqa: BLE001
+            logger.warning("bm25_search_failed error=%s", bm25_exc)
+
         sources = _build_sources(metadatas, distances)
         if not sources:
             return _unavailable_payload(
@@ -123,16 +175,16 @@ def retrieve_industry_methodology(
             requested=resolved_industry_name,
             sources=sources,
         )
-
+        all_documents = documents + bm25_extra_docs
         payload = {
             "industry_methodology": {
                 "industry_name": inferred_industry_name,
-                "summary": _build_methodology_summary(documents),
+                "summary": _build_methodology_summary(all_documents),
                 "key_risk_factors": _extract_factor_sentences(
-                    documents, _KEY_RISK_KEYWORDS
+                    all_documents, _KEY_RISK_KEYWORDS
                 ),
                 "credit_assessment_factors": _extract_factor_sentences(
-                    documents, _CREDIT_ASSESSMENT_KEYWORDS
+                    all_documents, _CREDIT_ASSESSMENT_KEYWORDS
                 ),
                 "source_count": len(sources),
                 "unavailable": False,

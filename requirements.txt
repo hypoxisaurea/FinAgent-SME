@@ -97,6 +97,7 @@ regex==2026.5.9
 requests==2.33.1
 requests-toolbelt==1.0.0
 rpds-py==0.30.0
+rank-bm25>=0.2.2
 sentence-transformers>=3.0.0
 six==1.17.0
 smmap==5.0.3
