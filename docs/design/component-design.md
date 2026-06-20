@@ -12,26 +12,30 @@
 ## 2. 상위 아키텍처
 
 ```mermaid
-flowchart LR
-    User[심사 담당자]
-    UI[Streamlit UI]
-    API[FastAPI]
-    ORCH[WorkflowOrchestrator]
-    AGENTS[Agents]
-    DATA[(PostgreSQL)]
-    EXT[External APIs]
-    OBS[Langfuse]
+flowchart TB
+    User[심사 담당자] --> UI[Streamlit UI]
 
-    User --> UI
-    UI --> API
-    API --> ORCH
-    ORCH --> AGENTS
-    AGENTS --> DATA
-    AGENTS --> EXT
-    API --> OBS
-    ORCH --> OBS
-    AGENTS --> OBS
+    subgraph App[FastAPI Application Process]
+        API[API Router]
+        Runner[WorkflowJobRunner]
+        ORCH[WorkflowOrchestrator]
+        AGENTS[Domain Agents]
+        API --> Runner
+        Runner --> ORCH --> AGENTS
+    end
+
+    UI -->|submit · poll · fetch| API
+    API <--> DATA[(PostgreSQL\nworkflow + business data)]
+    Runner <--> DATA
+    AGENTS <--> DATA
+    AGENTS <--> VECTOR[(Chroma\nindustry methodology)]
+    AGENTS <--> EXT[External APIs]
+    API --> OBS[Structured Logs]
+    ORCH --> LF[Langfuse]
+    AGENTS --> LF
 ```
+
+`WorkflowJobRunner`는 별도 배포 worker가 아니라 FastAPI lifespan에서 시작되는 단일 background loop입니다. API 프로세스가 중단되면 남아 있던 `queued`/`running` job은 다음 시작 시 `WORKER_RESTARTED`로 종료됩니다.
 
 ## 3. 컴포넌트 목록
 
@@ -39,6 +43,7 @@ flowchart LR
 | --- | --- | --- |
 | Presentation | Streamlit UI | 회사명 입력, 결과 렌더링 |
 | API | FastAPI Router | 요청 검증, request_id 바인딩, HTTP 매핑 |
+| Job | `WorkflowJobRunner` | queued job claim, timeout 적용, 결과/실패 저장 |
 | Orchestration | `WorkflowOrchestrator` | 그래프 실행, 상태 계산, 응답 조립 |
 | Agent | `CompanyResolverAgent` | 기업 식별 |
 | Agent | `NewsCollectorAgent` | 뉴스 수집/요약/적재 |
@@ -49,6 +54,7 @@ flowchart LR
 | Agent | `ReportAgent` | 보고서 생성 |
 | Agent | `ValidationAgent` | 결과 검증과 score 기록 |
 | Data | Repository / Service | DB 조회/저장, use-case 처리 |
+| Retrieval | Chroma / Industry RAG | 산업 방법론 PDF 검색과 출처 제공 |
 | Observability | Logging / Langfuse | 요청 추적과 품질 score |
 
 ## 4. 오케스트레이터 설계
@@ -101,6 +107,7 @@ flowchart LR
 - 입력: `corp_code`, `financial_ratios`
 - 의존성: `IndustryDataProvider`
 - 출력: `industry_summary`, `industry_outlook`, `business_cycle`, `macro_indicators`
+- 방법론 근거: `industry_outlook.industry_methodology`, `industry_outlook.methodology_sources`
 
 ### `RiskEventAgent`
 
@@ -132,6 +139,8 @@ flowchart LR
 | `repositories/` | SQL 조회, DataFrame append/save |
 | `services/` | 기업 조회, DART 파이프라인 orchestration |
 
+업무 데이터와 job 상태는 PostgreSQL에, 산업 방법론 임베딩은 Chroma에 저장합니다. 두 저장소의 데이터 수명주기와 백업 정책은 분리해서 다룹니다.
+
 ## 7. 관측성
 
 | 수단 | 위치 | 목적 |
@@ -146,14 +155,15 @@ flowchart LR
 
 | 구성요소 | 현재 방식 |
 | --- | --- |
-| Backend | `.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000` |
+| Backend + Job Runner | `.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000` |
 | Frontend | `.venv/bin/python -m streamlit run frontend/main.py --server.address 0.0.0.0 --server.port 8501` |
 | DB | `backend/docker-compose.yml`의 PostgreSQL |
 | DB Build | `scripts/setup-db.sh build` |
+| RAG Ingest | `.venv/bin/python -m backend.rag.ingest_industry_docs` |
 
 ## 9. 현재 확장 포인트
 
 - 공개 API body 확장 (`pdf_path`, `continue_on_error` 등)
 - 추가 agent 노드 연결
 - UI 업로드/진행상태 기능
-- 운영성 테이블(`workflow_runs` 등) 추가
+- job runner의 별도 worker 프로세스/분산 queue 전환

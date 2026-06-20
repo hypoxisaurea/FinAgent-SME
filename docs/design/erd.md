@@ -66,7 +66,24 @@ erDiagram
         string message
         datetime created_at
     }
+
+    WORKFLOW_JOBS {
+        string job_id PK
+        string request_id
+        string company_name
+        string status
+        text result_json
+        text step_summary_json
+        string error_code
+        string error_message
+        datetime submitted_at
+        datetime started_at
+        datetime finished_at
+        datetime updated_at
+    }
 ```
+
+`workflow_jobs`는 기업 master와 외래키로 묶이지 않는 실행 이력입니다. 입력 당시 회사명과 추적 ID를 보존하고, 완료된 workflow payload를 JSON 문자열로 저장합니다.
 
 ## 3. 테이블 설명
 
@@ -137,6 +154,28 @@ erDiagram
 
 - `corp_code + error_type + message`
 
+### `workflow_jobs`
+
+- 비동기 심사 job의 queue와 결과 저장소
+- repository가 최초 접근 시 `CREATE TABLE IF NOT EXISTS`로 생성
+- `job_id`가 기본 키이며 `request_id`로 로그·Langfuse trace와 연결
+- `result_json`, `step_summary_json`은 성공 완료 시 기록
+- 서버 재시작 시 미완료 job은 `failed / WORKER_RESTARTED`로 전이
+
+상태 전이:
+
+```mermaid
+stateDiagram-v2
+    [*] --> queued: submit
+    queued --> running: worker claim
+    running --> succeeded: result saved
+    running --> failed: timeout / exception
+    queued --> failed: server restart recovery
+    running --> failed: server restart recovery
+    succeeded --> [*]
+    failed --> [*]
+```
+
 ## 4. 논리 관계
 
 | From | To | 관계 | 설명 |
@@ -146,6 +185,8 @@ erDiagram
 | `sme_list` | `daum_news_articles` | 1:N | 수집된 뉴스 기사 |
 | `sme_list` | `financial_error_logs` | 1:N | 배치 오류 로그 |
 
+`workflow_jobs`와 업무 테이블 사이에는 현재 물리적 외래키가 없습니다.
+
 ## 5. 사용 시나리오
 
 | 시나리오 | 읽기/쓰기 |
@@ -154,9 +195,12 @@ erDiagram
 | 재무 분석 | `financial_features` 읽기 |
 | 뉴스 수집 | `sme_list` 읽기, `daum_news_articles` 쓰기 |
 | DB 구축 | `sme_list`, `company_profiles`, `financial_features`, `financial_error_logs` 쓰기 |
+| 비동기 심사 | `workflow_jobs` 생성, claim, 상태/결과 갱신 |
 
 ## 6. 설계 메모
 
 - 일부 키/제약은 코드 레벨에서 관리된다
 - 신규 컬럼은 저장 시 nullable TEXT 컬럼으로 자동 추가될 수 있다
-- 향후 운영성 테이블(`workflow_runs`, `agent_runs`)은 아직 도입되지 않았다
+- `workflow_jobs`는 현재 운영 queue와 실행 결과를 함께 보관한다
+- agent별 정규화 실행 테이블(`agent_runs`)은 아직 도입되지 않았다
+- 산업 방법론 벡터는 PostgreSQL이 아니라 `backend/vectorstore/industry_knowledge/`의 Chroma에 저장된다

@@ -7,6 +7,7 @@
 - FastAPI 앱 제공
 - 신용 심사 워크플로우 실행
 - 기업 마스터/기업개황/재무 피처 DB 구축
+- 산업 신용평가방법론 PDF 적재·검색·RAGAS 평가
 - 뉴스 수집 및 리스크 분석
 - 최종 판단, 리포트 생성, 검증 및 Langfuse score 기록
 
@@ -40,6 +41,8 @@ backend/
 ├── common/
 ├── data/
 ├── integrations/
+├── rag/
+├── rag_docs/
 ├── schemas/
 ├── scripts/
 ├── tools/
@@ -100,6 +103,15 @@ backend/
 - `contracts.py`: agent 공통 실행 contract
 - `tool_runtime.py`: tool fallback/실행 메타데이터
 - `langfuse.py`: trace, observation, score wrapper
+
+### `rag/`
+
+- `chroma_client.py`: `industry_knowledge` collection과 Ko-SRoBERTa 임베딩
+- `ingest_industry_docs.py`: 방법론 PDF를 페이지 단위로 읽고 중복 없이 청크 적재
+- `retriever.py`: 업종 metadata와 의미 검색을 결합해 요약·평가요소·출처 반환
+- `evaluation.py`: retriever와 `IndustryAnalystAgent`의 RAGAS 평가
+
+자세한 실행 절차와 데이터셋 계약은 [산업 방법론 RAG 문서](../docs/rag/industry-methodology.md)를 참고합니다.
 
 ## 주요 엔드포인트
 
@@ -237,6 +249,25 @@ LANGFUSE_SECRET_KEY=...
 - `financial_features`
 - `financial_error_logs`
 - `daum_news_articles`
+
+## 산업 RAG
+
+방법론 PDF 적재:
+
+```bash
+.venv/bin/python -m backend.rag.ingest_industry_docs
+```
+
+Retriever 평가:
+
+```bash
+.venv/bin/python -m backend.scripts.evaluate_industry_rag \
+  backend/rag/eval_datasets/industry_methodology.sample.jsonl \
+  --target retriever \
+  --output-path artifacts/industry_rag_eval/retriever-report.json
+```
+
+기본 벡터 저장소는 `backend/vectorstore/industry_knowledge/`입니다. 평가에는 LLM API 키가 필요하며, 최초 적재에는 임베딩 모델 다운로드가 발생할 수 있습니다.
 
 ## 품질 확인
 

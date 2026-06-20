@@ -20,6 +20,8 @@
 - `business_cycle`
 - `macro_indicators`
 - `peer_comparison`
+- `industry_outlook.industry_methodology`
+- `industry_outlook.methodology_sources`
 - `industry_tool_runs`
 - `industry_tool_errors`
 
@@ -38,6 +40,8 @@
 4. `get_business_cycle`
 5. `get_macro_indicators`
 
+`get_industry_outlook` provider 경로 안에서 `retrieve_industry_methodology`가 호출되며, 방법론 결과와 출처는 `industry_outlook` 내부에 포함됩니다.
+
 도구 실패 시 기본 중립값이나 안내 문구로 fallback 합니다.
 
 ## 데이터 소스
@@ -46,6 +50,9 @@
 - ECOS: 기준금리, 경기 지표
 - KOSIS: 업황 지표
 - 로컬 CSV: 산업 평균 재무비율
+- Chroma + 업종 신용평가방법론 PDF: 평가요소, 핵심 리스크, 출처
+
+방법론 문서의 적재·검색·평가 절차는 [`docs/rag/industry-methodology.md`](../../../docs/rag/industry-methodology.md)를 참고합니다.
 
 ## 상태 규칙
 

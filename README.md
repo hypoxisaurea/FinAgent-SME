@@ -2,6 +2,64 @@
 
 FinAgent-SME는 중소기업 대상 B2B 거래 리스크 심사를 지원하는 멀티 에이전트 시스템입니다. 현재 저장소는 FastAPI 백엔드, Streamlit 프론트엔드, PostgreSQL 기반 기업/재무 데이터 저장소, LangGraph 오케스트레이터를 포함합니다.
 
+> 회사명 하나로 기업 식별, 재무·산업·뉴스·리스크 분석, 신용 판단, 리포트 생성과 결과 검증까지 연결합니다.
+
+## 한눈에 보기
+
+```mermaid
+flowchart LR
+    U[심사 담당자] --> UI[Streamlit]
+    UI -->|job 등록·조회| API[FastAPI]
+    API --> Q[(workflow_jobs)]
+    Q --> W[Background Job Runner]
+    W --> G[LangGraph Agent Graph]
+    G --> P[(PostgreSQL)]
+    G --> V[(Chroma\n산업 방법론)]
+    G --> E[OpenDART · ECOS · KOSIS\nDaum News · OpenRouter]
+    G --> O[구조화 로그 · Langfuse]
+    G --> R[판단 · 등급 · 한도 · 리포트]
+    R --> Q
+    Q --> UI
+```
+
+| 영역 | 현재 구현 |
+| --- | --- |
+| 사용자 경험 | 회사명 검색, 진행 상태 polling, 심사 리포트와 그래프, JSON 다운로드 |
+| 실행 방식 | DB-backed 비동기 job + FastAPI 프로세스 내 단일 background runner |
+| 분석 | 기업, 뉴스, 재무, 산업 방법론 RAG, 거시환경, 리스크 이벤트 |
+| 결과 | 승인 판단, 신용등급, 추천한도, 근거, 최종 보고서, 계약 검증 |
+| 품질 추적 | agent step metadata, `request_id` 로그, Langfuse trace/score, RAGAS 평가 |
+
+## 에이전트 그래프
+
+```mermaid
+flowchart LR
+    A[Company Resolver] --> B{대상 기업?}
+    B -->|아니오| X[not_target]
+    B -->|예| N[News Collector]
+    B -->|예| F[Financial Analyst]
+    N --> K[Risk Event]
+    F --> I[Industry Analyst\n산업 방법론 RAG]
+    K --> D[Decision]
+    I --> D
+    F --> D
+    D --> R[Report]
+    R --> V[Validation]
+    V --> Z[최종 context + steps]
+```
+
+## 문서 바로가기
+
+| 목적 | 문서 |
+| --- | --- |
+| 전체 문서 지도 | [문서 허브](docs/README.md) |
+| 신용 심사 흐름 | [워크플로우](docs/domain/workflows.md) |
+| 시스템 구성 | [컴포넌트 설계](docs/design/component-design.md) |
+| API 계약 | [인터페이스 정의](docs/design/interface-definition.md) |
+| 데이터 모델 | [ERD](docs/design/erd.md) |
+| 산업 RAG 적재·평가 | [산업 방법론 RAG](docs/rag/industry-methodology.md) |
+| 개발 규칙 | [네이밍](docs/conventions/naming.md) · [에러 처리](docs/conventions/error-handling.md) · [테스트](docs/conventions/testing.md) |
+
 ## 현재 구현 상태
 
 - 기본 심사 진입점: `POST /api/v1/workflows/jobs`
@@ -38,6 +96,7 @@ FinAgent-SME/
 - `backend/agents`: 개별 agent와 orchestrator
 - `backend/data`: DB 연결, repository, service
 - `backend/integrations`: DART/ECOS/KOSIS 클라이언트
+- `backend/rag`: 산업 신용평가방법론 적재, 검색, RAGAS 평가
 - `backend/tools`: 재무/산업/뉴스/기업구축 로직
 - `frontend/views`: 검색/리포트 화면
 
@@ -127,6 +186,12 @@ Python 실행/검증 명령은 모두 `.venv/bin/...` 기준으로 통일합니�
 ```
 
 이 파이프라인은 `sme_list`, `company_profiles`, `financial_features`, `financial_error_logs`를 생성하거나 갱신합니다.
+
+산업 방법론 PDF를 Chroma에 적재하려면 다음 명령을 실행합니다. 최초 실행 시 한국어 임베딩 모델을 내려받을 수 있습니다.
+
+```bash
+.venv/bin/python -m backend.rag.ingest_industry_docs
+```
 
 ### 4. 백엔드와 프론트 실행
 
@@ -299,6 +364,14 @@ Python 실행/검증 명령은 모두 `.venv/bin/...` 기준으로 통일합니�
 ```
 
 모든 Python 실행/검증 명령은 `.venv/bin/...` 기준으로 실행합니다.
+
+산업 RAG 평가 예시는 다음과 같습니다. 상세한 데이터셋 계약과 메트릭은 [산업 방법론 RAG 문서](docs/rag/industry-methodology.md)를 참고합니다.
+
+```bash
+.venv/bin/python -m backend.scripts.evaluate_industry_rag \
+  backend/rag/eval_datasets/industry_methodology.sample.jsonl \
+  --target retriever
+```
 
 `frontend/`는 현재 Python Streamlit 앱이므로 `npm run lint` 대상이 아닙니다.
 
