@@ -42,6 +42,15 @@
 
 각 단계는 `backend/common/tool_runtime.py`를 통해 fallback 가능하게 실행됩니다.
 
+### calc_financial_ratios 출력 비율 목록 (16개)
+
+| 범주 | 키 |
+|------|-----|
+| 안정성 | `debt_ratio`, `current_ratio`, `quick_ratio`, `borrow_dep`, `interest_coverage` |
+| 활동성 | `receivable_turnover`, `asset_turnover`, `payable_turnover` |
+| 수익성 | `roa`, `op_margin`, `net_margin`, `cogs_ratio` |
+| 현금흐름 | `ocf_to_sales`, `ocf_to_net_income`, `fcf`, `fcf_to_sales` |
+
 ## 상태 규칙
 
 - 모든 도구가 정상 동작하면 `status=success`
@@ -53,6 +62,17 @@
 - `DatabaseFinancialDataProvider`
 - `backend/tools/financial.py`
 - `OPEN_DART_API_KEY` 일부 기능 사용
+
+## 추가 추출 계정 (EBITDA/유동성 분석용)
+
+`_normalize_accounts`에서 추출하는 신규 계정과목 4개:
+
+| 계정 | 출처 | 용도 |
+|------|------|------|
+| `현금및현금성자산` | BS | 유동성 분석 |
+| `단기금융상품` | BS | 유동성 분석 |
+| `감가상각비` | IS/CIS → CF 폴백 | EBITDA 계산 |
+| `무형자산상각비` | IS/CIS → CF 폴백 | EBITDA 계산 |
 
 ## 오케스트레이터 연동
 
