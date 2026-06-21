@@ -4,7 +4,8 @@ OpenAI API를 호출해 신용등급·승인 결정의 근거를
 심사 담당자가 이해할 수 있는 자연어로 설명한다.
 
 변경 사항:
-  - 프롬프트에 CRITICAL 상세 원인 블록 추가 (신규)
+  - 프롬프트에 CRITICAL 상세 원인 블록 추가
+  - 프롬프트에 HIGH / MEDIUM 상세 원인 블록 추가 (신규)
 """
 
 from __future__ import annotations
@@ -126,11 +127,23 @@ def _build_prompt(
         f"  MEDIUM:   {context.get('medium_count', 0)}건",
     ]
 
-    # CRITICAL 상세 원인 (신규)
+    # CRITICAL 상세 원인
     critical_reasons = context.get("critical_reasons") or []
     if critical_reasons:
         lines.append("  CRITICAL 상세 원인:")
         lines.extend(f"    · {r}" for r in critical_reasons)
+
+    # HIGH 상세 원인 (신규)
+    high_reasons = context.get("high_reasons") or []
+    if high_reasons:
+        lines.append("  HIGH 상세 원인:")
+        lines.extend(f"    · {r}" for r in high_reasons)
+
+    # MEDIUM 상세 원인 (신규)
+    medium_reasons = context.get("medium_reasons") or []
+    if medium_reasons:
+        lines.append("  MEDIUM 상세 원인:")
+        lines.extend(f"    · {r}" for r in medium_reasons)
 
     lines += [
         "",
