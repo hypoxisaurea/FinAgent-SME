@@ -169,14 +169,95 @@ def _normalize_accounts(fs: pd.DataFrame) -> dict:
     return {k: v if v is not None else 0.0 for k, v in result.items()}
 
 
+# ---------------------------------------------------------------------------
+# 기업 규모 분류 — is_individual / is_small_enterprise
+# ---------------------------------------------------------------------------
+
+# DART corp_cls 필드에서 법인으로 분류되는 코드
+# Y=유가증권, K=코스닥, N=코넥스, E=기타(외감기업)
+_CORPORATE_CORP_CLS: frozenset[str] = frozenset({"Y", "K", "N", "E"})
+
+# 소기업 기준 연평균 매출액 상한 (원)
+# 출처: 중소기업기본법 시행령 별표 3 (2021.12.28 개정)
+# induty_code 앞 2자리(KSIC 세분류 첫 두 자리) → 매출액 상한
+_SMALL_ENTERPRISE_REVENUE_LIMIT: dict[str, int] = {
+    # A 농림어업 (01, 03) — 50억
+    "01": 5_000_000_000, "03": 5_000_000_000,
+    # B 광업 (05~08) — 120억
+    "05": 12_000_000_000, "06": 12_000_000_000,
+    "07": 12_000_000_000, "08": 12_000_000_000,
+    # C 제조업 (10~33) — 120억
+    **{str(i).zfill(2): 12_000_000_000 for i in range(10, 34)},
+    # D35 전기·가스·증기 — 30억 (법령 별도 항목 없음, 기타 기준 적용)
+    "35": 3_000_000_000,
+    # E 수도·하수·폐기물처리 (37~39) — 30억
+    "37": 3_000_000_000, "38": 3_000_000_000, "39": 3_000_000_000,
+    # F 건설업 (41~42) — 120억
+    "41": 12_000_000_000, "42": 12_000_000_000,
+    # G 도매·소매업 (45~47) — 50억
+    "45": 5_000_000_000, "46": 5_000_000_000, "47": 5_000_000_000,
+    # H 운수·창고업 (49~52) — 120억
+    "49": 12_000_000_000, "50": 12_000_000_000,
+    "51": 12_000_000_000, "52": 12_000_000_000,
+    # I 숙박·음식점업 (55~56) — 10억
+    "55": 1_000_000_000, "56": 1_000_000_000,
+    # J 정보통신업 (58~63) — 50억
+    "58": 5_000_000_000, "59": 5_000_000_000, "60": 5_000_000_000,
+    "61": 5_000_000_000, "62": 5_000_000_000, "63": 5_000_000_000,
+    # L 부동산업 (68) — 30억
+    "68": 3_000_000_000,
+    # M 전문·과학·기술서비스업 (71~73) — 30억
+    "71": 3_000_000_000, "72": 3_000_000_000, "73": 3_000_000_000,
+    # N 사업시설관리·지원·임대 (74~76) — 30억
+    "74": 3_000_000_000, "75": 3_000_000_000, "76": 3_000_000_000,
+    # P 교육서비스업 (85) — 30억
+    "85": 3_000_000_000,
+    # Q 보건·사회복지서비스업 (86~87) — 30억
+    "86": 3_000_000_000, "87": 3_000_000_000,
+    # R 예술·스포츠·여가서비스업 (90~91) — 10억
+    "90": 1_000_000_000, "91": 1_000_000_000,
+    # S 개인서비스업 (95~96) — 10억
+    "95": 1_000_000_000, "96": 1_000_000_000,
+}
+_DEFAULT_SMALL_ENTERPRISE_REVENUE_LIMIT: int = 3_000_000_000  # 30억 (미분류 기본)
+
+
+def _is_individual_business(corp_cls: str) -> bool:
+    """DART 법인구분(corp_cls) 기준 개인사업자 여부를 판별한다.
+
+    Y(유가증권), K(코스닥), N(코넥스), E(외감기업)은 모두 법인이므로 False.
+    DART corp_code가 존재하는 기업은 대부분 법인이므로, corp_cls 미수집 시
+    개인사업자가 아닌 법인으로 간주 (보수적 분류).
+    """
+    cleaned = corp_cls.strip()
+    if not cleaned:
+        return False  # corp_cls 미수집 시 법인으로 간주
+    return cleaned not in _CORPORATE_CORP_CLS
+
+
+def _is_small_enterprise(revenue: float, induty_code: str) -> bool:
+    """중소기업기본법 시행령 별표 3 기준으로 소기업 여부를 판별한다.
+
+    induty_code 앞 2자리를 KSIC 분류로 사용해 업종별 연평균 매출액 상한과 비교한다.
+    매출액이 0 이하이거나 induty_code를 파싱할 수 없으면 False를 반환한다.
+    """
+    if not revenue or revenue <= 0:
+        return False
+    prefix = (induty_code or "").strip()[:2]
+    limit = _SMALL_ENTERPRISE_REVENUE_LIMIT.get(prefix, _DEFAULT_SMALL_ENTERPRISE_REVENUE_LIMIT)
+    return revenue <= limit
+
+
 @tool
 def get_financial_statements(corp_code: str, year: int) -> dict:
     """DART에서 corp_code 기업의 year 연도 재무제표를 가져와
     표준 계정과목 dict로 반환한다."""
     dart = _get_dart()
-    # 회사명 조회
+    # 회사명·업종코드·법인구분 조회
     corp_info = dart.company(corp_code)
-    corp_name = corp_info["corp_name"] if corp_info is not None else corp_code
+    corp_name   = corp_info["corp_name"]                   if corp_info is not None else corp_code
+    induty_code = str(corp_info.get("induty_code", ""))    if corp_info is not None else ""
+    corp_cls    = str(corp_info.get("corp_cls",    ""))    if corp_info is not None else ""
 
     fs = dart.finstate_all(corp_code, year)
     if fs is None or fs.empty:
@@ -186,12 +267,17 @@ def get_financial_statements(corp_code: str, year: int) -> dict:
     result["회사명"] = corp_name
 
     audit_opinion, is_external_audit = _fetch_audit_opinion(corp_code, year)
-    result["audit_opinion"] = audit_opinion
-    result["is_external_audit"] = is_external_audit
+    result["audit_opinion"]      = audit_opinion
+    result["is_external_audit"]  = is_external_audit
+    result["is_individual"]      = _is_individual_business(corp_cls)
+    result["is_small_enterprise"] = _is_small_enterprise(result.get("매출액", 0.0), induty_code)
 
     logger.info(
-        "get_financial_statements corp_code=%s year=%s audit_opinion=%s is_external_audit=%s",
-        corp_code, year, audit_opinion, is_external_audit,
+        "get_financial_statements corp_code=%s year=%s corp_cls=%s induty_code=%s "
+        "audit_opinion=%s is_external_audit=%s is_individual=%s is_small_enterprise=%s",
+        corp_code, year, corp_cls, induty_code,
+        audit_opinion, is_external_audit,
+        result["is_individual"], result["is_small_enterprise"],
     )
     return result
 
