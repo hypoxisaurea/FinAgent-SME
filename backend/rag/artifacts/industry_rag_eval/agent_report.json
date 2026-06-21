@@ -25,17 +25,17 @@
       "skipped_cases": 0
     },
     "faithfulness": {
-      "mean": 0.4902,
+      "mean": 0.5791,
       "scored_cases": 8,
       "skipped_cases": 0
     },
     "response_groundedness": {
-      "mean": 0.75,
+      "mean": 0.7812,
       "scored_cases": 8,
       "skipped_cases": 0
     },
     "factual_correctness": {
-      "mean": 0.1825,
+      "mean": 0.1325,
       "scored_cases": 8,
       "skipped_cases": 0
     }
@@ -57,7 +57,7 @@
         {
           "filename": "2025 건설업 신용평가방법론.pdf",
           "page": 10,
-          "score": 0.6858113640386359,
+          "score": 0.6858113780557777,
           "industry_name": "건설업",
           "ksic_code": "F 건설업",
           "sub_sector": "건설"
@@ -73,7 +73,7 @@
         {
           "filename": "2025 건설업 신용평가방법론.pdf",
           "page": 9,
-          "score": 0.677111437902311,
+          "score": 0.677111451566077,
           "industry_name": "건설업",
           "ksic_code": "F 건설업",
           "sub_sector": "건설"
@@ -104,13 +104,13 @@
           "value": 1.0
         },
         "faithfulness": {
-          "value": 0.7917
+          "value": 0.7568
         },
         "response_groundedness": {
           "value": 1.0
         },
         "factual_correctness": {
-          "value": 0.52
+          "value": 0.59
         }
       }
     },
@@ -138,7 +138,7 @@
         {
           "filename": "2025 반도체업 신용평가방법론.pdf",
           "page": 11,
-          "score": 0.6537645590990175,
+          "score": 0.6537646100500373,
           "industry_name": "반도체업",
           "ksic_code": "C 제조업",
           "sub_sector": "반도체"
@@ -146,7 +146,7 @@
         {
           "filename": "2025 반도체업 신용평가방법론.pdf",
           "page": 5,
-          "score": 0.6332858566935249,
+          "score": 0.6332859284070359,
           "industry_name": "반도체업",
           "ksic_code": "C 제조업",
           "sub_sector": "반도체"
@@ -154,7 +154,7 @@
         {
           "filename": "2025 반도체업 신용평가방법론.pdf",
           "page": 3,
-          "score": 0.6283286627808689,
+          "score": 0.628328756907801,
           "industry_name": "반도체업",
           "ksic_code": "C 제조업",
           "sub_sector": "반도체"
@@ -162,7 +162,7 @@
         {
           "filename": "2025 반도체업 신용평가방법론.pdf",
           "page": 11,
-          "score": 0.6277096357445299,
+          "score": 0.6277096827153046,
           "industry_name": "반도체업",
           "ksic_code": "C 제조업",
           "sub_sector": "반도체"
@@ -177,13 +177,13 @@
           "value": 1.0
         },
         "faithfulness": {
-          "value": 0.7333
+          "value": 0.7381
         },
         "response_groundedness": {
           "value": 1.0
         },
         "factual_correctness": {
-          "value": 0.4
+          "value": 0.18
         }
       }
     },
@@ -203,23 +203,15 @@
         {
           "filename": "2025 조선업 평가방법론.pdf",
           "page": 23,
-          "score": 0.7122608499403691,
+          "score": 0.7122607592252969,
           "industry_name": "조선업",
           "ksic_code": "C 제조업",
           "sub_sector": "조선"
         },
         {
           "filename": "2025 조선업 평가방법론.pdf",
-          "page": 4,
-          "score": 0.7002977510659503,
-          "industry_name": "조선업",
-          "ksic_code": "C 제조업",
-          "sub_sector": "조선"
-        },
-        {
-          "filename": "2025 조선업 평가방법론.pdf",
-          "page": 5,
-          "score": 0.7002977510659503,
+          "page": 6,
+          "score": 0.7002976487570189,
           "industry_name": "조선업",
           "ksic_code": "C 제조업",
           "sub_sector": "조선"
@@ -227,15 +219,23 @@
         {
           "filename": "2025 조선업 평가방법론.pdf",
           "page": 8,
-          "score": 0.7002977510659503,
+          "score": 0.7002976487570189,
           "industry_name": "조선업",
           "ksic_code": "C 제조업",
           "sub_sector": "조선"
         },
         {
           "filename": "2025 조선업 평가방법론.pdf",
-          "page": 13,
-          "score": 0.7002977510659503,
+          "page": 12,
+          "score": 0.7002976487570189,
+          "industry_name": "조선업",
+          "ksic_code": "C 제조업",
+          "sub_sector": "조선"
+        },
+        {
+          "filename": "2025 조선업 평가방법론.pdf",
+          "page": 14,
+          "score": 0.7002976487570189,
           "industry_name": "조선업",
           "ksic_code": "C 제조업",
           "sub_sector": "조선"
@@ -250,7 +250,7 @@
           "value": 1.0
         },
         "faithfulness": {
-          "value": 0.1111
+          "value": 0.0
         },
         "response_groundedness": {
           "value": 0.0
@@ -276,7 +276,7 @@
         {
           "filename": "2025 정유업 신용평가방법론.pdf",
           "page": 10,
-          "score": 0.7224154018513653,
+          "score": 0.72241538629801,
           "industry_name": "정유업",
           "ksic_code": "C 제조업",
           "sub_sector": "정유"
@@ -284,7 +284,7 @@
         {
           "filename": "2025 정유업 신용평가방법론.pdf",
           "page": 1,
-          "score": 0.6997313595020956,
+          "score": 0.69973138868596,
           "industry_name": "정유업",
           "ksic_code": "C 제조업",
           "sub_sector": "정유"
@@ -292,7 +292,7 @@
         {
           "filename": "2025 정유업 신용평가방법론.pdf",
           "page": 11,
-          "score": 0.6861770138036081,
+          "score": 0.6861770839640778,
           "industry_name": "정유업",
           "ksic_code": "C 제조업",
           "sub_sector": "정유"
@@ -323,13 +323,13 @@
           "value": 1.0
         },
         "faithfulness": {
-          "value": 0.1515
+          "value": 0.6667
         },
         "response_groundedness": {
           "value": 1.0
         },
         "factual_correctness": {
-          "value": 0.06
+          "value": 0.29
         }
       }
     },
@@ -349,7 +349,7 @@
         {
           "filename": "2024 자동차업 신용평가방법론.pdf",
           "page": 9,
-          "score": 0.6533578664878812,
+          "score": 0.653357968263186,
           "industry_name": "자동차업",
           "ksic_code": "C 제조업",
           "sub_sector": "자동차"
@@ -357,7 +357,7 @@
         {
           "filename": "2024 자동차업 신용평가방법론.pdf",
           "page": 5,
-          "score": 0.6204046567505754,
+          "score": 0.6204047026344655,
           "industry_name": "자동차업",
           "ksic_code": "C 제조업",
           "sub_sector": "자동차"
@@ -365,7 +365,7 @@
         {
           "filename": "2024 자동차업 신용평가방법론.pdf",
           "page": 9,
-          "score": 0.6130063384704335,
+          "score": 0.6130063160723934,
           "industry_name": "자동차업",
           "ksic_code": "C 제조업",
           "sub_sector": "자동차"
@@ -373,7 +373,7 @@
         {
           "filename": "2024 자동차업 신용평가방법론.pdf",
           "page": 4,
-          "score": 0.6072334298746169,
+          "score": 0.6072334958091221,
           "industry_name": "자동차업",
           "ksic_code": "C 제조업",
           "sub_sector": "자동차"
@@ -381,7 +381,7 @@
         {
           "filename": "2024 자동차업 신용평가방법론.pdf",
           "page": 10,
-          "score": 0.6070644208744395,
+          "score": 0.6070644648063096,
           "industry_name": "자동차업",
           "ksic_code": "C 제조업",
           "sub_sector": "자동차"
@@ -396,13 +396,13 @@
           "value": 1.0
         },
         "faithfulness": {
-          "value": 0.4483
+          "value": 0.7931
         },
         "response_groundedness": {
           "value": 1.0
         },
         "factual_correctness": {
-          "value": 0.48
+          "value": 0.0
         }
       }
     },
@@ -422,7 +422,7 @@
         {
           "filename": "2025 철강업 신용평가방법론.pdf",
           "page": 2,
-          "score": 0.7317749407318781,
+          "score": 0.7317749726498427,
           "industry_name": "철강업",
           "ksic_code": "C 제조업",
           "sub_sector": "철강"
@@ -430,7 +430,7 @@
         {
           "filename": "2025 철강업 신용평가방법론.pdf",
           "page": 8,
-          "score": 0.6989901457698787,
+          "score": 0.6989901894529834,
           "industry_name": "철강업",
           "ksic_code": "C 제조업",
           "sub_sector": "철강"
@@ -438,7 +438,7 @@
         {
           "filename": "2025 철강업 신용평가방법론.pdf",
           "page": 10,
-          "score": 0.694559126435788,
+          "score": 0.6945591839438299,
           "industry_name": "철강업",
           "ksic_code": "C 제조업",
           "sub_sector": "철강"
@@ -446,7 +446,7 @@
         {
           "filename": "2025 철강업 신용평가방법론.pdf",
           "page": 8,
-          "score": 0.6427330079241673,
+          "score": 0.6427330571702103,
           "industry_name": "철강업",
           "ksic_code": "C 제조업",
           "sub_sector": "철강"
@@ -469,7 +469,7 @@
           "value": 1.0
         },
         "faithfulness": {
-          "value": 0.7667
+          "value": 0.7586
         },
         "response_groundedness": {
           "value": 1.0
@@ -495,7 +495,7 @@
         {
           "filename": "2025 의류(패션, 의류제조)업 신용평가방법론.pdf",
           "page": 21,
-          "score": 0.6503302795686471,
+          "score": 0.650330304777209,
           "industry_name": "의류업",
           "ksic_code": "C 제조업",
           "sub_sector": "의류"
@@ -503,7 +503,7 @@
         {
           "filename": "2025 의류(패션, 의류제조)업 신용평가방법론.pdf",
           "page": 21,
-          "score": 0.6454791017241115,
+          "score": 0.6454791265579866,
           "industry_name": "의류업",
           "ksic_code": "C 제조업",
           "sub_sector": "의류"
@@ -511,7 +511,7 @@
         {
           "filename": "2025 의류(패션, 의류제조)업 신용평가방법론.pdf",
           "page": 5,
-          "score": 0.6437810199590268,
+          "score": 0.6437810446624113,
           "industry_name": "의류업",
           "ksic_code": "C 제조업",
           "sub_sector": "의류"
@@ -519,7 +519,7 @@
         {
           "filename": "2025 의류(패션, 의류제조)업 신용평가방법론.pdf",
           "page": 21,
-          "score": 0.6389570247235138,
+          "score": 0.6389570490580694,
           "industry_name": "의류업",
           "ksic_code": "C 제조업",
           "sub_sector": "의류"
@@ -568,23 +568,15 @@
         {
           "filename": "2025 항공운송업 평가방법론.pdf",
           "page": 20,
-          "score": 0.6965555177327084,
+          "score": 0.6965554020545152,
           "industry_name": "항공운송업",
           "ksic_code": "H 운수 및 창고업",
           "sub_sector": "항공운송"
         },
         {
           "filename": "2025 항공운송업 평가방법론.pdf",
-          "page": 4,
-          "score": 0.6822811206435979,
-          "industry_name": "항공운송업",
-          "ksic_code": "H 운수 및 창고업",
-          "sub_sector": "항공운송"
-        },
-        {
-          "filename": "2025 항공운송업 평가방법론.pdf",
-          "page": 7,
-          "score": 0.6822811206435979,
+          "page": 6,
+          "score": 0.6822810235311738,
           "industry_name": "항공운송업",
           "ksic_code": "H 운수 및 창고업",
           "sub_sector": "항공운송"
@@ -592,7 +584,15 @@
         {
           "filename": "2025 항공운송업 평가방법론.pdf",
           "page": 9,
-          "score": 0.6822811206435979,
+          "score": 0.6822810235311738,
+          "industry_name": "항공운송업",
+          "ksic_code": "H 운수 및 창고업",
+          "sub_sector": "항공운송"
+        },
+        {
+          "filename": "2025 항공운송업 평가방법론.pdf",
+          "page": 11,
+          "score": 0.6822810235311738,
           "industry_name": "항공운송업",
           "ksic_code": "H 운수 및 창고업",
           "sub_sector": "항공운송"
@@ -600,7 +600,7 @@
         {
           "filename": "2025 항공운송업 평가방법론.pdf",
           "page": 14,
-          "score": 0.6822811206435979,
+          "score": 0.6822810235311738,
           "industry_name": "항공운송업",
           "ksic_code": "H 운수 및 창고업",
           "sub_sector": "항공운송"
@@ -618,7 +618,7 @@
           "value": 0.125
         },
         "response_groundedness": {
-          "value": 0.0
+          "value": 0.25
         },
         "factual_correctness": {
           "value": 0.0

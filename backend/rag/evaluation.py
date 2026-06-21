@@ -848,6 +848,7 @@ def _summarize_case_results(case_results: list[IndustryRagasCaseResult]) -> dict
             for result in case_results
             if (score := result.metric_scores.get(metric_name)) is not None
             and score.value is not None
+            and math.isfinite(score.value)
         ]
         summary[metric_name] = {
             "mean": round(fmean(values), 4) if values else None,
@@ -861,7 +862,7 @@ def _ensure_any_metric_succeeded(
     case_results: list[IndustryRagasCaseResult],
 ) -> None:
     if any(
-        score.value is not None
+        score.value is not None and math.isfinite(score.value)
         for result in case_results
         for score in result.metric_scores.values()
     ):

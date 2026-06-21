@@ -392,6 +392,51 @@ def test_summarize_case_results_ignores_skipped_metrics() -> None:
     }
 
 
+def test_summarize_case_results_treats_nan_score_as_skipped() -> None:
+    """NaN score가 score.value에 들어왔을 때 scored가 아닌 skipped로 집계되어야 한다.
+
+    회귀: _summarize_case_results가 score.value is not None만 체크하면
+    float('nan')이 values 리스트에 포함되어 fmean → NaN, scored_cases 오카운트 발생.
+    math.isfinite() 필터로 수정 후 NaN은 skipped_cases에만 포함되어야 한다.
+    """
+    case_results = [
+        evaluation.IndustryRagasCaseResult(
+            case_id="case-nan-1",
+            user_input="q1",
+            response="r1",
+            reference="ref1",
+            metric_scores={
+                "response_groundedness": evaluation.IndustryRagasMetricScore(
+                    value=float("nan")  # NaN이 직접 담긴 케이스
+                ),
+            },
+        ),
+        evaluation.IndustryRagasCaseResult(
+            case_id="case-nan-2",
+            user_input="q2",
+            response="r2",
+            reference="ref2",
+            metric_scores={
+                "response_groundedness": evaluation.IndustryRagasMetricScore(value=1.0),
+            },
+        ),
+    ]
+
+    summary = evaluation._summarize_case_results(case_results)
+    rg = summary["response_groundedness"]
+
+    # NaN 케이스는 scored_cases가 아닌 skipped_cases로 분류되어야 한다
+    assert rg["scored_cases"] == 1, f"NaN이 scored로 카운트됨: {rg}"
+    assert rg["skipped_cases"] == 1, f"NaN이 skipped로 카운트되지 않음: {rg}"
+
+    # mean은 유효한 값(1.0)만으로 계산되어야 한다 — NaN이 아니어야 함
+    import math as _math
+    assert rg["mean"] is not None and _math.isfinite(rg["mean"]), (
+        f"mean이 NaN 또는 None: {rg['mean']}"
+    )
+    assert rg["mean"] == 1.0, f"mean 기대값 1.0, 실제값: {rg['mean']}"
+
+
 def test_summarize_metric_coverage_marks_complete_report() -> None:
     coverage = evaluation._summarize_metric_coverage(
         {
