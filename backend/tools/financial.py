@@ -159,9 +159,32 @@ def _normalize_accounts(fs: pd.DataFrame) -> dict:
         # 유형자산취득은 CF에 음수로 기록됨 → 절댓값으로 저장
         # 표준 코드(account_id)를 함께 넘겨서 공백 깨짐이나 명칭 변동에 상관없이 완벽 추적
         "유형자산취득": abs(
-            _get("유형자산의 취득", "CF", "ifrs-full_PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities") 
-            or _get("유형자산취득", "CF") 
+            _get("유형자산의 취득", "CF", "ifrs-full_PurchaseOfPropertyPlantAndEquipmentClassifiedAsInvestingActivities")
+            or _get("유형자산취득", "CF")
             or 0
+        ),
+
+        # ── 현금성 자산 (EBITDA/유동성 분석용) ───────────────────
+        "현금및현금성자산": (
+            _get("현금및현금성자산", "BS")
+            or _get("현금및현금성자산및단기금융상품", "BS")
+        ),
+        "단기금융상품": (
+            _get("단기금융상품",   "BS")
+            or _get("단기투자자산", "BS")
+            or _get("단기금융자산", "BS")
+        ),
+
+        # ── 상각비 (EBITDA 계산용) ────────────────────────────────
+        # IS/CIS 우선, 없으면 CF 비현금 항목에서 폴백
+        "감가상각비": (
+            _get("감가상각비",           is_div)
+            or _get("유형자산감가상각비", is_div)
+            or _get("감가상각비",           "CF")
+        ),
+        "무형자산상각비": (
+            _get("무형자산상각비", is_div)
+            or _get("무형자산상각비", "CF")
         ),
     }
 
@@ -326,6 +349,7 @@ def calc_financial_ratios(fs: dict) -> dict:
         # 수익성
         "roa":          net_income / total_assets,
         "op_margin":    op_income  / revenue,
+        "net_margin":   net_income / revenue,                  # 순이익률
         "cogs_ratio":   fs["매출원가"] / revenue,              # 매출원가율
 
         # 현금흐름

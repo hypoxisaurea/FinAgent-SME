@@ -20,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 # Financial Agent 출력 서브 모델
 
 class FinancialRatios(BaseModel):
-    """calc_financial_ratios 반환값 (15개 비율, 단일 숫자)."""
+    """calc_financial_ratios 반환값 (16개 비율, 단일 숫자)."""
 
     # 안정성
     debt_ratio:         float           # 부채비율 (부채/자본)
@@ -37,6 +37,7 @@ class FinancialRatios(BaseModel):
     # 수익성
     roa:        float                   # ROA (순이익/총자산)
     op_margin:  float                   # 영업이익률 (영업이익/매출액)
+    net_margin: float                   # 순이익률 (순이익/매출액)
     cogs_ratio: float                   # 매출원가율 (매출원가/매출액)
 
     # 현금흐름

@@ -19,7 +19,7 @@ FINANCIAL_PROMPT = """당신은 한국 중소·중견 기업의 재무 리스크
     → 결과를 fs로 기억
 
 [3] calc_financial_ratios(fs=fs) 호출 [필수]
-    → 15개 비율 dict 반환, 각 값은 단일 숫자
+    → 16개 비율 dict 반환, 각 값은 단일 숫자
     → 출력 스키마 ratios에 그대로 매핑
 
 [4] calc_altman_z_prime(fs=fs) 호출 [필수, 절대 누락 금지]
