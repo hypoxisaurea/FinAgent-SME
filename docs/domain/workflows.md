@@ -123,14 +123,17 @@
 ## 상태값 규칙
 
 - `not_target`: 기업 미존재
-- `success`: 모든 step이 `ok=True`
+- `success`: 모든 step이 `ok=True`이고 최종 검증을 통과
 - `partial`: 성공 step과 실패 step이 혼재
 - `failed`: 모든 step이 `ok=False`
 
 주의:
 
 - agent의 `status=partial` 또는 `fallback_used=true`는 step 내부 메타데이터다.
-- 현재 전체 workflow `status`는 `step.ok` 집계로만 계산된다.
+- 기본 전체 workflow `status`는 `step.ok` 집계로 계산된다.
+- 단, `validation_result.validation_passed=false`이면 검증 step이 `ok=True`여도
+  최종 응답은 `status=partial`, `code=VALIDATION_WARNING`으로 강등된다.
+- 이 경우 보고서와 검증 상세는 원인 확인을 위해 응답에 유지된다.
 
 ## 실패 처리 정책
 

@@ -265,7 +265,7 @@ Retriever 평가:
 .venv/bin/python -m backend.scripts.evaluate_industry_rag \
   backend/rag/eval_datasets/industry_methodology.jsonl \
   --target retriever \
-  --output-path artifacts/industry_rag_eval/retriever-report.json
+  --output-path backend/rag/artifacts/industry_rag_eval/report.json
 ```
 
 기본 벡터 저장소는 `backend/vectorstore/industry_knowledge/`입니다. 평가에는 LLM API 키가 필요하며, 최초 적재에는 임베딩 모델 다운로드가 발생할 수 있습니다.

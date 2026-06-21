@@ -26,7 +26,19 @@ class _FakeCollection:
 
     def query(self, **kwargs: Any) -> dict[str, Any]:
         self.last_query = kwargs
-        return self.result
+        result = dict(self.result)
+        if "ids" not in result:
+            docs = self.result.get("documents", [[]])[0]
+            result["ids"] = [[f"fake_id_{i}" for i in range(len(docs))]]
+        return result
+
+    def get(self, **_: Any) -> dict[str, Any]:
+        """BM25 코퍼스 빌딩용 전체 문서 반환 (flat 형식)."""
+        docs = list(self.result.get("documents", [[]])[0])
+        return {
+            "ids": [f"fake_id_{i}" for i in range(len(docs))],
+            "documents": docs,
+        }
 
 
 class _FailingCollection:
@@ -383,3 +395,136 @@ def test_retrieve_industry_methodology_returns_unavailable_on_failure() -> None:
         "error": "vector store unavailable",
     }
     assert result["methodology_sources"] == []
+
+
+# ── Hybrid Search (BM25 + RRF) 테스트 ─────────────────────────────────────────
+
+
+def test_tokenize_for_bm25_splits_on_whitespace_and_punctuation() -> None:
+    from backend.rag.retriever import _tokenize_for_bm25  # noqa: PLC0415
+
+    tokens = _tokenize_for_bm25("EBITDA마진, 부채비율.")
+    assert "EBITDA마진" in tokens
+    assert "부채비율" in tokens
+    assert "" not in tokens
+
+
+def test_rrf_merge_combines_rankings() -> None:
+    from backend.rag.retriever import _rrf_merge  # noqa: PLC0415
+
+    # "a": dense 1위 + bm25 2위, "c": dense 3위 + bm25 1위 → 둘 다 "b"보다 상위
+    merged = _rrf_merge(["a", "b", "c"], ["c", "a", "d"])
+
+    assert "a" in merged[:2]
+    assert merged.index("c") < merged.index("b")
+    assert "d" in merged
+
+
+def test_rrf_merge_boosts_item_in_both_lists() -> None:
+    from backend.rag.retriever import _rrf_merge  # noqa: PLC0415
+
+    # "x": dense 1위 + bm25 1위 → 최상위 보장
+    merged = _rrf_merge(["x", "y"], ["x", "z"])
+    assert merged[0] == "x"
+
+
+def test_retrieve_hybrid_surfaces_keyword_match() -> None:
+    """BM25가 dense top-k 밖에 있던 EBITDA 키워드 문서를 요인 추출에 포함한다."""
+
+    class _HybridFakeCollection:
+        def query(self, **_: Any) -> dict[str, Any]:
+            return {
+                "documents": [["일반문서: 사업위험 분석.", "수주잔고 감소가 우려된다."]],
+                "metadatas": [
+                    [
+                        {
+                            "filename": "f.pdf",
+                            "page": 1,
+                            "industry_name": "건설업",
+                            "ksic_code": "F 건설업",
+                            "sub_sector": "건설",
+                        },
+                        {
+                            "filename": "f.pdf",
+                            "page": 2,
+                            "industry_name": "건설업",
+                            "ksic_code": "F 건설업",
+                            "sub_sector": "건설",
+                        },
+                    ]
+                ],
+                "distances": [[0.3, 0.4]],
+                "ids": [["dense_0", "dense_1"]],
+            }
+
+        def get(self, **_: Any) -> dict[str, Any]:
+            return {
+                "ids": ["dense_0", "dense_1", "bm25_only_0"],
+                "documents": [
+                    "일반문서: 사업위험 분석.",
+                    "수주잔고 감소가 우려된다.",
+                    "EBITDA 마진과 부채비율이 핵심 재무 평가요소입니다.",
+                ],
+            }
+
+    result = retrieve_industry_methodology(
+        query="EBITDA",
+        industry_name="건설업",
+        top_k=2,
+        collection=_HybridFakeCollection(),
+        use_hybrid=True,
+    )
+
+    all_factors = (
+        result["industry_methodology"]["key_risk_factors"]
+        + result["industry_methodology"]["credit_assessment_factors"]
+    )
+    assert any("EBITDA" in f for f in all_factors)
+
+
+# ── use_hybrid=False 기본값 검증 ───────────────────────────────────────────────
+
+
+def test_use_hybrid_false_skips_bm25_get_call() -> None:
+    """use_hybrid=False(기본값)이면 collection.get()을 호출하지 않는다."""
+
+    class _TrackingCollection:
+        def __init__(self) -> None:
+            self.get_called = False
+
+        def query(self, **_: Any) -> dict[str, Any]:
+            return {
+                "documents": [["사업위험 분석 문서."]],
+                "metadatas": [[{"filename": "f.pdf", "page": 1,
+                                "industry_name": "건설업", "ksic_code": "F 건설업",
+                                "sub_sector": "건설"}]],
+                "distances": [[0.3]],
+                "ids": [["dense_0"]],
+            }
+
+        def get(self, **_: Any) -> dict[str, Any]:
+            self.get_called = True
+            return {"ids": [], "documents": []}
+
+    col = _TrackingCollection()
+    retrieve_industry_methodology(
+        query="건설업 평가요소",
+        industry_name="건설업",
+        collection=col,
+        use_hybrid=False,
+    )
+    assert not col.get_called, "use_hybrid=False이면 get()을 호출하면 안 됨"
+
+
+def test_use_hybrid_false_default_matches_dense_only_result() -> None:
+    """use_hybrid 미지정(기본값 False)과 명시적 False가 동일한 결과를 반환한다."""
+    collection = _FakeCollection()
+
+    result_default = retrieve_industry_methodology(
+        industry_name="건설업", collection=collection
+    )
+    result_explicit = retrieve_industry_methodology(
+        industry_name="건설업", collection=collection, use_hybrid=False
+    )
+
+    assert result_default == result_explicit

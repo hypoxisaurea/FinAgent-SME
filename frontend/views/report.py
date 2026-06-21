@@ -168,6 +168,7 @@ def _inject_styles() -> None:
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 12px;
             margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
         }
         .metrics-grid.tight-values .mini-value {
             font-size: 1.02rem;
@@ -178,6 +179,7 @@ def _inject_styles() -> None:
             border: 1px solid #dbe4ef;
             border-radius: 16px;
             padding: 16px 16px 14px;
+            margin-bottom: 12px;
         }
         .metric-label, .mini-label {
             color: #66758a;
@@ -371,6 +373,42 @@ def _inject_styles() -> None:
             border-color: #efc9ce;
             background: #fff6f7;
             color: #8e313a;
+        }
+        .summary-emphasis {
+            border-radius: 18px;
+            padding: 18px 20px;
+            border: 1px solid #d7e6f4;
+            background: linear-gradient(180deg, #f6fbff 0%, #eef5fb 100%);
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+            margin-top: 0.35rem;
+        }
+        .summary-emphasis-title {
+            color: #1f3552;
+            font-size: 0.96rem;
+            font-weight: 800;
+            margin-bottom: 0.6rem;
+        }
+        .summary-emphasis-body {
+            color: #22364f;
+            font-size: 1.02rem;
+            line-height: 1.8;
+            font-weight: 400;
+        }
+        .summary-emphasis-headline {
+            color: #1f3552;
+            font-size: 1.08rem;
+            line-height: 1.8;
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+        }
+        .summary-emphasis-list {
+            margin: 0;
+            padding-left: 1.1rem;
+            color: #334155;
+        }
+        .summary-emphasis-list li {
+            margin-bottom: 0.45rem;
+            line-height: 1.7;
         }
         @media (max-width: 900px) {
             .metrics-grid,
@@ -768,22 +806,21 @@ def _render_decision_rationale_section(section: dict[str, Any]) -> None:
             f'<div class="card-title">{escape(str(section["title"]))}</div>',
             unsafe_allow_html=True,
         )
-        st.markdown('<div class="subsection-title">연결 요약</div>', unsafe_allow_html=True)
-        st.markdown(
-            f'<div class="item-chip">{escape(str(section.get("connected_reason") or "-"))}</div>',
-            unsafe_allow_html=True,
-        )
         factor_col1, factor_col2 = st.columns(2)
         with factor_col1:
-            st.markdown('<div class="subsection-title" style="margin-top: 1rem;">긍정 요인</div>', unsafe_allow_html=True)
+            st.markdown('<div class="subsection-title">긍정 요인</div>', unsafe_allow_html=True)
             _render_event_factor_blocks(section.get("positive_factors"), "item-chip item-good")
         with factor_col2:
-            st.markdown('<div class="subsection-title" style="margin-top: 1rem;">리스크 요인</div>', unsafe_allow_html=True)
+            st.markdown('<div class="subsection-title">리스크 요인</div>', unsafe_allow_html=True)
             _render_event_factor_blocks(section.get("risk_factors"), "item-chip item-risk")
 
-        st.markdown('<div class="subsection-title" style="margin-top: 1rem;">최종 요약</div>', unsafe_allow_html=True)
+        st.markdown('<div class="subsection-title" style="margin-top: 1rem;">최종 신용판단 요약</div>', unsafe_allow_html=True)
         st.markdown(
-            f'<div class="item-chip">{escape(str(section.get("summary") or "-"))}</div>',
+            f"""
+            <div class="summary-emphasis">
+                <div class="summary-emphasis-body">{_build_decision_summary_html(section)}</div>
+            </div>
+            """,
             unsafe_allow_html=True,
         )
         st.markdown('<div class="subsection-title" style="margin-top: 1rem;">판단 사유</div>', unsafe_allow_html=True)
@@ -1247,6 +1284,65 @@ def _format_risk_factor_text(item: Any) -> str:
     if rest_lines:
         return first_line + "<br>" + "<br>".join(rest_lines)
     return first_line
+
+
+def _merge_decision_summary(section: dict[str, Any]) -> str:
+    connected = str(section.get("connected_reason") or "").strip()
+    summary = str(section.get("summary") or "").strip()
+    if connected and summary:
+        if summary in connected:
+            return connected
+        if connected in summary:
+            return summary
+        return f"{connected} {summary}"
+    return connected or summary or "-"
+
+
+def _build_decision_summary_html(section: dict[str, Any]) -> str:
+    connected = str(section.get("connected_reason") or "").strip()
+    summary = str(section.get("summary") or "").strip()
+
+    if connected and " 동시에 " in connected:
+        first, second = connected.split(" 동시에 ", 1)
+        connected = f"{_ensure_sentence_end(first)} {second.strip()}"
+
+    prefix = connected
+    non_financial = ""
+    if "비금융 리스크" in connected:
+        prefix, non_financial = connected.split("비금융 리스크", 1)
+        non_financial = f"비금융 리스크{non_financial}".strip()
+
+    parts: list[str] = []
+    if prefix.strip():
+        parts.append(_ensure_sentence_end(prefix.strip()))
+    if non_financial.strip():
+        parts.append(_ensure_sentence_end(non_financial.strip()))
+    if summary:
+        parts.append(_ensure_sentence_end(summary))
+
+    ordered_parts = [part for part in parts if part]
+    if not ordered_parts:
+        return escape("-")
+
+    headline = ordered_parts[-1]
+    bullets = ordered_parts[:-1]
+    if not bullets:
+        return f'<div class="summary-emphasis-headline">{escape(headline)}</div>'
+
+    bullet_html = "".join(f"<li>{escape(part)}</li>" for part in bullets)
+    return (
+        f'<div class="summary-emphasis-headline">{escape(headline)}</div>'
+        f'<ul class="summary-emphasis-list">{bullet_html}</ul>'
+    )
+
+
+def _ensure_sentence_end(text: str) -> str:
+    value = text.strip()
+    if not value:
+        return value
+    if value[-1] in ".!?":
+        return value
+    return f"{value}."
 
 
 def _format_decision(decision: str) -> str:

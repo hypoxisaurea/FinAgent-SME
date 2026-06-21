@@ -52,7 +52,9 @@
 - `status=failed`는 `ok=False`로 처리된다.
 - `status=success`, `partial`, `skipped`는 현재 `ok=True`로 처리된다.
 
-즉, 전체 workflow 상태는 agent의 `status` 문자열이 아니라 `step.ok` 집계에 의해 계산된다.
+기본 전체 workflow 상태는 agent의 `status` 문자열이 아니라 `step.ok` 집계에 의해
+계산된다. 단, 최종 `validation_result.validation_passed=false`이면 workflow 결과는
+`status=partial`, `code=VALIDATION_WARNING`으로 강등된다.
 
 ## Timeout / Retry 정책
 

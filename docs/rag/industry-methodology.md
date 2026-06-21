@@ -103,7 +103,7 @@ Retriever 품질:
 .venv/bin/python -m backend.scripts.evaluate_industry_rag \
   backend/rag/eval_datasets/industry_methodology.jsonl \
   --target retriever \
-  --output-path artifacts/industry_rag_eval/retriever-report.json
+  --output-path backend/rag/artifacts/industry_rag_eval/report.json
 ```
 
 IndustryAnalystAgent end-to-end 품질:
@@ -112,7 +112,7 @@ IndustryAnalystAgent end-to-end 품질:
 .venv/bin/python -m backend.scripts.evaluate_industry_rag \
   backend/rag/eval_datasets/industry_agent.jsonl \
   --target agent \
-  --output-path artifacts/industry_rag_eval/agent-report.json
+  --output-path backend/rag/artifacts/industry_rag_eval/agent_report.json
 ```
 
 `--model`로 evaluator 모델을 덮어쓸 수 있습니다. 지정하지 않으면 프로젝트 LLM 설정을 사용하므로 `backend/.env`의 `OPEN_ROUTER_API_KEY`와 모델 설정이 필요합니다. Agent 평가는 실제 provider 경로에 따라 DB 또는 외부 연동도 요구할 수 있습니다.
@@ -142,6 +142,42 @@ flowchart TD
   tests/unit/test_industry_rag_evaluation.py \
   tests/unit/test_evaluate_industry_rag_script.py
 ```
+
+## 7. Hybrid Search(BM25+Dense) 도입 검토
+
+정량 검증을 위해 BM25+Dense 하이브리드 검색을 구현하고 골든셋 9개 케이스로
+Dense 단독과 Hit@k/MRR을 비교했습니다.
+
+### 측정 결과
+
+| 지표 | Dense | Hybrid | 변화 |
+| --- | --- | --- | --- |
+| Hit@3 | 0.8889 | 0.7778 | -0.1111 |
+| MRR@3 | 0.8148 | 0.5370 | -0.2778 |
+| Hit@5 | 0.8889 | 0.8889 | 0.0000 |
+| MRR@5 | 0.8148 | 0.5593 | -0.2555 |
+
+### 원인 분석
+
+RRF 점수 계산 구조상 k 파라미터를 조정해도 Dense·BM25 점수 비율이 유지되어 효과가
+없습니다. 근본 원인은 쿼리가 구어체 자연어("알려줘", "정리해줘")로 작성되어 있어
+BM25 토큰이 gold chunk의 전문용어와 매칭되지 않는 것입니다. 가중치를 Dense 2배로
+설정해도 MRR@3이 0.537로 정체하여 Dense 단독(0.815) 대비 낮습니다.
+
+### 결론 및 현황
+
+본 도메인에서는 LLM이 생성한 구어체 쿼리가 주를 이루므로 Dense 단독이 더 적합합니다.
+Hybrid 코드는 `retrieve_industry_methodology(use_hybrid=True)`로 호출해 재활성화할
+수 있도록 보존하며 기본값은 `False`(Dense 단독)입니다. 키워드 기반 정확 질의
+비중이 늘면 재검토합니다.
+
+### 재현
+
+```bash
+/opt/anaconda3/bin/python -m backend.rag.retrieval_metrics
+```
+
+결과는 `backend/rag/artifacts/retrieval_metrics_YYYYMMDD_HHMMSS.json`에 저장됩니다.
 
 ## 운영 체크리스트
 

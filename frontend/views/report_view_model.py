@@ -13,11 +13,11 @@ def build_report_view_model(
     report_payload: dict[str, Any],
     decision_step: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    explanation = context.get("explanation", {}) if isinstance(context, dict) else {}
-    company_profile = context.get("company_profile", {}) if isinstance(context, dict) else {}
-    risk_filters = context.get("risk_filters", {}) if isinstance(context, dict) else {}
-    altman_z = context.get("altman_z", {}) if isinstance(context, dict) else {}
-    financial_ratios = context.get("financial_ratios", {}) if isinstance(context, dict) else {}
+    explanation = context.get("explanation") or {} if isinstance(context, dict) else {}
+    company_profile = context.get("company_profile") or {} if isinstance(context, dict) else {}
+    risk_filters = context.get("risk_filters") or {} if isinstance(context, dict) else {}
+    altman_z = context.get("altman_z") or {} if isinstance(context, dict) else {}
+    financial_ratios = context.get("financial_ratios") or {} if isinstance(context, dict) else {}
 
     decision = report_payload.get("decision") or context.get("decision") or "-"
     credit_grade = report_payload.get("credit_grade") or context.get("credit_grade") or "-"

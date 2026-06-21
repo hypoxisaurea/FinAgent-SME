@@ -1,0 +1,170 @@
+{
+  "evaluated_at": "2026-06-20T05:55:08.605059+00:00",
+  "num_cases": 9,
+  "top_k_list": [
+    3,
+    5
+  ],
+  "gold_top_n": 3,
+  "gold_max_distance": 0.8,
+  "summary": {
+    "dense": {
+      "hit@3": 0.8889,
+      "mrr@3": 0.8148,
+      "hit@5": 0.8889,
+      "mrr@5": 0.8148
+    },
+    "hybrid": {
+      "hit@3": 0.7778,
+      "mrr@3": 0.537,
+      "hit@5": 0.8889,
+      "mrr@5": 0.5593
+    }
+  },
+  "cases": [
+    {
+      "case_id": "construction-01",
+      "gold_chunk_count": 3,
+      "dense": {
+        "hit@3": true,
+        "mrr@3": 1.0,
+        "hit@5": true,
+        "mrr@5": 1.0
+      },
+      "hybrid": {
+        "hit@3": true,
+        "mrr@3": 0.5,
+        "hit@5": true,
+        "mrr@5": 0.5
+      }
+    },
+    {
+      "case_id": "semiconductor-01",
+      "gold_chunk_count": 3,
+      "dense": {
+        "hit@3": true,
+        "mrr@3": 1.0,
+        "hit@5": true,
+        "mrr@5": 1.0
+      },
+      "hybrid": {
+        "hit@3": true,
+        "mrr@3": 0.5,
+        "hit@5": true,
+        "mrr@5": 0.5
+      }
+    },
+    {
+      "case_id": "shipbuilding-01",
+      "gold_chunk_count": 3,
+      "dense": {
+        "hit@3": true,
+        "mrr@3": 1.0,
+        "hit@5": true,
+        "mrr@5": 1.0
+      },
+      "hybrid": {
+        "hit@3": true,
+        "mrr@3": 1.0,
+        "hit@5": true,
+        "mrr@5": 1.0
+      }
+    },
+    {
+      "case_id": "refining-01",
+      "gold_chunk_count": 3,
+      "dense": {
+        "hit@3": true,
+        "mrr@3": 1.0,
+        "hit@5": true,
+        "mrr@5": 1.0
+      },
+      "hybrid": {
+        "hit@3": true,
+        "mrr@3": 1.0,
+        "hit@5": true,
+        "mrr@5": 1.0
+      }
+    },
+    {
+      "case_id": "automobile-01",
+      "gold_chunk_count": 3,
+      "dense": {
+        "hit@3": true,
+        "mrr@3": 1.0,
+        "hit@5": true,
+        "mrr@5": 1.0
+      },
+      "hybrid": {
+        "hit@3": true,
+        "mrr@3": 0.5,
+        "hit@5": true,
+        "mrr@5": 0.5
+      }
+    },
+    {
+      "case_id": "steel-01",
+      "gold_chunk_count": 3,
+      "dense": {
+        "hit@3": true,
+        "mrr@3": 1.0,
+        "hit@5": true,
+        "mrr@5": 1.0
+      },
+      "hybrid": {
+        "hit@3": true,
+        "mrr@3": 1.0,
+        "hit@5": true,
+        "mrr@5": 1.0
+      }
+    },
+    {
+      "case_id": "apparel-01",
+      "gold_chunk_count": 3,
+      "dense": {
+        "hit@3": true,
+        "mrr@3": 0.3333,
+        "hit@5": true,
+        "mrr@5": 0.3333
+      },
+      "hybrid": {
+        "hit@3": false,
+        "mrr@3": 0.0,
+        "hit@5": true,
+        "mrr@5": 0.2
+      }
+    },
+    {
+      "case_id": "air-transport-01",
+      "gold_chunk_count": 3,
+      "dense": {
+        "hit@3": false,
+        "mrr@3": 0.0,
+        "hit@5": false,
+        "mrr@5": 0.0
+      },
+      "hybrid": {
+        "hit@3": false,
+        "mrr@3": 0.0,
+        "hit@5": false,
+        "mrr@5": 0.0
+      }
+    },
+    {
+      "case_id": "cable-01",
+      "gold_chunk_count": 3,
+      "dense": {
+        "hit@3": true,
+        "mrr@3": 1.0,
+        "hit@5": true,
+        "mrr@5": 1.0
+      },
+      "hybrid": {
+        "hit@3": true,
+        "mrr@3": 0.3333,
+        "hit@5": true,
+        "mrr@5": 0.3333
+      }
+    }
+  ]
+}
