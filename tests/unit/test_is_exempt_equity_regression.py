@@ -10,7 +10,6 @@ is_exempt_equity = is_small_enterprise OR is_individual
   케이스는 "자기자본비율 10% 이하, 자본 양수" 상황으로 설정합니다.
 """
 
-import pytest
 from backend.tools.financial import apply_risk_filters
 
 
