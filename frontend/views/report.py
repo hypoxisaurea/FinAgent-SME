@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from frontend.views.report_view_model import build_report_view_model
+from views.report_view_model import build_report_view_model
 
 
 def render() -> None:
