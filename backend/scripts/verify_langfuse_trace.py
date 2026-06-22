@@ -1,30 +1,50 @@
 from __future__ import annotations
 
 import argparse
-import base64
 import json
 import logging
-import os
+import re
 import signal
 import time
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
-from urllib.error import HTTPError
-from urllib.request import Request, urlopen
 
 from backend.common.langfuse import get_langfuse_client, is_langfuse_enabled
 from backend.common.logging import configure_logging
 
 logger = logging.getLogger(__name__)
 DEFAULT_OUTPUT_PATH = "artifacts/langfuse_trace_verification.json"
+SENSITIVE_KEYS = frozenset(
+    {
+        "api_key",
+        "authorization",
+        "credential",
+        "credentials",
+        "password",
+        "secret_key",
+        "token",
+        "access_token",
+        "refresh_token",
+        "id_token",
+    }
+)
+SENSITIVE_KEY_SUFFIXES = (
+    "api_key",
+    "password",
+    "secret_key",
+)
+SENSITIVE_VALUE_PATTERNS = (
+    re.compile(r"(?i)\b(?:sk|pk)-lf-[a-z0-9_-]+"),
+    re.compile(r"(?i)\bbearer\s+[a-z0-9._~+/=-]+"),
+)
 
 
 def verify_trace(
     *,
     output_path: str | Path,
-    attempts: int = 5,
+    attempts: int = 10,
     flush_timeout_seconds: int = 15,
 ) -> dict[str, Any]:
     """테스트 trace를 전송하고 Langfuse Trace API에서 수신 여부를 확인한다."""
@@ -42,16 +62,34 @@ def verify_trace(
         metadata={"feature": "observability_verification"},
     ) as observation:
         trace_id = client.get_current_trace_id() or observation.trace_id
+        with client.start_as_current_observation(
+            name="langfuse_ingestion_check",
+            as_type="span",
+            input={"check": "trace_ingestion"},
+            metadata={"verification_step": True},
+        ) as verification_step:
+            verification_step.update(
+                output={"ingestion_event_created": True}
+            )
         observation.update(output={"status": "completed"})
 
     _flush_with_timeout(client, timeout_seconds=flush_timeout_seconds)
-    trace_payload = _fetch_trace_with_retry(trace_id, attempts=attempts)
+    trace_payload = _fetch_trace_with_retry(client, trace_id, attempts=attempts)
+    trace_data = _redact_sensitive_data(_parse_json_io_fields(_to_json_data(trace_payload)))
+    observations = _fetch_observations_with_retry(client, trace_id, attempts=attempts)
+    trace_data["observations"] = _redact_sensitive_data(
+        [
+            _parse_json_io_fields(_to_json_data(observation))
+            for observation in observations
+        ]
+    )
     evidence = {
         "verified": True,
         "verified_at": datetime.now(UTC).isoformat(),
         "trace_id": trace_id,
-        "trace_name": trace_payload.get("name", "finagent_trace_verification"),
+        "trace_name": trace_data.get("name", "finagent_trace_verification"),
         "trace_url": client.get_trace_url(trace_id=trace_id),
+        "trace": trace_data,
     }
     target_path = Path(output_path)
     target_path.parent.mkdir(parents=True, exist_ok=True)
@@ -67,6 +105,55 @@ def verify_trace(
     return evidence
 
 
+def _to_json_data(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    model_dump = getattr(value, "model_dump", None)
+    if callable(model_dump):
+        payload = model_dump(mode="json")
+        if isinstance(payload, dict):
+            return payload
+    raise TypeError("Langfuse trace 응답을 JSON 객체로 변환할 수 없습니다.")
+
+
+def _redact_sensitive_data(value: Any, *, key: str | None = None) -> Any:
+    if key is not None:
+        snake_case_key = re.sub(r"(?<!^)(?=[A-Z])", "_", key).lower().replace("-", "_")
+        if snake_case_key in SENSITIVE_KEYS or snake_case_key.endswith(
+            SENSITIVE_KEY_SUFFIXES
+        ):
+            return "[REDACTED]"
+    if isinstance(value, dict):
+        return {
+            item_key: _redact_sensitive_data(item_value, key=str(item_key))
+            for item_key, item_value in value.items()
+        }
+    if isinstance(value, list):
+        return [_redact_sensitive_data(item) for item in value]
+    if isinstance(value, str):
+        redacted = value
+        for pattern in SENSITIVE_VALUE_PATTERNS:
+            redacted = pattern.sub("[REDACTED]", redacted)
+        return redacted
+    return value
+
+
+def _parse_json_io_fields(value: Any, *, key: str | None = None) -> Any:
+    if isinstance(value, dict):
+        return {
+            item_key: _parse_json_io_fields(item_value, key=str(item_key))
+            for item_key, item_value in value.items()
+        }
+    if isinstance(value, list):
+        return [_parse_json_io_fields(item) for item in value]
+    if key in {"input", "output"} and isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return value
+    return value
+
+
 def _flush_with_timeout(client: Any, *, timeout_seconds: int) -> None:
     def _handle_timeout(signum: int, frame: Any) -> None:
         raise TimeoutError("Langfuse flush가 제한 시간을 초과했습니다.")
@@ -80,33 +167,51 @@ def _flush_with_timeout(client: Any, *, timeout_seconds: int) -> None:
         signal.signal(signal.SIGALRM, previous_handler)
 
 
-def _fetch_trace_with_retry(trace_id: str, *, attempts: int) -> dict[str, Any]:
-    base_url = os.getenv("LANGFUSE_BASE_URL", "https://cloud.langfuse.com").rstrip("/")
-    public_key = os.environ["LANGFUSE_PUBLIC_KEY"]
-    secret_key = os.environ["LANGFUSE_SECRET_KEY"]
-    encoded_credentials = base64.b64encode(
-        f"{public_key}:{secret_key}".encode()
-    ).decode()
-    request = Request(
-        f"{base_url}/api/public/traces/{trace_id}",
-        headers={"Authorization": f"Basic {encoded_credentials}"},
-    )
+def _fetch_trace_with_retry(client: Any, trace_id: str, *, attempts: int) -> Any:
+    last_error: Exception | None = None
     for attempt in range(1, max(attempts, 1) + 1):
         try:
-            with urlopen(request, timeout=10) as response:  # noqa: S310
-                return json.loads(response.read().decode("utf-8"))
-        except HTTPError as exc:
-            if exc.code != 404 or attempt >= attempts:
-                raise
+            return client.api.trace.get(trace_id)
+        except Exception as exc:  # noqa: BLE001 - SDK 오류는 재시도 후 명시적으로 처리
+            last_error = exc
+            if attempt >= max(attempts, 1):
+                break
             time.sleep(0.5 * attempt)
-    raise RuntimeError("Langfuse trace 확인에 실패했습니다.")
+    raise RuntimeError("Langfuse trace 확인에 실패했습니다.") from last_error
+
+
+def _fetch_observations_with_retry(
+    client: Any,
+    trace_id: str,
+    *,
+    attempts: int,
+) -> list[Any]:
+    last_error: Exception | None = None
+    for attempt in range(1, max(attempts, 1) + 1):
+        try:
+            response = client.api.observations.get_many(
+                trace_id=trace_id,
+                limit=100,
+                fields=(
+                    "core,basic,time,io,metadata,model,usage,prompt,metrics,"
+                    "trace_context"
+                ),
+            )
+            observations = response.data
+            if observations:
+                return list(observations)
+        except Exception as exc:  # noqa: BLE001 - SDK 오류는 재시도 후 명시적으로 처리
+            last_error = exc
+        if attempt < max(attempts, 1):
+            time.sleep(0.5 * attempt)
+    raise RuntimeError("Langfuse observation 확인에 실패했습니다.") from last_error
 
 
 def build_parser() -> argparse.ArgumentParser:
     """Langfuse trace 검증 CLI 파서를 생성한다."""
     parser = argparse.ArgumentParser(description="Langfuse trace 적재를 검증합니다.")
     parser.add_argument("--output-path", default=DEFAULT_OUTPUT_PATH)
-    parser.add_argument("--attempts", type=int, default=5)
+    parser.add_argument("--attempts", type=int, default=10)
     parser.add_argument("--flush-timeout-seconds", type=int, default=15)
     return parser
 

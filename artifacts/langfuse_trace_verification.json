@@ -1,0 +1,179 @@
+{
+  "verified": true,
+  "verified_at": "2026-06-22T14:56:09.463779+00:00",
+  "trace_id": "2bf41c702375099c728c7c2d4e592402",
+  "trace_name": "finagent_trace_verification",
+  "trace_url": "https://cloud.langfuse.com/project/cmq51q9y001iaad0i0wvfmrwf/traces/2bf41c702375099c728c7c2d4e592402",
+  "trace": {
+    "id": "2bf41c702375099c728c7c2d4e592402",
+    "timestamp": "2026-06-22T14:55:45.531000Z",
+    "name": "finagent_trace_verification",
+    "input": {
+      "verification": true
+    },
+    "output": {
+      "status": "completed"
+    },
+    "metadata": {
+      "feature": "observability_verification",
+      "resourceAttributes": {
+        "telemetry.sdk.language": "python",
+        "telemetry.sdk.name": "opentelemetry",
+        "telemetry.sdk.version": "1.42.1",
+        "langfuse.environment": "development",
+        "service.name": "unknown_service"
+      },
+      "scope": {
+        "name": "langfuse-sdk",
+        "version": "4.7.1",
+        "attributes": {
+          "public_key": "[REDACTED]"
+        }
+      }
+    },
+    "tags": [],
+    "public": false,
+    "environment": "development",
+    "htmlPath": "/project/cmq51q9y001iaad0i0wvfmrwf/traces/2bf41c702375099c728c7c2d4e592402",
+    "latency": 0.001,
+    "totalCost": 0.0,
+    "observations": [
+      {
+        "id": "43af15a1c8994d4f",
+        "traceId": "2bf41c702375099c728c7c2d4e592402",
+        "startTime": "2026-06-22T14:55:45.531000Z",
+        "endTime": "2026-06-22T14:55:45.531000Z",
+        "projectId": "cmq51q9y001iaad0i0wvfmrwf",
+        "parentObservationId": "39dfc1a35d1d5f78",
+        "type": "SPAN",
+        "name": "langfuse_ingestion_check",
+        "level": "DEFAULT",
+        "statusMessage": "",
+        "version": "",
+        "environment": "development",
+        "bookmarked": false,
+        "public": false,
+        "userId": "",
+        "sessionId": "",
+        "createdAt": "2026-06-22T14:55:46.350000Z",
+        "updatedAt": "2026-06-22T14:55:46.350000Z",
+        "input": {
+          "check": "trace_ingestion"
+        },
+        "output": {
+          "ingestion_event_created": true
+        },
+        "metadata": {
+          "verification_step": true,
+          "scope.attributes.public_key": "[REDACTED]",
+          "scope.version": "4.7.1",
+          "scope.name": "langfuse-sdk",
+          "resourceAttributes.service.name": "unknown_service",
+          "resourceAttributes.langfuse.environment": "development",
+          "resourceAttributes.telemetry.sdk.version": "1.42.1",
+          "resourceAttributes.telemetry.sdk.name": "opentelemetry",
+          "resourceAttributes.telemetry.sdk.language": "python"
+        },
+        "internalModelId": "",
+        "modelParameters": {},
+        "usageDetails": {},
+        "costDetails": {},
+        "totalCost": 0.0,
+        "promptId": "",
+        "promptName": "",
+        "latency": 0.0,
+        "traceName": "",
+        "tags": [],
+        "release": "",
+        "model": "",
+        "inputUsage": 0,
+        "outputUsage": 0,
+        "totalUsage": 0,
+        "completionStartTime": null,
+        "usagePricingTierName": null,
+        "promptVersion": null,
+        "timeToFirstToken": null,
+        "modelId": null,
+        "inputPrice": null,
+        "outputPrice": null,
+        "totalPrice": null,
+        "inputCost": null,
+        "outputCost": null,
+        "usagePricingTierId": null
+      },
+      {
+        "id": "39dfc1a35d1d5f78",
+        "traceId": "2bf41c702375099c728c7c2d4e592402",
+        "startTime": "2026-06-22T14:55:45.531000Z",
+        "endTime": "2026-06-22T14:55:45.532000Z",
+        "projectId": "cmq51q9y001iaad0i0wvfmrwf",
+        "type": "CHAIN",
+        "name": "finagent_trace_verification",
+        "level": "DEFAULT",
+        "statusMessage": "",
+        "version": "",
+        "environment": "development",
+        "bookmarked": false,
+        "public": false,
+        "userId": "",
+        "sessionId": "",
+        "createdAt": "2026-06-22T14:55:46.350000Z",
+        "updatedAt": "2026-06-22T14:55:46.350000Z",
+        "input": {
+          "verification": true
+        },
+        "output": {
+          "status": "completed"
+        },
+        "metadata": {
+          "feature": "observability_verification",
+          "scope.attributes.public_key": "[REDACTED]",
+          "scope.version": "4.7.1",
+          "scope.name": "langfuse-sdk",
+          "resourceAttributes.service.name": "unknown_service",
+          "resourceAttributes.langfuse.environment": "development",
+          "resourceAttributes.telemetry.sdk.version": "1.42.1",
+          "resourceAttributes.telemetry.sdk.name": "opentelemetry",
+          "resourceAttributes.telemetry.sdk.language": "python"
+        },
+        "internalModelId": "",
+        "modelParameters": {},
+        "usageDetails": {},
+        "costDetails": {},
+        "totalCost": 0.0,
+        "promptId": "",
+        "promptName": "",
+        "latency": 0.001,
+        "traceName": "",
+        "tags": [],
+        "release": "",
+        "model": "",
+        "inputUsage": 0,
+        "outputUsage": 0,
+        "totalUsage": 0,
+        "parentObservationId": null,
+        "completionStartTime": null,
+        "usagePricingTierName": null,
+        "promptVersion": null,
+        "timeToFirstToken": null,
+        "modelId": null,
+        "inputPrice": null,
+        "outputPrice": null,
+        "totalPrice": null,
+        "inputCost": null,
+        "outputCost": null,
+        "usagePricingTierId": null
+      }
+    ],
+    "scores": [],
+    "projectId": "cmq51q9y001iaad0i0wvfmrwf",
+    "bookmarked": false,
+    "createdAt": "2026-06-22T14:55:47.000Z",
+    "updatedAt": "2026-06-22T14:55:46.402Z",
+    "sessionId": null,
+    "release": null,
+    "version": null,
+    "userId": null,
+    "externalId": null
+  }
+}
