@@ -240,6 +240,24 @@ def filter_sme_companies(
     return filtered_companies
 
 
+def _build_fallback_company(
+    *,
+    company_name: str | None = None,
+    corp_name: str | None = None,
+    stock_code: str | None = None,
+) -> SMECompany | None:
+    normalized_stock_code = _normalize_stock_code(_normalize_text(stock_code))
+    normalized_corp_name = _normalize_text(corp_name) or _normalize_text(company_name)
+
+    if not normalized_stock_code or not normalized_corp_name:
+        return None
+
+    return SMECompany(
+        stock_code=normalized_stock_code,
+        corp_name=normalized_corp_name,
+    )
+
+
 def extract_daum_news_list(
     stock_code: str,
     headers: dict[str, str] | None = None,
