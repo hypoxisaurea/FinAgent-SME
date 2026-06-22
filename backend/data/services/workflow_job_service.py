@@ -26,6 +26,7 @@ JOB_ERROR_MESSAGES = {
     "RESOURCE_NOT_FOUND": "심사에 필요한 리소스를 찾지 못해 작업이 중단되었습니다.",
     "UPSTREAM_UNAVAILABLE": "외부 연동 오류로 심사 작업이 중단되었습니다.",
     "AGENT_EXECUTION_FAILED": "심사 워크플로우 실행 중 오류가 발생했습니다.",
+    "VALIDATION_FAILED": "최종 결과 검증에 실패하여 심사 결과가 차단되었습니다.",
     "WORKER_RESTARTED": "서버 재시작으로 이전 작업이 종료되었습니다. 다시 시도해주세요.",
 }
 

@@ -14,6 +14,8 @@ from langgraph.graph import END, START, StateGraph
 
 logger = logging.getLogger("backend.agents.orchestrator.orchestrator")
 LANGGRAPH_RUNTIME_CONFIGURED = LANGGRAPH_IMPORT_GUARD
+DEFAULT_VALIDATION_RETRY_ATTEMPTS = 1
+MAX_VALIDATION_RETRY_ATTEMPTS = 3
 
 
 class WorkflowGraphBuilder:
@@ -101,7 +103,13 @@ class WorkflowGraphBuilder:
                 )
                 node_state: WorkflowState = {"steps": [asdict(step)]}
 
-                if step.ok:
+                if agent.name == "validation" and "validation_result" in step.output:
+                    node_state["context"] = self._build_validation_gate_context(
+                        context,
+                        step.output,
+                    )
+                    self._log_agent_result(context, agent, step)
+                elif step.ok:
                     logger.info(
                         (
                             "workflow_agent_completed company_name=%s agent_name=%s "
@@ -168,6 +176,68 @@ class WorkflowGraphBuilder:
             return node_state
 
         return _node
+
+    def _build_validation_gate_context(
+        self,
+        context: dict[str, Any],
+        output: dict[str, Any],
+    ) -> dict[str, Any]:
+        validation_result = output["validation_result"]
+        attempt = int(context.get("validation_attempt", 0)) + 1
+        retry_attempts = (
+            self._validation_retry_attempts(context)
+            if self._validation_retry_node_name() is not None
+            else 0
+        )
+        passed = validation_result.get("validation_passed") is True
+        if passed:
+            gate_status = "passed"
+        elif attempt <= retry_attempts:
+            gate_status = "retrying"
+        else:
+            gate_status = "blocked"
+        logger.warning(
+            (
+                "workflow_validation_gate company_name=%s gate_status=%s "
+                "attempt=%s retry_attempts=%s failed_checks=%s"
+            ),
+            context.get("company_name"),
+            gate_status,
+            attempt,
+            retry_attempts,
+            validation_result.get("failed_checks", []),
+        )
+        return {
+            **output,
+            "validation_attempt": attempt,
+            "validation_retry_attempts": retry_attempts,
+            "validation_gate_status": gate_status,
+        }
+
+    def _validation_retry_attempts(self, context: dict[str, Any]) -> int:
+        value = context.get(
+            "validation_retry_attempts",
+            DEFAULT_VALIDATION_RETRY_ATTEMPTS,
+        )
+        if isinstance(value, bool) or not isinstance(value, int):
+            return DEFAULT_VALIDATION_RETRY_ATTEMPTS
+        return min(max(value, 0), MAX_VALIDATION_RETRY_ATTEMPTS)
+
+    @staticmethod
+    def _log_agent_result(context: dict[str, Any], agent: Agent, step: Any) -> None:
+        log = logger.info if step.ok else logger.warning
+        log(
+            (
+                "workflow_agent_completed company_name=%s agent_name=%s "
+                "status=%s error_code=%s latency_ms=%s output_keys=%s"
+            ),
+            context.get("company_name"),
+            agent.name,
+            step.status,
+            step.error_code,
+            step.latency_ms,
+            sorted(step.output.keys()),
+        )
 
     def _route_after_resolver(self, state: WorkflowState) -> str | list[str]:
         context = state.get("context", {})
@@ -236,7 +306,27 @@ class WorkflowGraphBuilder:
         ):
             builder.add_edge(current_agent.name, next_agent.name)
 
-        builder.add_edge(self._sequential_agents[-1].name, END)
+        last_agent = self._sequential_agents[-1]
+        if last_agent.name == "validation":
+            builder.add_conditional_edges(
+                last_agent.name,
+                self._route_after_validation,
+            )
+        else:
+            builder.add_edge(last_agent.name, END)
+
+    def _route_after_validation(self, state: WorkflowState) -> str:
+        context = state.get("context", {})
+        if context.get("validation_gate_status") != "retrying":
+            return END
+        retry_node = self._validation_retry_node_name()
+        return retry_node or END
+
+    def _validation_retry_node_name(self) -> str | None:
+        if len(self._sequential_agents) < 2:
+            return None
+        retry_node = self._sequential_agents[-2].name
+        return retry_node if retry_node == "report" else None
 
     def _find_parallel_agent(self, name: str) -> Agent | None:
         for agent in self._parallel_agents:

@@ -6,7 +6,7 @@ from time import perf_counter
 from typing import Any
 
 from backend.common.contracts import (
-    AGENT_PARTIAL_STATUS,
+    AGENT_FAILED_STATUS,
     AGENT_SUCCESS_STATUS,
     build_agent_output,
     elapsed_ms,
@@ -49,9 +49,9 @@ class ValidationAgent:
             status = (
                 AGENT_SUCCESS_STATUS
                 if validation_result["validation_passed"]
-                else AGENT_PARTIAL_STATUS
+                else AGENT_FAILED_STATUS
             )
-            error_code = "OK" if validation_result["validation_passed"] else "VALIDATION_WARNING"
+            error_code = "OK" if validation_result["validation_passed"] else "VALIDATION_FAILED"
             return build_agent_output(
                 {"validation_result": validation_result},
                 status=status,

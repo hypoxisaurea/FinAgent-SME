@@ -77,7 +77,7 @@ def test_validation_agent_returns_success_for_consistent_result(
     }
 
 
-def test_validation_agent_returns_partial_for_inconsistent_reject_limit(
+def test_validation_agent_returns_failed_for_inconsistent_reject_limit(
     monkeypatch,
 ) -> None:
     def fake_score_current_trace(
@@ -133,8 +133,8 @@ def test_validation_agent_returns_partial_for_inconsistent_reject_limit(
         )
     )
 
-    assert result["status"] == "partial"
-    assert result["error_code"] == "VALIDATION_WARNING"
+    assert result["status"] == "failed"
+    assert result["error_code"] == "VALIDATION_FAILED"
     assert result["validation_result"]["validation_passed"] is False
     assert "reject_limit_rule" in result["validation_result"]["failed_checks"]
 
@@ -193,7 +193,7 @@ def test_validation_agent_detects_report_field_mismatches(
         )
     )
 
-    assert result["status"] == "partial"
+    assert result["status"] == "failed"
     assert result["validation_result"]["validation_passed"] is False
     assert "report_confidence_matches" in result["validation_result"]["failed_checks"]
     assert "report_recommended_limit_matches" in result["validation_result"]["failed_checks"]

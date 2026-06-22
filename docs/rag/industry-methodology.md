@@ -179,6 +179,15 @@ Hybrid 코드는 `retrieve_industry_methodology(use_hybrid=True)`로 호출해 �
 
 결과는 `backend/rag/artifacts/retrieval_metrics_YYYYMMDD_HHMMSS.json`에 저장됩니다.
 
+고정 retriever/agent 평가셋의 RAGAS artifact를 함께 재생성하려면 다음 명령을 사용합니다.
+
+```bash
+.venv/bin/python -m backend.scripts.regenerate_industry_rag_artifacts
+```
+
+기본 출력은 `backend/rag/artifacts/industry_rag_eval/report.json`과
+`backend/rag/artifacts/industry_rag_eval/agent_report.json`입니다.
+
 ## 운영 체크리스트
 
 - 원본 PDF의 라이선스와 보관 정책을 확인합니다.

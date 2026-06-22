@@ -107,10 +107,12 @@
    - `RiskEventAgent`는 `news_collector` 이후 실행된다.
    - `IndustryAnalystAgent`는 `financial_analyst` 이후 실행된다.
 
-6. **후속 심사 단계**
+6. **후속 심사 및 검증 gate**
    - `DecisionAgent`
    - `ReportAgent`
    - `ValidationAgent`
+   - 검증 실패 시 기본 1회 `ReportAgent -> ValidationAgent` 재실행
+   - 재검증도 실패하면 결과를 차단하고 종료
 
 7. **결과 저장**
    - 오케스트레이터가 최종 `context`와 `steps`를 조립해 반환한다.
@@ -131,9 +133,11 @@
 
 - agent의 `status=partial` 또는 `fallback_used=true`는 step 내부 메타데이터다.
 - 기본 전체 workflow `status`는 `step.ok` 집계로 계산된다.
-- 단, `validation_result.validation_passed=false`이면 검증 step이 `ok=True`여도
-  최종 응답은 `status=partial`, `code=VALIDATION_WARNING`으로 강등된다.
-- 이 경우 보고서와 검증 상세는 원인 확인을 위해 응답에 유지된다.
+- validation 실패는 `status=failed`, `ok=false`인 실제 gate 실패다.
+- 재시도 소진 후에는 `status=failed`, `code=VALIDATION_FAILED`를 반환한다.
+- 차단 응답은 `validation_result`와 gate 메타데이터를 유지하지만 최종 판단과
+  보고서 필드는 노출하지 않는다.
+- 재검증 통과 시 실패 이력은 `steps`에 남고 최종 validation 결과가 상태를 결정한다.
 
 ## 실패 처리 정책
 
@@ -141,6 +145,7 @@
 - `continue_on_error=True`로 오케스트레이터를 만들면 실패 step이 있어도 후속 단계 지속 가능
 - 공개 HTTP API는 현재 `continue_on_error` 토글을 직접 노출하지 않음
 - 내부 예외는 API 계층에서 `500 AGENT_EXECUTION_FAILED`로 매핑
+- validation 재시도 기본값은 1회, 내부 `validation_retry_attempts` 허용 범위는 0~3회
 
 ## Job 상태 정책
 
@@ -155,3 +160,5 @@
 - 워크플로우와 agent 단위 로그가 남는다.
 - Langfuse가 활성화된 경우 trace/observation/score가 기록된다.
 - 테스트 런타임에서는 기본적으로 Langfuse가 비활성화된다.
+- `.venv/bin/python -m backend.scripts.verify_langfuse_trace`는 trace를 flush하고
+  Trace API 재조회 결과를 `artifacts/langfuse_trace_verification.json`에 기록한다.

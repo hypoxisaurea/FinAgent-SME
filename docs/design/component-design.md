@@ -53,9 +53,30 @@ flowchart TB
 | Agent | `DecisionAgent` | 등급/판단/한도 산출 |
 | Agent | `ReportAgent` | 보고서 생성 |
 | Agent | `ValidationAgent` | 결과 검증과 score 기록 |
+| Agent | `MultiModalDocumentAgent` | PDF 텍스트와 차트 이미지 추출 |
 | Data | Repository / Service | DB 조회/저장, use-case 처리 |
 | Retrieval | Chroma / Industry RAG | 산업 방법론 PDF 검색과 출처 제공 |
+| Evaluation | RAGAS Evaluation | retriever/agent 품질 평가와 artifact 생성 |
 | Observability | Logging / Langfuse | 요청 추적과 품질 score |
+
+### 실제 모듈 구성
+
+| 모듈 경로 | 구현 책임 |
+| --- | --- |
+| `backend/api/routes/workflows.py` | 동기/비동기 workflow HTTP endpoint |
+| `backend/data/services/workflow_job_runner.py` | background job claim, 실행, timeout, 저장 |
+| `backend/data/services/workflow_job_service.py` | job 생성/조회/결과 use-case |
+| `backend/agents/orchestrator/graph.py` | LangGraph 노드, 의존 edge, validation gate 분기 |
+| `backend/agents/orchestrator/step_runner.py` | agent 입력/출력 계약, timeout, retry |
+| `backend/agents/orchestrator/results.py` | workflow 상태 계산과 차단 응답 조립 |
+| `backend/agents/multimodal_document/agent.py` | 문서 처리 task 계획과 결과 계약 |
+| `backend/agents/multimodal_document/processor.py` | PDF 텍스트/차트 이미지 추출 |
+| `backend/agents/validation/agent.py` | 최종 결과 정합성 검사와 score 기록 |
+| `backend/common/langfuse.py` | trace/observation/score client adapter |
+| `backend/rag/evaluation.py` | retriever/agent RAGAS row, metric, report 생성 |
+| `backend/scripts/regenerate_industry_rag_artifacts.py` | 고정 평가셋 artifact 일괄 재생성 |
+| `backend/scripts/verify_langfuse_trace.py` | trace 전송, flush, API 재조회 증거 생성 |
+| `frontend/views/report.py` | workflow 결과 보고서 렌더링 |
 
 ## 4. 오케스트레이터 설계
 
@@ -76,11 +97,19 @@ flowchart TB
 | 의존 노드 | `risk_event`, `industry_analyst` |
 | 후속 노드 | `decision`, `report`, `validation` |
 
+Validation gate는 `report -> validation` 뒤에 조건부 edge를 둔다. 실패하면 기본
+1회 `report`로 되돌아가 재생성/재검증하고, 재시도 소진 시 `END`로 이동하면서
+`validation_gate_status=blocked`로 결과를 차단한다. 내부 payload의
+`validation_retry_attempts`는 `0..3` 범위에서 재시도 횟수를 조절한다.
+
 ### 상태 계산
 
 - `build_result()`가 최종 응답을 조립한다
 - 기업 미존재 시 `not_target`
 - 나머지는 `steps[*].ok` 집계로 `success/partial/failed`
+- 재검증 통과 시 이전 validation 실패 step은 감사용으로 유지하되 상태 집계에서는 제외
+- validation 차단 시 `status=failed`, `code=VALIDATION_FAILED`로 고정하고 최종
+  decision/report 필드를 공개 context에서 제거
 
 ## 5. 주요 agent 설계
 
@@ -129,7 +158,8 @@ flowchart TB
 
 - 입력: `decision`, `credit_grade`, `recommended_limit`, `report`
 - 출력: `validation_result`
-- 특이사항: Langfuse score는 활성화된 경우만 기록
+- 특이사항: 실패는 `status=failed`이며 orchestrator validation gate를 작동시킴
+- Langfuse score는 활성화된 경우만 기록
 
 ## 6. 데이터 계층
 
@@ -151,6 +181,13 @@ flowchart TB
 | Langfuse score | validation | 품질 수치 기록 |
 | `steps` | API 응답 | step 수준 디버깅 정보 제공 |
 
+실제 적재 검증은 아래 명령으로 trace를 생성하고 flush한 뒤 Trace API에서 재조회한다.
+성공 증거에는 credential 없이 trace ID와 URL만 기록된다.
+
+```bash
+.venv/bin/python -m backend.scripts.verify_langfuse_trace
+```
+
 ## 8. 실행 구성
 
 | 구성요소 | 현재 방식 |
@@ -160,6 +197,7 @@ flowchart TB
 | DB | `backend/docker-compose.yml`의 PostgreSQL |
 | DB Build | `scripts/setup-db.sh build` |
 | RAG Ingest | `.venv/bin/python -m backend.rag.ingest_industry_docs` |
+| RAGAS Artifact 재생성 | `.venv/bin/python -m backend.scripts.regenerate_industry_rag_artifacts` |
 
 ## 9. 현재 확장 포인트
 

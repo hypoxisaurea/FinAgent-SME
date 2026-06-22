@@ -116,6 +116,63 @@ def test_workflow_job_runner_marks_failure(monkeypatch) -> None:
     assert failed["error_code"] == "AGENT_EXECUTION_FAILED"
 
 
+def test_workflow_job_runner_marks_blocked_validation_as_failed(monkeypatch) -> None:
+    queued_jobs = [
+        {
+            "job_id": "job-validation",
+            "request_id": "req-validation",
+            "company_name": "BlockedCorp",
+        }
+    ]
+    failed: dict[str, object] = {}
+    completed: dict[str, object] = {}
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.workflow_job_service.fail_incomplete_workflow_jobs",
+        lambda: 0,
+    )
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.workflow_job_service.get_next_queued_workflow_job",
+        lambda: queued_jobs.pop(0) if queued_jobs else None,
+    )
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.workflow_job_service.claim_workflow_job",
+        lambda job_id: True,
+    )
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.workflow_job_service.complete_workflow_job",
+        lambda job_id, result: completed.update({"job_id": job_id}),
+    )
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.workflow_job_service.fail_workflow_job",
+        lambda job_id, **kwargs: failed.update({"job_id": job_id, **kwargs}),
+    )
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.run_credit_workflow_in_background",
+        lambda company_name, request_id: {
+            "request_id": request_id,
+            "company_name": company_name,
+            "status": "failed",
+            "code": "VALIDATION_FAILED",
+            "message": "blocked",
+            "context": {},
+            "steps": [],
+        },
+    )
+
+    async def _run() -> None:
+        runner = WorkflowJobRunner(poll_interval_seconds=0.01)
+        await runner.start()
+        runner.notify_job_submitted()
+        await asyncio.sleep(0.05)
+        await runner.stop()
+
+    asyncio.run(_run())
+
+    assert completed == {}
+    assert failed["job_id"] == "job-validation"
+    assert failed["error_code"] == "VALIDATION_FAILED"
+
+
 def test_workflow_job_runner_does_not_mislabel_internal_value_error(monkeypatch) -> None:
     queued_jobs = [
         {

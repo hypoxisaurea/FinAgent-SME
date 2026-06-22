@@ -44,6 +44,9 @@
 5. `ReportAgent`
 6. `ValidationAgent`
 
+Validation 실패 시 기본 1회 `ReportAgent -> ValidationAgent`를 재실행한다. 재시도
+소진 후에는 `VALIDATION_FAILED`로 종료하고 최종 판단/보고서를 응답에서 차단한다.
+
 `pdf_path`가 있으면 `MultiModalDocumentAgent`가 병렬 노드에 추가됩니다.
 
 ## 상태 규칙
