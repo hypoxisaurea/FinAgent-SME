@@ -216,6 +216,20 @@ Python 실행/검증 명령은 모두 `.venv/bin/...` 기준으로 통일합니�
 ./scripts/run-all.sh down
 ```
 
+Docker Compose로 PostgreSQL, backend, frontend를 함께 실행할 수도 있습니다.
+`backend/.env`를 준비한 뒤 프로젝트 루트에서 실행합니다.
+
+```bash
+docker compose -f backend/docker-compose.yml up --build -d
+docker compose -f backend/docker-compose.yml ps
+docker compose -f backend/docker-compose.yml logs -f backend frontend
+docker compose -f backend/docker-compose.yml down
+```
+
+Compose 내부에서는 frontend가 `FINAGENT_BACKEND_URL=http://backend:8000`으로
+backend를 호출합니다. 호스트 공개 포트는 `BACKEND_PORT`, `FRONTEND_PORT`,
+`POSTGRES_PORT` 환경 변수로 변경할 수 있습니다.
+
 ### 6. 개별 개발 실행
 
 ```bash

@@ -1,5 +1,6 @@
 import streamlit as st
 
+from config import get_backend_url
 from streamlit_ui import configure_page
 from views import report, search
 
@@ -10,7 +11,7 @@ if "page" not in st.session_state:
 if "last_result" not in st.session_state:
     st.session_state.last_result = None
 if "base_url" not in st.session_state:
-    st.session_state.base_url = "http://localhost:8000"
+    st.session_state.base_url = get_backend_url()
 if "pending_job_id" not in st.session_state:
     st.session_state.pending_job_id = None
 if "pending_job_status" not in st.session_state:

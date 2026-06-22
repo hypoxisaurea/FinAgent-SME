@@ -65,6 +65,18 @@ UI가 가져오는 `succeeded` 결과에는 `decision`, `credit_grade`, `recomme
 .venv/bin/python -m streamlit run frontend/main.py --server.address 0.0.0.0 --server.port 8501
 ```
 
+Docker 이미지 실행:
+
+```bash
+docker build -f frontend/Dockerfile -t finagent-frontend .
+docker run --rm -p 8501:8501 \
+  -e FINAGENT_BACKEND_URL=http://host.docker.internal:8000 \
+  finagent-frontend
+```
+
+Compose에서는 `FINAGENT_BACKEND_URL=http://backend:8000`이 자동 설정됩니다.
+환경 변수가 없으면 로컬 개발 기본값 `http://localhost:8000`을 사용합니다.
+
 ## 구현 메모
 
 - 별도 JavaScript 번들링은 없습니다.

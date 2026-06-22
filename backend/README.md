@@ -232,6 +232,18 @@ LANGFUSE_SECRET_KEY=...
 ./.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+Docker 이미지와 전체 Compose 스택 실행:
+
+```bash
+docker build -f backend/Dockerfile -t finagent-backend .
+docker compose -f backend/docker-compose.yml up --build -d
+docker compose -f backend/docker-compose.yml logs -f backend
+```
+
+Compose의 backend는 `postgres:5432`를 사용하며 `backend/.env`의 외부 API와
+Langfuse 설정을 전달받습니다. `backend/.env`는 build context에서 제외되어 이미지에
+포함되지 않습니다.
+
 주의:
 
 - 현재 worker는 FastAPI 앱 프로세스 안에서 같이 실행됩니다.
