@@ -286,3 +286,18 @@ class Agent(Protocol):
 - `target_year`
 - agent별 timeout/retry override 필드
 - `validation_retry_attempts` (`0..3`)
+
+## 10. 컨테이너 실행 계약
+
+| 서비스 | 내부 주소 | 공개 포트 기본값 | Healthcheck |
+| --- | --- | --- | --- |
+| `postgres` | `postgres:5432` | `5432` | `pg_isready` |
+| `backend` | `backend:8000` | `8000` | `GET /api/health` |
+| `frontend` | `frontend:8501` | `8501` | `GET /_stcore/health` |
+
+- Frontend는 `FINAGENT_BACKEND_URL`을 사용하며, Compose 값은
+  `http://backend:8000`, 로컬 기본값은 `http://localhost:8000`이다.
+- Backend는 Compose 내부에서 `POSTGRES_HOST=postgres`, `POSTGRES_PORT=5432`를
+  사용한다. `backend/.env`의 외부 API/Langfuse 값은 runtime에 전달되며 이미지에는
+  포함되지 않는다.
+- 공개 포트는 `BACKEND_PORT`, `FRONTEND_PORT`, `POSTGRES_PORT`로 재정의할 수 있다.

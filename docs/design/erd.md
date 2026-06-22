@@ -41,10 +41,10 @@ erDiagram
     }
 
     FINANCIAL_FEATURES {
-        string corp_code
+        string corp_code PK
         string corp_name
-        string stock_code
-        int year
+        string stock_code PK
+        int year PK
         float avg_revenue_last_3y
         float total_assets
         float revenue
@@ -57,10 +57,10 @@ erDiagram
     }
 
     FINANCIAL_STATEMENT_DETAILS {
-        string corp_code
+        string corp_code PK
         string corp_name
-        string stock_code
-        int year
+        string stock_code PK
+        int year PK
         float avg_revenue_last_3y
         float current_assets
         float current_liabilities
@@ -103,10 +103,10 @@ erDiagram
 
     FINANCIAL_ERROR_LOGS {
         string error_datetime
-        string corp_code
+        string corp_code PK
         string corp_name
-        string error_type
-        string message
+        string error_type PK
+        string message PK
         text response
         text traceback
     }
@@ -132,6 +132,10 @@ erDiagram
 Mermaid의 `DAUM_NEWS_ARTICLES.stock_code`, `url`에 표시한 `UK`는 두 컬럼을
 합친 복합 유니크 제약 `uq_daum_news_stock_code_url`을 뜻합니다. DataFrame 기반
 테이블의 `created_at`은 현재 `YYYY-MM-DD` 문자열로 적재됩니다.
+
+`financial_features`, `financial_statement_details`, `financial_error_logs`의 복수
+`PK` 표시는 repository upsert에 사용하는 논리적 복합 키입니다. DataFrame으로
+생성되는 PostgreSQL 테이블에 물리적 `PRIMARY KEY` 제약을 추가한다는 뜻은 아닙니다.
 
 ## 3. 테이블 설명
 
@@ -299,7 +303,8 @@ stateDiagram-v2
 
 ## 6. 설계 메모
 
-- 일부 키/제약은 코드 레벨에서 관리된다
+- `sme_list`, `company_profiles`와 재무/오류 테이블의 논리 키는 repository 코드가
+  upsert와 중복 제거에 사용하며 물리적 PK 제약은 보장하지 않는다
 - DataFrame 기반 5개 테이블은 최초 `to_sql()` 시 DataFrame dtype으로 생성되며,
   이후 신규 컬럼은 nullable `TEXT`로 자동 추가될 수 있다
 - `workflow_jobs`는 현재 운영 queue와 실행 결과를 함께 보관한다

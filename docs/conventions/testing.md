@@ -31,6 +31,12 @@
 - shell 스크립트와 DB 구축 CLI를 검증한다
 - 외부 API를 직접 치는 검증은 `tests/manual/`에 둔다
 
+### Container
+
+- Dockerfile의 Python 버전, 비루트 사용자, healthcheck를 검증한다
+- Compose의 서비스 목록, health dependency, 내부 URL 계약을 검증한다
+- 실제 배포 전 `docker compose config --quiet`과 이미지 build를 수행한다
+
 ## 현재 필수 시나리오
 
 - 정상 흐름: `status=success`
@@ -86,6 +92,8 @@
 ```bash
 .venv/bin/ruff check backend frontend tests
 .venv/bin/pytest -o cache_dir=.cache/pytest tests/
+docker compose -f backend/docker-compose.yml config --quiet
+docker compose -f backend/docker-compose.yml build backend frontend
 ```
 
 현재 프론트엔드는 Streamlit 앱이므로 별도 `npm run lint` 게이트는 적용되지 않는다.

@@ -244,6 +244,10 @@ Compose의 backend는 `postgres:5432`를 사용하며 `backend/.env`의 외부 A
 Langfuse 설정을 전달받습니다. `backend/.env`는 build context에서 제외되어 이미지에
 포함되지 않습니다.
 
+Backend 이미지는 RAG embedding 실행을 위해 `torch 2.12.1+cpu`를 먼저 설치합니다.
+일반 requirements 해석으로 CUDA 패키지가 유입되지 않도록 CPU wheel index를 명시하며,
+PDF 처리를 위해 Ghostscript와 ImageMagick을 포함합니다.
+
 주의:
 
 - 현재 worker는 FastAPI 앱 프로세스 안에서 같이 실행됩니다.

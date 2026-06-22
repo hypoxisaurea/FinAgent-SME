@@ -37,6 +37,20 @@ flowchart TB
 
 `WorkflowJobRunner`는 별도 배포 worker가 아니라 FastAPI lifespan에서 시작되는 단일 background loop입니다. API 프로세스가 중단되면 남아 있던 `queued`/`running` job은 다음 시작 시 `WORKER_RESTARTED`로 종료됩니다.
 
+### Docker 배포 토폴로지
+
+```mermaid
+flowchart LR
+    Browser[사용자 브라우저] -->|8501| Frontend[frontend\nStreamlit]
+    Frontend -->|FINAGENT_BACKEND_URL\nhttp://backend:8000| Backend[backend\nFastAPI + Job Runner]
+    Backend -->|postgres:5432| Postgres[(postgres\nPostgreSQL 16)]
+    Backend --> External[External APIs / Langfuse]
+```
+
+`backend/docker-compose.yml`은 `postgres -> backend -> frontend` 순서로 healthcheck
+완료를 기다립니다. Backend와 Frontend 이미지는 Python 3.13 slim 기반 비루트
+`appuser`로 실행됩니다.
+
 ## 3. 컴포넌트 목록
 
 | 계층 | 컴포넌트 | 책임 |
@@ -76,6 +90,10 @@ flowchart TB
 | `backend/rag/evaluation.py` | retriever/agent RAGAS row, metric, report 생성 |
 | `backend/scripts/regenerate_industry_rag_artifacts.py` | 고정 평가셋 artifact 일괄 재생성 |
 | `backend/scripts/verify_langfuse_trace.py` | trace 전송, flush, API 재조회 증거 생성 |
+| `backend/Dockerfile` | FastAPI runtime, PDF system library, CPU-only PyTorch 이미지 |
+| `frontend/Dockerfile` | Streamlit 최소 runtime 이미지 |
+| `frontend/config.py` | 로컬/컨테이너 backend URL 해석 |
+| `backend/docker-compose.yml` | PostgreSQL, backend, frontend health dependency 구성 |
 | `frontend/views/report.py` | workflow 결과 보고서 렌더링 |
 
 ## 4. 오케스트레이터 설계
@@ -192,9 +210,10 @@ Validation gate는 `report -> validation` 뒤에 조건부 edge를 둔다. 실�
 
 | 구성요소 | 현재 방식 |
 | --- | --- |
-| Backend + Job Runner | `.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000` |
-| Frontend | `.venv/bin/python -m streamlit run frontend/main.py --server.address 0.0.0.0 --server.port 8501` |
-| DB | `backend/docker-compose.yml`의 PostgreSQL |
+| Backend + Job Runner | 로컬 Uvicorn 또는 `backend/Dockerfile` |
+| Frontend | 로컬 Streamlit 또는 `frontend/Dockerfile` |
+| 전체 Docker Stack | `docker compose -f backend/docker-compose.yml up --build -d` |
+| DB | Compose의 PostgreSQL 16 + `postgres_data` named volume |
 | DB Build | `scripts/setup-db.sh build` |
 | RAG Ingest | `.venv/bin/python -m backend.rag.ingest_industry_docs` |
 | RAGAS Artifact 재생성 | `.venv/bin/python -m backend.scripts.regenerate_industry_rag_artifacts` |
@@ -205,3 +224,4 @@ Validation gate는 `report -> validation` 뒤에 조건부 edge를 둔다. 실�
 - 추가 agent 노드 연결
 - UI 업로드/진행상태 기능
 - job runner의 별도 worker 프로세스/분산 queue 전환
+- Chroma 변경분의 별도 volume/object storage 영속화

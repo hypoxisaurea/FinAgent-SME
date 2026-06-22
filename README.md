@@ -38,14 +38,18 @@ flowchart LR
     B -->|아니오| X[not_target]
     B -->|예| N[News Collector]
     B -->|예| F[Financial Analyst]
+    B -.->|pdf_path가 있을 때| M[MultiModal Document]
     N --> K[Risk Event]
     F --> I[Industry Analyst\n산업 방법론 RAG]
     K --> D[Decision]
     I --> D
     F --> D
+    M --> D
     D --> R[Report]
     R --> V[Validation]
-    V --> Z[최종 context + steps]
+    V -->|통과| Z[최종 context + steps]
+    V -->|첫 실패| R
+    V -->|재시도 소진| Y[VALIDATION_FAILED\n판단·보고서 차단]
 ```
 
 ## 문서 바로가기
@@ -103,7 +107,7 @@ FinAgent-SME/
 ## 요구사항
 
 - Python `3.13+`
-- Docker Desktop 또는 `docker compose` (로컬 PostgreSQL 사용 시)
+- Docker Desktop 또는 `docker compose` (컨테이너 실행 시)
 - 선택적 외부 키:
   - `OPEN_ROUTER_API_KEY`
   - `OPEN_DART_API_KEY`
@@ -185,7 +189,8 @@ Python 실행/검증 명령은 모두 `.venv/bin/...` 기준으로 통일합니�
 ./scripts/setup-db.sh build --year 2024 --sample-size 10
 ```
 
-이 파이프라인은 `sme_list`, `company_profiles`, `financial_features`, `financial_error_logs`를 생성하거나 갱신합니다.
+이 파이프라인은 `sme_list`, `company_profiles`, `financial_features`,
+`financial_statement_details`, `financial_error_logs`를 생성하거나 갱신합니다.
 
 산업 방법론 PDF를 Chroma에 적재하려면 다음 명령을 실행합니다. 최초 실행 시 한국어 임베딩 모델을 내려받을 수 있습니다.
 
@@ -261,7 +266,15 @@ backend를 호출합니다. 호스트 공개 포트는 `BACKEND_PORT`, `FRONTEND
 
 ```json
 {
-  "status": "ok"
+  "status": "ok",
+  "workflow_job_runner": {
+    "running": true,
+    "stop_requested": false,
+    "job_timeout_seconds": 300.0,
+    "last_error": null,
+    "last_error_at": null,
+    "current_job": null
+  }
 }
 ```
 
@@ -330,7 +343,9 @@ backend를 호출합니다. 호스트 공개 포트는 `BACKEND_PORT`, `FRONTEND
 }
 ```
 
-`decision`, `credit_grade`, `report`, `validation_result` 같은 최종 산출물은 현재 `context` 내부에 들어갑니다.
+`decision`, `credit_grade`, `report`, `validation_result` 같은 최종 산출물은
+성공한 job의 `context` 내부에 들어갑니다. Validation 재시도 소진 시 job은
+`failed / VALIDATION_FAILED`가 되며 결과 endpoint는 `409 JOB_FAILED`를 반환합니다.
 
 `not_target` 예시:
 
@@ -375,6 +390,7 @@ backend를 호출합니다. 호스트 공개 포트는 `BACKEND_PORT`, `FRONTEND
 ./tests/run_all_tests.sh
 .venv/bin/pytest -o cache_dir=.cache/pytest tests/
 .venv/bin/ruff check backend frontend tests
+docker compose -f backend/docker-compose.yml config --quiet
 ```
 
 모든 Python 실행/검증 명령은 `.venv/bin/...` 기준으로 실행합니다.
