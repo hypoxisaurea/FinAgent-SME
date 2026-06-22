@@ -50,10 +50,10 @@
 ## 상태 규칙
 
 - 모든 검증이 통과하면 `status=success`
-- 하나라도 실패하면 `status=partial`, `error_code=VALIDATION_WARNING`
-- 검증 실패가 최종 오케스트레이터 결과에 반영되면 workflow는
-  `status=partial`, `code=VALIDATION_WARNING`을 반환한다.
-- 보고서와 `validation_result`는 원인 확인과 감사 추적을 위해 응답에 유지한다.
+- 하나라도 실패하면 `status=failed`, `error_code=VALIDATION_FAILED`
+- orchestrator는 기본 1회 보고서를 재생성하고 다시 검증한다.
+- 재시도 소진 시 workflow는 `status=failed`, `code=VALIDATION_FAILED`를 반환한다.
+- 이때 `validation_result`는 감사 추적을 위해 유지하고 판단/보고서는 차단한다.
 
 ## 관측성
 

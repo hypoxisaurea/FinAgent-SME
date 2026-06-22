@@ -28,7 +28,7 @@
 | UC-03 | 분석 수행 | WorkflowOrchestrator | 뉴스/재무/산업/리스크 분석을 실행한다 |
 | UC-04 | 심사 판단 생성 | DecisionAgent | 승인/검토/거절과 등급/한도를 산출한다 |
 | UC-05 | 리포트 제공 | ReportAgent | 사람이 읽을 수 있는 결과 리포트를 만든다 |
-| UC-06 | 결과 검증 기록 | ValidationAgent | 결과 정합성을 검증하고 score를 남긴다 |
+| UC-06 | 결과 검증 게이트 | ValidationAgent | 결과 정합성을 검증하고 공개 여부를 결정한다 |
 | UC-07 | DB 구축 배치 실행 | 운영자 | 기업/재무 DB를 구축한다 |
 
 ## 4. 유스케이스 상세
@@ -57,7 +57,8 @@
 
 - 공백 회사명: `400 INVALID_INPUT`
 - 대상 기업 미존재: job은 `succeeded`, 결과 payload는 `status=not_target`
-- 내부 예외: job은 `failed`, 상태 조회에서 `error_code`, `error_message` 확인 가능
+- 내부 예외: job은 `failed`, 상태 조회에서 `error_code`, `message` 확인 가능
+- validation 재시도 소진: job은 `failed / VALIDATION_FAILED`, 결과 조회는 `409 JOB_FAILED`
 - 미완료 job 결과 조회: `409 JOB_NOT_COMPLETED`
 
 ### UC-02 대상 기업 판별
@@ -78,7 +79,7 @@
 
 | 항목 | 내용 |
 | --- | --- |
-| 주체 | `NewsCollectorAgent`, `FinancialAnalystAgent`, `RiskEventAgent`, `IndustryAnalystAgent` |
+| 주체 | `NewsCollectorAgent`, `FinancialAnalystAgent`, `RiskEventAgent`, `IndustryAnalystAgent`, 선택적 `MultiModalDocumentAgent` |
 | 입력 | `company_name`, `corp_code`, `corp_name` |
 | 출력 | 뉴스, 재무, 산업, 리스크 관련 context |
 
@@ -87,6 +88,7 @@
 - 시작 노드는 `news_collector`, `financial_analyst`
 - `risk_event`는 뉴스 결과를 사용
 - `industry_analyst`는 재무 비율을 사용
+- 내부 payload에 `pdf_path`가 있으면 `multimodal_document`를 시작 노드에 추가
 - fallback 발생 시 step 메타데이터에 반영
 
 ### UC-04 심사 판단 생성
@@ -119,7 +121,7 @@
 - `key_risks`
 - `recommendation`
 
-### UC-06 결과 검증 기록
+### UC-06 결과 검증 게이트
 
 | 항목 | 내용 |
 | --- | --- |
@@ -139,6 +141,13 @@ Langfuse 활성화 시 아래 score를 기록한다.
 - `validation_pass_rate`
 - `workflow_contract_valid`
 - `failed_check_count`
+
+후속 규칙:
+
+1. 모든 검증 통과 시 결과를 공개한다.
+2. 첫 실패 시 기본 1회 `ReportAgent -> ValidationAgent`를 재실행한다.
+3. 재검증 통과 시 이전 실패 step은 감사 이력으로만 유지한다.
+4. 재시도 소진 시 `VALIDATION_FAILED`로 판단/보고서를 차단하고 job을 실패 처리한다.
 
 ### UC-07 DB 구축 배치 실행
 

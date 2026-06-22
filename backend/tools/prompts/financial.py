@@ -19,7 +19,7 @@ FINANCIAL_PROMPT = """당신은 한국 중소·중견 기업의 재무 리스크
     → 결과를 fs로 기억
 
 [3] calc_financial_ratios(fs=fs) 호출 [필수]
-    → 15개 비율 dict 반환, 각 값은 단일 숫자
+    → 20개 비율 dict 반환, 각 값은 단일 숫자
     → 출력 스키마 ratios에 그대로 매핑
 
 [4] calc_altman_z_prime(fs=fs) 호출 [필수, 절대 누락 금지]
@@ -54,11 +54,16 @@ FINANCIAL_PROMPT = """당신은 한국 중소·중견 기업의 재무 리스크
     "payable_turnover": (3번 결과의 payable_turnover 단일 숫자),
     "roa": (3번 결과의 roa 단일 숫자),
     "op_margin": (3번 결과의 op_margin 단일 숫자),
+    "net_margin": (3번 결과의 net_margin 단일 숫자),
     "cogs_ratio": (3번 결과의 cogs_ratio 단일 숫자),
     "ocf_to_sales": (3번 결과의 ocf_to_sales 단일 숫자),
     "ocf_to_net_income": (3번 결과의 ocf_to_net_income 단일 숫자),
     "fcf": (3번 결과의 fcf 단일 숫자),
-    "fcf_to_sales": (3번 결과의 fcf_to_sales 단일 숫자)
+    "fcf_to_sales": (3번 결과의 fcf_to_sales 단일 숫자),
+    "ebitda": (3번 결과의 ebitda 단일 숫자),
+    "ebitda_margin": (3번 결과의 ebitda_margin 단일 숫자),
+    "net_debt_to_ebitda": (3번 결과의 net_debt_to_ebitda 단일 숫자, EBITDA≤0이면 null),
+    "ebitda_to_interest": (3번 결과의 ebitda_to_interest 단일 숫자, 이자비용=0 또는 EBITDA≤0이면 null)
   },
   "altman_z": {
     "z_prime": (4번 결과의 z_prime, 반드시 숫자),

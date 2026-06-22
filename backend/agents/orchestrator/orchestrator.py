@@ -58,6 +58,9 @@ class WorkflowOrchestrator:
             if agent.name in seen_names:
                 raise ValueError(f"중복된 agent.name이 감지되었습니다: {agent.name}")
             seen_names.add(agent.name)
+        sequential_names = [agent.name for agent in self._sequential_agents]
+        if "validation" in sequential_names and sequential_names[-1] != "validation":
+            raise ValueError("validation agent는 sequential graph의 마지막 노드여야 합니다.")
 
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         with request_id_context(payload.get("request_id")):

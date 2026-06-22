@@ -61,6 +61,10 @@ _JOB_QUEUED_SINCE_KEY = "_pending_job_queued_since"
 _QUEUE_STALL_WARNING_INTERVAL = 5
 
 
+def _normalize_company_name(value: str) -> str:
+    return "".join(str(value or "").split())
+
+
 def _utc_timestamp() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -212,13 +216,14 @@ def _render_transport_error(
 def submit_workflow_job(company_name: str) -> dict | None:
     try:
         url = f"{st.session_state.base_url}/api/v1/workflows/jobs"
-        payload = {"company_name": company_name}
+        normalized_company_name = _normalize_company_name(company_name)
+        payload = {"company_name": normalized_company_name}
         started_at = time.perf_counter()
         _emit_browser_console(
             level="info",
             event="workflow_job_submit_requested",
             payload={
-                "company_name": company_name,
+                "company_name": normalized_company_name,
                 "payload": payload,
                 "url": url,
             },
@@ -230,7 +235,7 @@ def submit_workflow_job(company_name: str) -> dict | None:
             level="info",
             event="workflow_job_submit_succeeded",
             payload={
-                "company_name": company_name,
+                "company_name": normalized_company_name,
                 "job_id": job_payload.get("job_id"),
                 "status": job_payload.get("status"),
                 "latency_ms": int((time.perf_counter() - started_at) * 1000),
@@ -958,6 +963,21 @@ def _render_job_progress() -> None:
     if status == "succeeded":
         result = get_workflow_job_result(job_id)
         if result is not None:
+            context = result.get("context", {}) if isinstance(result, dict) else {}
+            company_found = context.get("company_found", True) if isinstance(context, dict) else True
+            if company_found is False:
+                message = "입력한 회사명을 찾을 수 없습니다. 회사명을 다시 확인해주세요."
+                if isinstance(context, dict):
+                    message = str(context.get("workflow_message") or message)
+                st.error(message)
+                st.session_state.last_result = None
+                st.session_state.pending_job_id = None
+                st.session_state.pending_job_status = None
+                st.session_state.submitting_company_name = None
+                st.session_state[_JOB_POLL_COUNT_KEY] = 0
+                st.session_state[_JOB_QUEUED_SINCE_KEY] = None
+                st.session_state.page = "Search"
+                return
             st.session_state.last_result = result
             st.session_state.pending_job_id = None
             st.session_state.pending_job_status = None
@@ -1008,10 +1028,11 @@ def render() -> None:
     )
 
     if st.button("심사 시작", use_container_width=True):
-        if not company_name:
+        normalized_company_name = _normalize_company_name(company_name)
+        if not normalized_company_name:
             st.warning("회사명을 입력하세요.")
         else:
-            st.session_state.submitting_company_name = company_name
+            st.session_state.submitting_company_name = normalized_company_name
             st.session_state[_BROWSER_CONSOLE_DEDUPE_KEY] = {}
             st.session_state[_BROWSER_CONSOLE_QUEUE_KEY] = []
             st.session_state[_BROWSER_CONSOLE_FLUSHED_COUNT_KEY] = 0

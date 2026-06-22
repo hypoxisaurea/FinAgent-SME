@@ -50,10 +50,28 @@ def test_infer_sub_sector_returns_none_for_non_manufacturing() -> None:
     assert industry._infer_sub_sector_for_manufacturing("J 정보통신업", None, "SI업체") is None
 
 
-def test_infer_sub_sector_returns_none_when_no_match() -> None:
-    assert industry._infer_sub_sector_for_manufacturing("C 제조업", "9999", None) is None
-    assert industry._infer_sub_sector_for_manufacturing("C 제조업", None, "홍길동주식회사") is None
-    assert industry._infer_sub_sector_for_manufacturing("C 제조업", None, None) is None
+def test_infer_sub_sector_returns_corporate_fallback_when_no_match() -> None:
+    """코드·명칭 매칭 전부 실패하면 C 제조업 기본 폴백 "corporate_제조" 반환."""
+    assert industry._infer_sub_sector_for_manufacturing("C 제조업", "9999", None) == "corporate_제조"
+    assert industry._infer_sub_sector_for_manufacturing("C 제조업", None, "홍길동주식회사") == "corporate_제조"
+    assert industry._infer_sub_sector_for_manufacturing("C 제조업", None, None) == "corporate_제조"
+
+
+def test_infer_sub_sector_for_pharma_by_induty_code() -> None:
+    """제약업 KSIC 표준 4자리 및 실제 DART 3/5자리 코드 매칭."""
+    # KSIC 표준 (5자리 코드 전달 시 [:4] → "2110" / "2120")
+    assert industry._infer_sub_sector_for_manufacturing("C 제조업", "21101", None) == "제약업"
+    assert industry._infer_sub_sector_for_manufacturing("C 제조업", "21201", None) == "제약업"
+    # 실제 DART 코드 (유한양행·고려제약: "212", 한미약품: "21212")
+    assert industry._infer_sub_sector_for_manufacturing("C 제조업", "212",   None) == "제약업"
+    assert industry._infer_sub_sector_for_manufacturing("C 제조업", "21212", None) == "제약업"
+
+
+def test_infer_sub_sector_for_pharma_by_company_name() -> None:
+    assert industry._infer_sub_sector_for_manufacturing("C 제조업", None, "한미제약") == "제약업"
+    assert industry._infer_sub_sector_for_manufacturing("C 제조업", None, "바이오제약코리아") == "제약업"
+    assert industry._infer_sub_sector_for_manufacturing("C 제조업", None, "원료의약품주식회사") == "제약업"
+    assert industry._infer_sub_sector_for_manufacturing("C 제조업", None, "Pharma Solutions Inc") == "제약업"
 
 
 def test_default_industry_outlook_includes_methodology_fields() -> None:

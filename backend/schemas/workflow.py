@@ -242,6 +242,9 @@ class WorkflowContext(BaseModel):
     processed_at: str | None = None
     report: WorkflowReportPayload | dict[str, Any] | None = None
     validation_result: ValidationResultPayload | dict[str, Any] | None = None
+    validation_attempt: int | None = None
+    validation_retry_attempts: int | None = None
+    validation_gate_status: Literal["passed", "retrying", "blocked"] | None = None
     pdf_path: str | None = None
     output_dir: str | None = None
     texts: list[str] = Field(default_factory=list)

@@ -58,6 +58,7 @@ async def analyze_sentiment(
         SentimentLabel.NEGATIVE: 0,
     }
     events: list[RiskEvent] = []
+    article_sentiments: list[dict] = []
 
     if not news_data:
         return SentimentAnalysisResult(
@@ -67,6 +68,7 @@ async def analyze_sentiment(
             neutral_count=0,
             positive_count=0,
             overall_sentiment=SentimentLabel.NEUTRAL,
+            article_sentiments=[],
             detected_events=[],
         )
 
@@ -115,6 +117,16 @@ async def analyze_sentiment(
             label = SentimentLabel.NEUTRAL
 
         counts[label] += 1
+        article_sentiments.append(
+            {
+                "index": idx,
+                "title": news_item.get("title", ""),
+                "sentiment": label.value,
+                "reason": str(item_result.get("reason", "") or "").strip(),
+                "published_at": news_item.get("published_at"),
+                "url": news_item.get("url"),
+            }
+        )
 
         if label == SentimentLabel.NEGATIVE:
             events.append(RiskEvent(
@@ -142,6 +154,7 @@ async def analyze_sentiment(
         neutral_count=counts[SentimentLabel.NEUTRAL],
         positive_count=counts[SentimentLabel.POSITIVE],
         overall_sentiment=overall,
+        article_sentiments=article_sentiments,
         detected_events=events,
     )
 

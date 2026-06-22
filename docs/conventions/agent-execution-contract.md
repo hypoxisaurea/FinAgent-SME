@@ -53,8 +53,11 @@
 - `status=success`, `partial`, `skipped`는 현재 `ok=True`로 처리된다.
 
 기본 전체 workflow 상태는 agent의 `status` 문자열이 아니라 `step.ok` 집계에 의해
-계산된다. 단, 최종 `validation_result.validation_passed=false`이면 workflow 결과는
-`status=partial`, `code=VALIDATION_WARNING`으로 강등된다.
+계산된다. 단, ValidationAgent의 실패는 `status=failed`, `ok=false`인 gate 실패다.
+재검증이 통과하면 이전 validation 실패 step은 감사 이력에 유지하되 최종 상태
+집계에서는 제외한다.
+보고서 재생성/재검증 횟수를 소진하면 workflow 결과는 `status=failed`,
+`code=VALIDATION_FAILED`가 되고 최종 판단/보고서 산출물은 차단된다.
 
 ## Timeout / Retry 정책
 

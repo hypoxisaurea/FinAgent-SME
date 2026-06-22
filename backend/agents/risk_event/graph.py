@@ -4,6 +4,7 @@
 - 동기 핸들러를 asyncio.to_thread()로 스레드풀에서 실행 → 진짜 병렬 처리
 - 에러별 로깅 추가
 - CRITICAL 이벤트 원인 추적 (critical_events, critical_reasons) 추가
+- HIGH / MEDIUM 이벤트 원인 추적 (high_events, high_reasons, medium_events, medium_reasons) 추가 (신규)
 """
 
 from __future__ import annotations
@@ -152,7 +153,7 @@ async def _build_timeline(state: RiskEventState) -> RiskEventState:
     return {**state, "timeline": timeline}
 
 
-# ─── CRITICAL 원인 추출 (신규) ─────────────────────────────────────────────────
+# ─── CRITICAL / HIGH / MEDIUM 원인 추출 ────────────────────────────────────────
 
 def _extract_critical_info(
     classified: list[SeverityClassifiedEvent],
@@ -160,12 +161,25 @@ def _extract_critical_info(
     """심각도 분류된 이벤트 목록에서 CRITICAL 등급만 추출해
     상세 객체 목록과, 사람이 바로 읽을 수 있는 원인 문자열 목록을 반환한다.
     """
-    critical_events = [e for e in classified if e.severity == SeverityLevel.CRITICAL]
-    critical_reasons = [
+    return _extract_severity_info(classified, SeverityLevel.CRITICAL)
+
+
+def _extract_severity_info(
+    classified: list[SeverityClassifiedEvent],
+    severity: SeverityLevel,
+) -> tuple[list[SeverityClassifiedEvent], list[str]]:
+    """심각도 분류된 이벤트 목록에서 지정한 등급만 추출해
+    상세 객체 목록과, 사람이 바로 읽을 수 있는 원인 문자열 목록을 반환한다. (신규)
+
+    CRITICAL 전용이었던 _extract_critical_info를 모든 등급에서
+    재사용할 수 있도록 일반화한 함수다.
+    """
+    matched_events = [e for e in classified if e.severity == severity]
+    reasons = [
         f"[{e.event.title}] {e.event.description} (근거: {e.rationale})"
-        for e in critical_events
+        for e in matched_events
     ]
-    return critical_events, critical_reasons
+    return matched_events, reasons
 
 
 # ─── 노드 4: 최종 집계 ────────────────────────────────────────────────────────
@@ -184,6 +198,8 @@ async def _aggregate(state: RiskEventState) -> RiskEventState:
         overall = SeverityLevel.LOW
 
     critical_events, critical_reasons = _extract_critical_info(classified)
+    high_events, high_reasons = _extract_severity_info(classified, SeverityLevel.HIGH)
+    medium_events, medium_reasons = _extract_severity_info(classified, SeverityLevel.MEDIUM)
     financial_result = state.get("financial_result")
 
     result = RiskEventResult(
@@ -205,6 +221,10 @@ async def _aggregate(state: RiskEventState) -> RiskEventState:
         overall_risk_level=overall,
         critical_events=critical_events,
         critical_reasons=critical_reasons,
+        high_events=high_events,
+        high_reasons=high_reasons,
+        medium_events=medium_events,
+        medium_reasons=medium_reasons,
         latest_debt_ratio=getattr(financial_result, "latest_debt_ratio", None),
         latest_op_margin=getattr(financial_result, "latest_op_margin", None),
         is_net_income_negative=getattr(financial_result, "is_net_income_negative", False),

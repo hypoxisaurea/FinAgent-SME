@@ -72,6 +72,7 @@ class SentimentAnalysisResult(BaseModel):
     neutral_count:     int
     positive_count:    int
     overall_sentiment: SentimentLabel
+    article_sentiments: list[dict] = Field(default_factory=list)
     detected_events:   list[RiskEvent]
 
 
@@ -145,9 +146,15 @@ class RiskEventResult(BaseModel):
     total_event_count:  int = 0
     overall_risk_level: SeverityLevel = SeverityLevel.LOW
 
-    # CRITICAL 원인 추적 (신규)
+    # CRITICAL 원인 추적
     critical_events:  list[SeverityClassifiedEvent] = Field(default_factory=list)
     critical_reasons: list[str]                      = Field(default_factory=list)
+
+    # HIGH / MEDIUM 원인 추적 (신규)
+    high_events:    list[SeverityClassifiedEvent] = Field(default_factory=list)
+    high_reasons:   list[str]                      = Field(default_factory=list)
+    medium_events:  list[SeverityClassifiedEvent] = Field(default_factory=list)
+    medium_reasons: list[str]                      = Field(default_factory=list)
 
     # 재무 요약 (Decision Agent 연동용)
     latest_debt_ratio:      Optional[float] = None

@@ -115,7 +115,7 @@ job 상태 응답 예시:
   "started_at": "2026-06-13T00:00:01+00:00",
   "finished_at": null,
   "error_code": null,
-  "error_message": null,
+  "message": null,
   "step_summary": null
 }
 ```
@@ -143,6 +143,7 @@ job 상태 응답 예시:
 - job이 아직 끝나지 않으면 `409 JOB_NOT_COMPLETED`
 - job이 실패했으면 `409 JOB_FAILED`
 - 완료된 job만 최종 workflow 결과를 반환
+- validation gate 차단 job은 `failed`이므로 결과 endpoint에서 `409 JOB_FAILED`
 
 ### 동기 호환 엔드포인트 응답
 
@@ -184,6 +185,8 @@ job 상태 응답 예시:
 | `request_id` | 요청 추적 ID |
 | `company_name` | 정규화된 요청 기업명 |
 | `status` | `success`, `partial`, `failed`, `not_target` |
+| `code` | `not_target` 또는 validation 차단 시의 도메인 코드 |
+| `message` | `code`에 대응하는 공개 메시지 |
 | `context` | 누적 비즈니스 결과 |
 | `steps` | step 실행 메타데이터 목록 |
 
@@ -199,7 +202,7 @@ job 상태 응답 예시:
 | `started_at` | 실행 시작 시각 |
 | `finished_at` | 종료 시각 |
 | `error_code` | 실패 코드 |
-| `error_message` | 실패 메시지 |
+| `message` | `error_code`를 공개 메시지로 매핑한 값 |
 | `step_summary` | 완료 시 step 결과 요약 |
 
 ### `steps[*]`
@@ -282,3 +285,19 @@ class Agent(Protocol):
 - `continue_on_error`
 - `target_year`
 - agent별 timeout/retry override 필드
+- `validation_retry_attempts` (`0..3`)
+
+## 10. 컨테이너 실행 계약
+
+| 서비스 | 내부 주소 | 공개 포트 기본값 | Healthcheck |
+| --- | --- | --- | --- |
+| `postgres` | `postgres:5432` | `5432` | `pg_isready` |
+| `backend` | `backend:8000` | `8000` | `GET /api/health` |
+| `frontend` | `frontend:8501` | `8501` | `GET /_stcore/health` |
+
+- Frontend는 `FINAGENT_BACKEND_URL`을 사용하며, Compose 값은
+  `http://backend:8000`, 로컬 기본값은 `http://localhost:8000`이다.
+- Backend는 Compose 내부에서 `POSTGRES_HOST=postgres`, `POSTGRES_PORT=5432`를
+  사용한다. `backend/.env`의 외부 API/Langfuse 값은 runtime에 전달되며 이미지에는
+  포함되지 않는다.
+- 공개 포트는 `BACKEND_PORT`, `FRONTEND_PORT`, `POSTGRES_PORT`로 재정의할 수 있다.

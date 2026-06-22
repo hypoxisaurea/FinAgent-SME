@@ -63,7 +63,7 @@ def analyze_rrf_scores(collection) -> None:
             include=["distances"],
         )
         dense_ids: list[str] = (dense_result.get("ids") or [[]])[0]
-        dense_distances: list[float] = (dense_result.get("distances") or [[]])[0]
+        (dense_result.get("distances") or [[]])[0]
 
         # BM25 검색
         all_result = collection.get(where=where, include=["documents"])
@@ -74,7 +74,7 @@ def analyze_rrf_scores(collection) -> None:
         raw_scores = bm25_index.get_scores(_tokenize_for_bm25(query_text))
         ranked_bm25 = sorted(zip(all_ids, raw_scores), key=lambda x: -x[1])
         bm25_ids = [did for did, _ in ranked_bm25[:top_k]]
-        bm25_score_map = dict(ranked_bm25[:top_k])
+        dict(ranked_bm25[:top_k])
 
         # Gold chunk (reference 기반 dense)
         ref_result = collection.query(
@@ -186,7 +186,7 @@ def analyze_bm25_tokenization(collection) -> None:
     )
     ref_ids = (ref_result.get("ids") or [[]])[0]
     ref_dists = (ref_result.get("distances") or [[]])[0]
-    ref_docs = (ref_result.get("documents") or [[]])[0]
+    (ref_result.get("documents") or [[]])[0]
     gold_ids = {did for did, d in zip(ref_ids, ref_dists) if d < 0.8}
 
     print(f"\n  Gold IDs: {list(gold_ids)}")
@@ -209,7 +209,7 @@ def analyze_bm25_tokenization(collection) -> None:
         doc_preview = doc_map.get(did, "")[:60].replace("\n", " ")
         print(f"  {rank:>4} {score:>10.4f} {is_gold:>6}  {doc_preview}")
 
-    print(f"\n  Gold chunks BM25 순위:")
+    print("\n  Gold chunks BM25 순위:")
     for gold_id in gold_ids:
         bm25_rank = next((i + 1 for i, (did, _) in enumerate(ranked) if did == gold_id), None)
         bm25_score = dict(ranked).get(gold_id, 0.0)
@@ -231,7 +231,7 @@ def analyze_bm25_tokenization(collection) -> None:
     dense_ids = (dense_result.get("ids") or [[]])[0]
     dense_dists = (dense_result.get("distances") or [[]])[0]
 
-    print(f"\n  Dense 결과 (거리↓ = 유사도↑):")
+    print("\n  Dense 결과 (거리↓ = 유사도↑):")
     for rank, (did, dist) in enumerate(zip(dense_ids, dense_dists), 1):
         is_gold = "★ GOLD" if did in gold_ids else ""
         print(f"    rank {rank}: {did[-12:]}  dist={dist:.4f}  {is_gold}")

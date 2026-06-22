@@ -37,6 +37,20 @@ flowchart TB
 
 `WorkflowJobRunner`는 별도 배포 worker가 아니라 FastAPI lifespan에서 시작되는 단일 background loop입니다. API 프로세스가 중단되면 남아 있던 `queued`/`running` job은 다음 시작 시 `WORKER_RESTARTED`로 종료됩니다.
 
+### Docker 배포 토폴로지
+
+```mermaid
+flowchart LR
+    Browser[사용자 브라우저] -->|8501| Frontend[frontend\nStreamlit]
+    Frontend -->|FINAGENT_BACKEND_URL\nhttp://backend:8000| Backend[backend\nFastAPI + Job Runner]
+    Backend -->|postgres:5432| Postgres[(postgres\nPostgreSQL 16)]
+    Backend --> External[External APIs / Langfuse]
+```
+
+`backend/docker-compose.yml`은 `postgres -> backend -> frontend` 순서로 healthcheck
+완료를 기다립니다. Backend와 Frontend 이미지는 Python 3.13 slim 기반 비루트
+`appuser`로 실행됩니다.
+
 ## 3. 컴포넌트 목록
 
 | 계층 | 컴포넌트 | 책임 |
@@ -53,9 +67,34 @@ flowchart TB
 | Agent | `DecisionAgent` | 등급/판단/한도 산출 |
 | Agent | `ReportAgent` | 보고서 생성 |
 | Agent | `ValidationAgent` | 결과 검증과 score 기록 |
+| Agent | `MultiModalDocumentAgent` | PDF 텍스트와 차트 이미지 추출 |
 | Data | Repository / Service | DB 조회/저장, use-case 처리 |
 | Retrieval | Chroma / Industry RAG | 산업 방법론 PDF 검색과 출처 제공 |
+| Evaluation | RAGAS Evaluation | retriever/agent 품질 평가와 artifact 생성 |
 | Observability | Logging / Langfuse | 요청 추적과 품질 score |
+
+### 실제 모듈 구성
+
+| 모듈 경로 | 구현 책임 |
+| --- | --- |
+| `backend/api/routes/workflows.py` | 동기/비동기 workflow HTTP endpoint |
+| `backend/data/services/workflow_job_runner.py` | background job claim, 실행, timeout, 저장 |
+| `backend/data/services/workflow_job_service.py` | job 생성/조회/결과 use-case |
+| `backend/agents/orchestrator/graph.py` | LangGraph 노드, 의존 edge, validation gate 분기 |
+| `backend/agents/orchestrator/step_runner.py` | agent 입력/출력 계약, timeout, retry |
+| `backend/agents/orchestrator/results.py` | workflow 상태 계산과 차단 응답 조립 |
+| `backend/agents/multimodal_document/agent.py` | 문서 처리 task 계획과 결과 계약 |
+| `backend/agents/multimodal_document/processor.py` | PDF 텍스트/차트 이미지 추출 |
+| `backend/agents/validation/agent.py` | 최종 결과 정합성 검사와 score 기록 |
+| `backend/common/langfuse.py` | trace/observation/score client adapter |
+| `backend/rag/evaluation.py` | retriever/agent RAGAS row, metric, report 생성 |
+| `backend/scripts/regenerate_industry_rag_artifacts.py` | 고정 평가셋 artifact 일괄 재생성 |
+| `backend/scripts/verify_langfuse_trace.py` | trace 전송, flush, API 재조회 증거 생성 |
+| `backend/Dockerfile` | FastAPI runtime, PDF system library, CPU-only PyTorch 이미지 |
+| `frontend/Dockerfile` | Streamlit 최소 runtime 이미지 |
+| `frontend/config.py` | 로컬/컨테이너 backend URL 해석 |
+| `backend/docker-compose.yml` | PostgreSQL, backend, frontend health dependency 구성 |
+| `frontend/views/report.py` | workflow 결과 보고서 렌더링 |
 
 ## 4. 오케스트레이터 설계
 
@@ -76,11 +115,19 @@ flowchart TB
 | 의존 노드 | `risk_event`, `industry_analyst` |
 | 후속 노드 | `decision`, `report`, `validation` |
 
+Validation gate는 `report -> validation` 뒤에 조건부 edge를 둔다. 실패하면 기본
+1회 `report`로 되돌아가 재생성/재검증하고, 재시도 소진 시 `END`로 이동하면서
+`validation_gate_status=blocked`로 결과를 차단한다. 내부 payload의
+`validation_retry_attempts`는 `0..3` 범위에서 재시도 횟수를 조절한다.
+
 ### 상태 계산
 
 - `build_result()`가 최종 응답을 조립한다
 - 기업 미존재 시 `not_target`
 - 나머지는 `steps[*].ok` 집계로 `success/partial/failed`
+- 재검증 통과 시 이전 validation 실패 step은 감사용으로 유지하되 상태 집계에서는 제외
+- validation 차단 시 `status=failed`, `code=VALIDATION_FAILED`로 고정하고 최종
+  decision/report 필드를 공개 context에서 제거
 
 ## 5. 주요 agent 설계
 
@@ -129,7 +176,8 @@ flowchart TB
 
 - 입력: `decision`, `credit_grade`, `recommended_limit`, `report`
 - 출력: `validation_result`
-- 특이사항: Langfuse score는 활성화된 경우만 기록
+- 특이사항: 실패는 `status=failed`이며 orchestrator validation gate를 작동시킴
+- Langfuse score는 활성화된 경우만 기록
 
 ## 6. 데이터 계층
 
@@ -151,15 +199,24 @@ flowchart TB
 | Langfuse score | validation | 품질 수치 기록 |
 | `steps` | API 응답 | step 수준 디버깅 정보 제공 |
 
+실제 적재 검증은 아래 명령으로 trace를 생성하고 flush한 뒤 Trace API에서 재조회한다.
+성공 증거에는 credential 없이 trace ID와 URL만 기록된다.
+
+```bash
+.venv/bin/python -m backend.scripts.verify_langfuse_trace
+```
+
 ## 8. 실행 구성
 
 | 구성요소 | 현재 방식 |
 | --- | --- |
-| Backend + Job Runner | `.venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000` |
-| Frontend | `.venv/bin/python -m streamlit run frontend/main.py --server.address 0.0.0.0 --server.port 8501` |
-| DB | `backend/docker-compose.yml`의 PostgreSQL |
+| Backend + Job Runner | 로컬 Uvicorn 또는 `backend/Dockerfile` |
+| Frontend | 로컬 Streamlit 또는 `frontend/Dockerfile` |
+| 전체 Docker Stack | `docker compose -f backend/docker-compose.yml up --build -d` |
+| DB | Compose의 PostgreSQL 16 + `postgres_data` named volume |
 | DB Build | `scripts/setup-db.sh build` |
 | RAG Ingest | `.venv/bin/python -m backend.rag.ingest_industry_docs` |
+| RAGAS Artifact 재생성 | `.venv/bin/python -m backend.scripts.regenerate_industry_rag_artifacts` |
 
 ## 9. 현재 확장 포인트
 
@@ -167,3 +224,4 @@ flowchart TB
 - 추가 agent 노드 연결
 - UI 업로드/진행상태 기능
 - job runner의 별도 worker 프로세스/분산 queue 전환
+- Chroma 변경분의 별도 volume/object storage 영속화

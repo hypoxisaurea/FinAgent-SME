@@ -47,7 +47,9 @@ frontend/
 - 최종 응답 구조: `status`, `context`, `steps`, `request_id`
 - 상태 응답 구조: `job_id`, `status`, `submitted_at`, `started_at`, `finished_at`, `error_code`, `message`, `step_summary`
 
-현재 UI는 `decision`, `credit_grade`, `recommended_limit`, `report`, `validation_result`가 `context` 안에 있다는 전제에 맞춰 작성되어 있습니다.
+UI가 가져오는 `succeeded` 결과에는 `decision`, `credit_grade`, `recommended_limit`,
+`report`, `validation_result`가 `context`에 포함됩니다. Validation 차단 결과는 job이
+`failed`가 되어 결과 화면으로 이동하지 않고 검색 화면에서 상태 메시지를 표시합니다.
 
 ## 실행
 
@@ -62,6 +64,18 @@ frontend/
 ```bash
 .venv/bin/python -m streamlit run frontend/main.py --server.address 0.0.0.0 --server.port 8501
 ```
+
+Docker 이미지 실행:
+
+```bash
+docker build -f frontend/Dockerfile -t finagent-frontend .
+docker run --rm -p 8501:8501 \
+  -e FINAGENT_BACKEND_URL=http://host.docker.internal:8000 \
+  finagent-frontend
+```
+
+Compose에서는 `FINAGENT_BACKEND_URL=http://backend:8000`이 자동 설정됩니다.
+환경 변수가 없으면 로컬 개발 기본값 `http://localhost:8000`을 사용합니다.
 
 ## 구현 메모
 

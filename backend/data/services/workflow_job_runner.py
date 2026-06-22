@@ -167,16 +167,34 @@ class WorkflowJobRunner:
                 ),
                 timeout=self._job_timeout_seconds,
             )
-            await asyncio.to_thread(
-                workflow_job_service.complete_workflow_job,
-                job_id,
-                result,
-            )
-            logger.info(
-                "workflow_job_completed job_id=%s company_name=%s",
-                job_id,
-                company_name,
-            )
+            if result.get("status") == "failed":
+                error_code = str(result.get("code") or "AGENT_EXECUTION_FAILED")
+                await asyncio.to_thread(
+                    workflow_job_service.fail_workflow_job,
+                    job_id,
+                    error_code=error_code,
+                    error_message=str(result.get("message") or error_code),
+                )
+                logger.warning(
+                    (
+                        "workflow_job_result_blocked job_id=%s company_name=%s "
+                        "error_code=%s"
+                    ),
+                    job_id,
+                    company_name,
+                    error_code,
+                )
+            else:
+                await asyncio.to_thread(
+                    workflow_job_service.complete_workflow_job,
+                    job_id,
+                    result,
+                )
+                logger.info(
+                    "workflow_job_completed job_id=%s company_name=%s",
+                    job_id,
+                    company_name,
+                )
         except TimeoutError as exc:
             self._record_error(exc)
             logger.exception(

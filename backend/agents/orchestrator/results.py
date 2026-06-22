@@ -12,8 +12,24 @@ from backend.schemas.workflow import (
 )
 
 logger = logging.getLogger(__name__)
-VALIDATION_WARNING_CODE = "VALIDATION_WARNING"
-VALIDATION_WARNING_MESSAGE = "최종 결과 검증에서 경고가 발생했습니다."
+VALIDATION_FAILED_CODE = "VALIDATION_FAILED"
+VALIDATION_FAILED_MESSAGE = "최종 결과 검증에 실패하여 심사 결과가 차단되었습니다."
+BLOCKED_RESULT_KEYS = frozenset(
+    {
+        "decision",
+        "credit_grade",
+        "credit_score",
+        "decision_confidence",
+        "decision_reasons",
+        "recommended_limit",
+        "limit_range",
+        "limit_basis",
+        "explanation",
+        "grade_detail",
+        "processed_at",
+        "report",
+    }
+)
 
 
 def build_result(state: WorkflowState) -> WorkflowResponse:
@@ -35,26 +51,32 @@ def build_result(state: WorkflowState) -> WorkflowResponse:
             }
         )
 
-    status = derive_status_from_steps(steps)
-    validation_failed = _has_failed_validation(context)
-    if validation_failed:
-        status = "partial"
+    status_steps = _effective_steps_for_status(context, steps)
+    status = derive_status_from_steps(status_steps)
+    validation_blocked = context.get("validation_gate_status") == "blocked"
+    if validation_blocked:
+        status = "failed"
         validation_result = context["validation_result"]
         logger.warning(
             (
-                "workflow_validation_warning company_name=%s "
+                "workflow_validation_blocked company_name=%s "
                 "pass_rate=%s failed_checks=%s"
             ),
             context.get("company_name"),
             validation_result.get("pass_rate"),
             validation_result.get("failed_checks", []),
         )
+        context = {
+            key: value
+            for key, value in context.items()
+            if key not in BLOCKED_RESULT_KEYS
+        }
 
     return build_workflow_response(
         {
             "status": status,
-            "code": VALIDATION_WARNING_CODE if validation_failed else None,
-            "message": VALIDATION_WARNING_MESSAGE if validation_failed else None,
+            "code": VALIDATION_FAILED_CODE if validation_blocked else None,
+            "message": VALIDATION_FAILED_MESSAGE if validation_blocked else None,
             "context": context,
             "steps": steps,
         }
@@ -71,9 +93,22 @@ def summarize_steps(steps: list[dict[str, Any]]) -> dict[str, int]:
     return summarize_workflow_steps(steps)
 
 
-def _has_failed_validation(context: dict[str, Any]) -> bool:
-    validation_result = context.get("validation_result")
-    return (
-        isinstance(validation_result, dict)
-        and validation_result.get("validation_passed") is False
+def _effective_steps_for_status(
+    context: dict[str, Any],
+    steps: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    if context.get("validation_gate_status") != "passed":
+        return steps
+    last_validation_index = max(
+        (
+            index
+            for index, step in enumerate(steps)
+            if step.get("agent_name") == "validation"
+        ),
+        default=-1,
     )
+    return [
+        step
+        for index, step in enumerate(steps)
+        if step.get("agent_name") != "validation" or index == last_validation_index
+    ]

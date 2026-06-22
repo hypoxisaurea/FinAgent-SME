@@ -21,26 +21,30 @@ erDiagram
         string stock_code
         float avg_revenue_last_3y
         float total_assets
-        datetime created_at
+        string created_at
     }
 
     COMPANY_PROFILES {
         string corp_code PK
         string corp_cls
         string stock_name
-        string stock_code
         string ceo_name
         string address
         string homepage_url
+        string ir_url
+        string phone_number
+        string fax_number
         string industry_code
-        datetime created_at
+        string established_date
+        string settlement_month
+        string created_at
     }
 
     FINANCIAL_FEATURES {
-        string corp_code
+        string corp_code PK
         string corp_name
-        string stock_code
-        int year
+        string stock_code PK
+        int year PK
         float avg_revenue_last_3y
         float total_assets
         float revenue
@@ -49,48 +53,62 @@ erDiagram
         float total_assets_statement
         float total_liabilities
         float total_equity
-        datetime created_at
+        string created_at
     }
 
     FINANCIAL_STATEMENT_DETAILS {
-        string corp_code
+        string corp_code PK
         string corp_name
-        string stock_code
-        int year
+        string stock_code PK
+        int year PK
+        float avg_revenue_last_3y
         float current_assets
         float current_liabilities
         float total_assets_statement
         float total_liabilities
         float total_equity
+        float retained_earnings
+        float inventory
+        float accounts_receivable
+        float accounts_payable
+        float short_term_borrowings
+        float current_portion_long_term_borrowings
+        float long_term_borrowings
+        float bonds
+        float tangible_assets
         float revenue
+        float cost_of_goods_sold
         float operating_income
         float net_income
+        float interest_expense
         float operating_cashflow
         float capital_expenditure
         string audit_opinion
         boolean is_external_audit
-        datetime created_at
+        string created_at
     }
 
     DAUM_NEWS_ARTICLES {
         int id PK
-        string stock_code
+        string stock_code UK
         string corp_name
         string news_title
         string press_name
         datetime published_at
-        string url
+        string url UK
         string content
         string content_type
         datetime created_at
     }
 
     FINANCIAL_ERROR_LOGS {
-        datetime error_datetime
-        string corp_code
+        string error_datetime
+        string corp_code PK
         string corp_name
-        string error_type
-        string message
+        string error_type PK
+        string message PK
+        text response
+        text traceback
     }
 
     WORKFLOW_JOBS {
@@ -102,14 +120,22 @@ erDiagram
         text step_summary_json
         string error_code
         string error_message
-        datetime submitted_at
-        datetime started_at
-        datetime finished_at
-        datetime updated_at
+        string submitted_at
+        string started_at
+        string finished_at
+        string updated_at
     }
 ```
 
-`workflow_jobs`는 기업 master와 외래키로 묶이지 않는 실행 이력입니다. 입력 당시 회사명과 추적 ID를 보존하고, 완료된 workflow payload를 JSON 문자열로 저장합니다.
+`workflow_jobs`는 기업 master와 외래키로 묶이지 않는 실행 이력입니다. 입력 당시 회사명과 추적 ID를 보존하고, 성공한 workflow payload를 JSON 문자열로 저장합니다. 시간 값은 ISO 8601 문자열을 PostgreSQL `TEXT` 컬럼에 기록합니다.
+
+Mermaid의 `DAUM_NEWS_ARTICLES.stock_code`, `url`에 표시한 `UK`는 두 컬럼을
+합친 복합 유니크 제약 `uq_daum_news_stock_code_url`을 뜻합니다. DataFrame 기반
+테이블의 `created_at`은 현재 `YYYY-MM-DD` 문자열로 적재됩니다.
+
+`financial_features`, `financial_statement_details`, `financial_error_logs`의 복수
+`PK` 표시는 repository upsert에 사용하는 논리적 복합 키입니다. DataFrame으로
+생성되는 PostgreSQL 테이블에 물리적 `PRIMARY KEY` 제약을 추가한다는 뜻은 아닙니다.
 
 ## 3. 테이블 설명
 
@@ -138,7 +164,6 @@ erDiagram
 - `corp_code`
 - `corp_cls`
 - `stock_name`
-- `stock_code`
 - `ceo_name`
 - `address`
 - `homepage_url`
@@ -149,6 +174,9 @@ erDiagram
 - `established_date`
 - `settlement_month`
 - `created_at`
+
+`stock_code`는 현재 `company_profiles` DataFrame 저장 컬럼이 아니며, 조회 결과의
+기업 프로필에는 `sme_list.stock_code`가 병합되어 제공된다.
 
 ### `financial_features`
 
@@ -222,6 +250,7 @@ erDiagram
 - `corp_name`
 - `error_type`
 - `message`
+- `response`, `traceback` (오류 유형에 따라 동적으로 추가)
 
 키 성격:
 
@@ -233,6 +262,7 @@ erDiagram
 - repository가 최초 접근 시 `CREATE TABLE IF NOT EXISTS`로 생성
 - `job_id`가 기본 키이며 `request_id`로 로그·Langfuse trace와 연결
 - `result_json`, `step_summary_json`은 성공 완료 시 기록
+- validation gate 차단은 `failed / VALIDATION_FAILED`로 기록하며 결과 JSON은 저장하지 않음
 - 서버 재시작 시 미완료 job은 `failed / WORKER_RESTARTED`로 전이
 
 상태 전이:
@@ -242,7 +272,7 @@ stateDiagram-v2
     [*] --> queued: submit
     queued --> running: worker claim
     running --> succeeded: result saved
-    running --> failed: timeout / exception
+    running --> failed: timeout / exception / validation blocked
     queued --> failed: server restart recovery
     running --> failed: server restart recovery
     succeeded --> [*]
@@ -273,8 +303,10 @@ stateDiagram-v2
 
 ## 6. 설계 메모
 
-- 일부 키/제약은 코드 레벨에서 관리된다
-- 신규 컬럼은 저장 시 nullable TEXT 컬럼으로 자동 추가될 수 있다
+- `sme_list`, `company_profiles`와 재무/오류 테이블의 논리 키는 repository 코드가
+  upsert와 중복 제거에 사용하며 물리적 PK 제약은 보장하지 않는다
+- DataFrame 기반 5개 테이블은 최초 `to_sql()` 시 DataFrame dtype으로 생성되며,
+  이후 신규 컬럼은 nullable `TEXT`로 자동 추가될 수 있다
 - `workflow_jobs`는 현재 운영 queue와 실행 결과를 함께 보관한다
 - agent별 정규화 실행 테이블(`agent_runs`)은 아직 도입되지 않았다
 - 산업 방법론 벡터는 PostgreSQL이 아니라 `backend/vectorstore/industry_knowledge/`의 Chroma에 저장된다
