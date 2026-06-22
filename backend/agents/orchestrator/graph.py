@@ -16,6 +16,9 @@ logger = logging.getLogger("backend.agents.orchestrator.orchestrator")
 LANGGRAPH_RUNTIME_CONFIGURED = LANGGRAPH_IMPORT_GUARD
 DEFAULT_VALIDATION_RETRY_ATTEMPTS = 1
 MAX_VALIDATION_RETRY_ATTEMPTS = 3
+VALIDATION_GATE_PASSED = "passed"
+VALIDATION_GATE_RETRYING = "retrying"
+VALIDATION_GATE_BLOCKED = "blocked"
 
 
 class WorkflowGraphBuilder:
@@ -105,7 +108,11 @@ class WorkflowGraphBuilder:
 
                 if agent.name == "validation":
                     validation_output = step.output
-                    if "validation_result" not in validation_output:
+                    validation_result = validation_output.get("validation_result")
+                    if not isinstance(validation_result, dict) or (
+                        not step.ok
+                        and validation_result.get("validation_passed") is True
+                    ):
                         validation_output = self._build_validation_failure_output(step)
                     node_state["context"] = self._build_validation_gate_context(
                         context,
@@ -194,11 +201,11 @@ class WorkflowGraphBuilder:
         )
         passed = validation_result.get("validation_passed") is True
         if passed:
-            gate_status = "passed"
+            gate_status = VALIDATION_GATE_PASSED
         elif attempt <= retry_attempts:
-            gate_status = "retrying"
+            gate_status = VALIDATION_GATE_RETRYING
         else:
-            gate_status = "blocked"
+            gate_status = VALIDATION_GATE_BLOCKED
         logger.warning(
             (
                 "workflow_validation_gate company_name=%s gate_status=%s "
@@ -340,7 +347,7 @@ class WorkflowGraphBuilder:
 
     def _route_after_validation(self, state: WorkflowState) -> str:
         context = state.get("context", {})
-        if context.get("validation_gate_status") != "retrying":
+        if context.get("validation_gate_status") != VALIDATION_GATE_RETRYING:
             return END
         retry_node = self._validation_retry_node_name()
         return retry_node or END

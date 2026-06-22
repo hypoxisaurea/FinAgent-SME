@@ -492,6 +492,40 @@ def test_orchestrator_blocks_and_redacts_when_validation_execution_fails() -> No
     assert "report" not in report_step["output"]
 
 
+def test_orchestrator_fails_closed_for_inconsistent_validation_status() -> None:
+    report = _FakeAgent("report", {"report": {"summary": "차단 보고서"}})
+    validation = _FakeAgent(
+        "validation",
+        {
+            "status": "failed",
+            "error_code": "AGENT_EXECUTION_FAILED",
+            "validation_result": {
+                "validation_passed": True,
+                "pass_rate": 1.0,
+                "passed_checks": 1,
+                "total_checks": 1,
+                "failed_checks": [],
+                "checks": [],
+            },
+        },
+    )
+    orchestrator = WorkflowOrchestrator(
+        sequential_agents=[report, validation],
+    )
+
+    result = asyncio.run(
+        orchestrator.run({"company_name": "테스트기업", "validation_retry_attempts": 0})
+    )
+
+    assert result["status"] == "failed"
+    assert result["code"] == "VALIDATION_FAILED"
+    assert result["context"]["validation_gate_status"] == "blocked"
+    assert result["context"]["validation_result"]["validation_passed"] is False
+    assert result["context"]["validation_result"]["failed_checks"] == [
+        "validation_execution"
+    ]
+
+
 def test_orchestrator_marks_failed_contract_output_as_step_failure() -> None:
     resolver = _FakeAgent(
         "company_resolver",

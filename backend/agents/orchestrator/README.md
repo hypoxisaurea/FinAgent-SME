@@ -47,6 +47,20 @@
 Validation 실패 시 기본 1회 `ReportAgent -> ValidationAgent`를 재실행한다. 재시도
 소진 후에는 `VALIDATION_FAILED`로 종료하고 최종 판단/보고서를 응답에서 차단한다.
 
+### Validation 후속 처리 규칙
+
+| 조건 | gate 상태 | 다음 처리 |
+| --- | --- | --- |
+| validation step이 성공하고 `validation_passed=true` | `passed` | 결과 공개 후 종료 |
+| 검증 실패이고 재시도 횟수가 남음 | `retrying` | `report` 재생성 후 `validation` 재실행 |
+| 검증 실패이고 재시도 횟수를 소진함 | `blocked` | `failed / VALIDATION_FAILED`로 종료하고 결과 차단 |
+| validation 실행/계약 오류 또는 step/result 상태 불일치 | `retrying` 또는 `blocked` | 검증 실패로 정규화하여 동일한 재시도/차단 정책 적용 |
+
+`report`가 validation 바로 앞 노드가 아니면 재생성할 노드가 없으므로 재시도 횟수를
+`0`으로 강제하고 즉시 `blocked` 처리한다. `continue_on_error=True`여도 validation
+gate에는 적용되지 않으며, 차단된 판단·한도·보고서는 `context`와 `steps[].output`
+모두에서 제거한다.
+
 `pdf_path`가 있으면 `MultiModalDocumentAgent`가 병렬 노드에 추가됩니다.
 
 ## 상태 규칙
