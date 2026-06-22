@@ -103,10 +103,13 @@ class WorkflowGraphBuilder:
                 )
                 node_state: WorkflowState = {"steps": [asdict(step)]}
 
-                if agent.name == "validation" and "validation_result" in step.output:
+                if agent.name == "validation":
+                    validation_output = step.output
+                    if "validation_result" not in validation_output:
+                        validation_output = self._build_validation_failure_output(step)
                     node_state["context"] = self._build_validation_gate_context(
                         context,
-                        step.output,
+                        validation_output,
                     )
                     self._log_agent_result(context, agent, step)
                 elif step.ok:
@@ -212,6 +215,26 @@ class WorkflowGraphBuilder:
             "validation_attempt": attempt,
             "validation_retry_attempts": retry_attempts,
             "validation_gate_status": gate_status,
+        }
+
+    @staticmethod
+    def _build_validation_failure_output(step: Any) -> dict[str, Any]:
+        detail = step.error or step.error_code
+        return {
+            "validation_result": {
+                "validation_passed": False,
+                "pass_rate": 0.0,
+                "passed_checks": 0,
+                "total_checks": 1,
+                "failed_checks": ["validation_execution"],
+                "checks": [
+                    {
+                        "name": "validation_execution",
+                        "passed": False,
+                        "detail": detail,
+                    }
+                ],
+            }
         }
 
     def _validation_retry_attempts(self, context: dict[str, Any]) -> int:

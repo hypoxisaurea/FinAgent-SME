@@ -71,6 +71,7 @@ def build_result(state: WorkflowState) -> WorkflowResponse:
             for key, value in context.items()
             if key not in BLOCKED_RESULT_KEYS
         }
+        steps = _redact_blocked_step_outputs(steps)
 
     return build_workflow_response(
         {
@@ -81,6 +82,23 @@ def build_result(state: WorkflowState) -> WorkflowResponse:
             "steps": steps,
         }
     )
+
+
+def _redact_blocked_step_outputs(
+    steps: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    redacted_steps: list[dict[str, Any]] = []
+    for step in steps:
+        redacted_step = dict(step)
+        output = step.get("output")
+        if isinstance(output, dict):
+            redacted_step["output"] = {
+                key: value
+                for key, value in output.items()
+                if key not in BLOCKED_RESULT_KEYS
+            }
+        redacted_steps.append(redacted_step)
+    return redacted_steps
 
 
 def derive_status(steps: list[dict[str, Any]]) -> str:
