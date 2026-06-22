@@ -35,6 +35,9 @@ INDUSTRY_METHODOLOGY_MAPPING: dict[str, dict[str, str]] = {
     "제지업":       {"ksic_code": "C 제조업",              "sub_sector": "제지"},
     "시멘트업":     {"ksic_code": "C 제조업",              "sub_sector": "시멘트"},
     "음식료업":     {"ksic_code": "C 제조업",              "sub_sector": "식음료"},
+    "제약업":       {"ksic_code": "C 제조업",              "sub_sector": "제약업"},
+    # Corporate(제조): 업종 미매칭 시 기본값. _infer_sub_sector_for_manufacturing 폴백과 쌍을 이룸.
+    "Corporate":    {"ksic_code": "C 제조업",              "sub_sector": "corporate_제조"},
 }
 
 _FILENAME_ALIASES: tuple[tuple[str, str], ...] = (
