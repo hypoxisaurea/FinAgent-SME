@@ -25,7 +25,7 @@ class CompanyResolverAgent(Agent):
     async def run(self, payload: dict[str, Any]) -> dict[str, Any]:
         """기업명을 기준으로 기업 마스터를 조회한다."""
         started_at = perf_counter()
-        company_name = str(payload.get("company_name", "")).strip()
+        company_name = _normalize_company_name(payload.get("company_name", ""))
         if not company_name:
             raise ValueError("company_name은 비어 있을 수 없습니다.")
 
@@ -67,3 +67,7 @@ class CompanyResolverAgent(Agent):
             },
             latency_ms=elapsed_ms(started_at),
         )
+
+
+def _normalize_company_name(value: Any) -> str:
+    return "".join(str(value or "").split())

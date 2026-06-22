@@ -302,6 +302,10 @@ def _inject_styles() -> None:
             border-left-color: #4d8f63;
             background: #f5fbf7;
         }
+        .timeline-item.severity-positive {
+            border-left-color: #2b8a5a;
+            background: #effaf4;
+        }
         .timeline-meta {
             color: #627287;
             font-size: 0.84rem;
@@ -599,6 +603,7 @@ def _render_non_financial_events_section(section: dict[str, Any]) -> None:
                 [
                     f"통합 리스크 수준: {section.get('overall_risk_level') or '-'}",
                     f"뉴스 감성 분석: {section.get('overall_sentiment') or '-'}",
+                    f"긍정 기사 수: {section.get('positive_sentiment_count') or 0}건",
                     section.get("recentness_summary") or "-",
                     section.get("repeat_summary") or "-",
                     section.get("repayment_impact") or "-",
@@ -608,6 +613,8 @@ def _render_non_financial_events_section(section: dict[str, Any]) -> None:
         with event_col:
             st.markdown('<div class="subsection-title">Critical / High 중심 핵심 이벤트</div>', unsafe_allow_html=True)
             _render_timeline_items(section.get("key_event_items"))
+            st.markdown('<div class="subsection-title" style="margin-top: 1rem;">긍정 이벤트</div>', unsafe_allow_html=True)
+            _render_timeline_items(section.get("positive_event_items"))
 
         st.markdown('<div class="subsection-title" style="margin-top: 1rem;">최근 90일 타임라인</div>', unsafe_allow_html=True)
         _render_timeline_items(section.get("timeline_items"))

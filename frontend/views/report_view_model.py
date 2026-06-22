@@ -33,6 +33,8 @@ def build_report_view_model(
     decision_reasons = _as_list(context.get("decision_reasons"))
     news_result = context.get("news_result", {}) if isinstance(context, dict) else {}
     risk_event_result = context.get("risk_event_result", {}) if isinstance(context, dict) else {}
+    if not isinstance(risk_event_result, dict) or not risk_event_result:
+        risk_event_result = _build_risk_event_result_fallback(context)
     api_warnings = _extract_api_warnings(news_result)
 
     return {
@@ -214,6 +216,24 @@ def _extract_api_warnings(news_result: dict[str, Any]) -> list[str]:
     return warnings
 
 
+def _build_risk_event_result_fallback(context: dict[str, Any]) -> dict[str, Any]:
+    sentiment_result = context.get("sentiment_result")
+    if not isinstance(sentiment_result, dict):
+        sentiment_result = {}
+
+    return {
+        "sentiment_result": sentiment_result,
+        "classified_events": context.get("classified_events", []),
+        "timeline": context.get("timeline", []),
+        "overall_risk_level": context.get("overall_risk_level"),
+        "critical_count": context.get("critical_count", 0),
+        "high_count": context.get("high_count", 0),
+        "medium_count": context.get("medium_count", 0),
+        "low_count": context.get("low_count", 0),
+        "total_event_count": context.get("total_event_count", 0),
+    }
+
+
 def _build_financial_ratio_groups(financial_ratios: dict[str, Any]) -> list[dict[str, Any]]:
     if not isinstance(financial_ratios, dict):
         financial_ratios = {}
@@ -271,8 +291,12 @@ def _build_non_financial_event_section(
         sentiment_result = risk_event_result.get("sentiment_result", {}) or {}
 
     overall_sentiment = "-"
+    positive_sentiment_count = 0
+    positive_event_items: list[dict[str, str]] = []
     if isinstance(sentiment_result, dict):
         overall_sentiment = _format_sentiment(sentiment_result.get("overall_sentiment"))
+        positive_sentiment_count = int(sentiment_result.get("positive_count", 0) or 0)
+        positive_event_items = _extract_positive_sentiment_items(sentiment_result, limit=5)
 
     critical_count = int(context.get("critical_count", 0) or 0)
     high_count = int(context.get("high_count", 0) or 0)
@@ -318,6 +342,7 @@ def _build_non_financial_event_section(
     return {
         "overall_risk_level": overall_risk_level,
         "overall_sentiment": overall_sentiment,
+        "positive_sentiment_count": positive_sentiment_count,
         "recentness_summary": severity_summary,
         "repeat_summary": repeat_summary,
         "repayment_impact": repayment_impact,
@@ -325,6 +350,7 @@ def _build_non_financial_event_section(
         "timeline_lines": timeline_lines,
         "timeline_items": timeline_events,
         "key_event_items": severe_events[:3] if severe_events else timeline_events[:3],
+        "positive_event_items": positive_event_items,
         "total_event_count": total_event_count,
     }
 
@@ -370,6 +396,44 @@ def _extract_timeline_event_items(context: dict[str, Any], limit: int = 5) -> li
                     },
                 )
             )
+
+    items.sort(key=lambda item: item[0], reverse=True)
+    return [payload for _, payload in items[:limit]]
+
+
+def _extract_positive_sentiment_items(
+    sentiment_result: dict[str, Any],
+    limit: int = 5,
+) -> list[dict[str, str]]:
+    article_sentiments = sentiment_result.get("article_sentiments")
+    if not isinstance(article_sentiments, list):
+        return []
+
+    cutoff = date.today() - timedelta(days=RISK_LOOKBACK_DAYS)
+    items: list[tuple[date, dict[str, str]]] = []
+    for item in article_sentiments:
+        if not isinstance(item, dict):
+            continue
+        sentiment = str(item.get("sentiment") or "").lower()
+        if sentiment != "positive":
+            continue
+        published_at = _parse_date(item.get("published_at"))
+        if published_at is None or published_at < cutoff:
+            continue
+        title = str(item.get("title") or "-").strip() or "-"
+        reason = str(item.get("reason") or "").strip() or "긍정 요인으로 해석된 기사입니다."
+        items.append(
+            (
+                published_at,
+                {
+                    "date": published_at.isoformat(),
+                    "severity_raw": "positive",
+                    "severity": "긍정",
+                    "title": title,
+                    "impact": reason,
+                },
+            )
+        )
 
     items.sort(key=lambda item: item[0], reverse=True)
     return [payload for _, payload in items[:limit]]
