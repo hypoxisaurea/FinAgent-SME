@@ -72,6 +72,7 @@ class SentimentAnalysisResult(BaseModel):
     neutral_count:     int
     positive_count:    int
     overall_sentiment: SentimentLabel
+    article_sentiments: list[dict] = Field(default_factory=list)
     detected_events:   list[RiskEvent]
 
 
