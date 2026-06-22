@@ -42,7 +42,7 @@
 
 각 단계는 `backend/common/tool_runtime.py`를 통해 fallback 가능하게 실행됩니다.
 
-### calc_financial_ratios 출력 비율 목록 (16개)
+### calc_financial_ratios 출력 비율 목록 (20개)
 
 | 범주 | 키 |
 |------|-----|
@@ -50,6 +50,9 @@
 | 활동성 | `receivable_turnover`, `asset_turnover`, `payable_turnover` |
 | 수익성 | `roa`, `op_margin`, `net_margin`, `cogs_ratio` |
 | 현금흐름 | `ocf_to_sales`, `ocf_to_net_income`, `fcf`, `fcf_to_sales` |
+| EBITDA | `ebitda`, `ebitda_margin`, `net_debt_to_ebitda`, `ebitda_to_interest` |
+
+> `ebitda_to_interest`는 이자비용만으로 근사하며, 매출채권처분손실·자본화된이자비용은 미반영.
 
 ## 상태 규칙
 

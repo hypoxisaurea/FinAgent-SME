@@ -158,6 +158,109 @@ class TestNetMarginInRatios:
         assert ratios["net_margin"] == pytest.approx(expected)
 
     def test_net_margin_total_count(self):
-        """비율 총 개수가 16개인지 확인 (기존 15개 + net_margin)."""
+        """비율 총 개수가 20개인지 확인 (16개 + EBITDA 4개)."""
         ratios = calc_financial_ratios.invoke({"fs": self._make_fs_dict()})
-        assert len(ratios) == 16, f"비율 개수 {len(ratios)}개 (기대: 16개)"
+        assert len(ratios) == 20, f"비율 개수 {len(ratios)}개 (기대: 20개)"
+
+
+class TestEbitdaRatios:
+    """EBITDA 계열 4개 지표 검증."""
+
+    def _fs(self, **overrides) -> dict:
+        base = {
+            "매출액":         1_200_000_000.0,
+            "매출원가":       800_000_000.0,
+            "영업이익":       120_000_000.0,
+            "당기순이익":     80_000_000.0,
+            "이자비용":       30_000_000.0,
+            "총자산":         2_000_000_000.0,
+            "자본총계":       800_000_000.0,
+            "부채총계":       1_200_000_000.0,
+            "유동자산":       700_000_000.0,
+            "유동부채":       400_000_000.0,
+            "재고자산":       100_000_000.0,
+            "매출채권":       120_000_000.0,
+            "매입채무":       90_000_000.0,
+            "단기차입금":     200_000_000.0,
+            "유동성장기차입금": 50_000_000.0,
+            "장기차입금":     300_000_000.0,
+            "사채":           0.0,
+            "영업현금흐름":   100_000_000.0,
+            "유형자산취득":   40_000_000.0,
+            "이익잉여금":     150_000_000.0,
+            "유형자산":       500_000_000.0,
+            "현금및현금성자산": 50_000_000.0,
+            "단기금융상품":    30_000_000.0,
+            "감가상각비":      20_000_000.0,
+            "무형자산상각비":   5_000_000.0,
+        }
+        base.update(overrides)
+        return base
+
+    def _call(self, **overrides) -> dict:
+        return calc_financial_ratios.invoke({"fs": self._fs(**overrides)})
+
+    # ── 정상 케이스 ──────────────────────────────────────────────────────────
+
+    def test_ebitda_value(self):
+        """EBITDA = 영업이익 + 감가상각비 + 무형자산상각비."""
+        ratios = self._call()
+        expected = 120_000_000.0 + 20_000_000.0 + 5_000_000.0
+        assert ratios["ebitda"] == pytest.approx(expected)
+
+    def test_ebitda_margin_value(self):
+        ratios = self._call()
+        expected = (120_000_000.0 + 20_000_000.0 + 5_000_000.0) / 1_200_000_000.0
+        assert ratios["ebitda_margin"] == pytest.approx(expected)
+
+    def test_net_debt_to_ebitda_value(self):
+        """순차입금 = 총차입금 - (현금 + 단기금융상품)."""
+        ratios = self._call()
+        total_borrow = 200_000_000.0 + 50_000_000.0 + 300_000_000.0 + 0.0
+        net_debt     = total_borrow - (50_000_000.0 + 30_000_000.0)
+        ebitda       = 120_000_000.0 + 20_000_000.0 + 5_000_000.0
+        assert ratios["net_debt_to_ebitda"] == pytest.approx(net_debt / ebitda)
+
+    def test_ebitda_to_interest_value(self):
+        ratios = self._call()
+        ebitda = 120_000_000.0 + 20_000_000.0 + 5_000_000.0
+        assert ratios["ebitda_to_interest"] == pytest.approx(ebitda / 30_000_000.0)
+
+    def test_zero_depreciation_ebitda_equals_op_income(self):
+        """감가상각비·상각비 0 → EBITDA = 영업이익."""
+        ratios = self._call(감가상각비=0.0, 무형자산상각비=0.0)
+        assert ratios["ebitda"] == pytest.approx(120_000_000.0)
+
+    # ── Edge case: EBITDA ≤ 0 ────────────────────────────────────────────────
+
+    def test_negative_ebitda_ratios_are_none(self):
+        """영업이익 음수, 감가상각 0 → EBITDA < 0 → 두 비율 None."""
+        ratios = self._call(영업이익=-10_000_000.0, 감가상각비=0.0, 무형자산상각비=0.0)
+        assert ratios["net_debt_to_ebitda"] is None
+        assert ratios["ebitda_to_interest"] is None
+
+    def test_zero_ebitda_ratios_are_none(self):
+        """EBITDA = 0 → 두 비율 None."""
+        ratios = self._call(영업이익=0.0, 감가상각비=0.0, 무형자산상각비=0.0)
+        assert ratios["net_debt_to_ebitda"] is None
+        assert ratios["ebitda_to_interest"] is None
+
+    # ── Edge case: 이자비용 = 0 ───────────────────────────────────────────────
+
+    def test_zero_interest_ebitda_to_interest_is_none(self):
+        """이자비용 0 → ebitda_to_interest None (net_debt_to_ebitda는 정상)."""
+        ratios = self._call(이자비용=0.0)
+        assert ratios["ebitda_to_interest"] is None
+        assert ratios["net_debt_to_ebitda"] is not None
+
+    # ── DB 경로 폴백: 새 키 없는 fs ───────────────────────────────────────────
+
+    def test_missing_new_keys_no_crash(self):
+        """감가상각비·현금 등 4개 키가 없어도 KeyError 없이 계산."""
+        fs_without_new_keys = {k: v for k, v in self._fs().items()
+                               if k not in ("감가상각비", "무형자산상각비",
+                                            "현금및현금성자산", "단기금융상품")}
+        ratios = calc_financial_ratios.invoke({"fs": fs_without_new_keys})
+        # 키 없으면 0.0 폴백 → EBITDA = 영업이익, net_debt = 총차입금
+        assert ratios["ebitda"] == pytest.approx(120_000_000.0)
+        assert ratios["net_debt_to_ebitda"] is not None

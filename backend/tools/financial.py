@@ -327,6 +327,15 @@ def calc_financial_ratios(fs: dict) -> dict:
     # 차입금 총계
     total_borrow = fs["단기차입금"] + fs["유동성장기차입금"] + fs["장기차입금"] + fs["사채"]
 
+    # EBITDA 구성 요소 — .get() 사용: providers.py 업데이트 전까지는 DB 경로에서 0.0으로 근사
+    depreciation = fs.get("감가상각비",       0.0)
+    amortization = fs.get("무형자산상각비",   0.0)
+    cash         = fs.get("현금및현금성자산", 0.0)
+    short_fin    = fs.get("단기금융상품",     0.0)
+
+    ebitda   = op_income + depreciation + amortization
+    net_debt = total_borrow - (cash + short_fin)
+
     # FCF = OCF - CapEx (CapEx가 0원일 때도 정상 연산되도록 수식 교정, None이 아닐 때만 계산)
     fcf = (ocf - capex) if capex is not None else None
 
@@ -357,7 +366,13 @@ def calc_financial_ratios(fs: dict) -> dict:
         "ocf_to_net_income": ocf / net_income if net_income != 0 else None,
         "fcf": fcf if fcf is not None else 0.0,
         # fcf와 revenue가 모두 정상적으로 존재할 때만 계산하고, 아니면 0.0이나 None을 리턴
-        "fcf_to_sales":      (fcf / revenue) if (fcf is not None and revenue) else 0.0
+        "fcf_to_sales":      (fcf / revenue) if (fcf is not None and revenue) else 0.0,
+
+        # EBITDA (ebitda ≤ 0이면 비율 무의미 → None)
+        "ebitda":             ebitda,
+        "ebitda_margin":      ebitda / revenue,
+        "net_debt_to_ebitda": net_debt / ebitda if ebitda > 0 else None,
+        "ebitda_to_interest": ebitda / interest_exp if (ebitda > 0 and interest_exp > 0) else None,
     }
 
 

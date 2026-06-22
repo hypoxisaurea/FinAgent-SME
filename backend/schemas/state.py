@@ -20,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, Field
 # Financial Agent 출력 서브 모델
 
 class FinancialRatios(BaseModel):
-    """calc_financial_ratios 반환값 (16개 비율, 단일 숫자)."""
+    """calc_financial_ratios 반환값 (20개 비율, 단일 숫자)."""
 
     # 안정성
     debt_ratio:         float           # 부채비율 (부채/자본)
@@ -45,6 +45,12 @@ class FinancialRatios(BaseModel):
     ocf_to_net_income: float | None     # OCF/순이익 (순이익=0이면 null)
     fcf:               float            # FCF (영업현금흐름 - 자본적지출)
     fcf_to_sales:      float            # FCF/매출액
+
+    # EBITDA
+    ebitda:             float           # EBITDA (영업이익+감가상각+무형자산상각)
+    ebitda_margin:      float           # EBITDA마진 (EBITDA/매출액)
+    net_debt_to_ebitda: float | None    # 순차입금/EBITDA (EBITDA≤0이면 null)
+    ebitda_to_interest: float | None    # EBITDA/이자비용 근사 (이자비용=0 또는 EBITDA≤0이면 null)
 
 
 class AltmanZ(BaseModel):
