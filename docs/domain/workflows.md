@@ -125,14 +125,15 @@
 ## 상태값 규칙
 
 - `not_target`: 기업 미존재
-- `success`: 모든 step이 `ok=True`이고 최종 검증을 통과
+- `success`: 유효 step이 모두 `ok=True`이고 최종 검증을 통과
 - `partial`: 성공 step과 실패 step이 혼재
-- `failed`: 모든 step이 `ok=False`
+- `failed`: 모든 step이 실패했거나 validation gate가 결과를 차단
 
 주의:
 
 - agent의 `status=partial` 또는 `fallback_used=true`는 step 내부 메타데이터다.
-- 기본 전체 workflow `status`는 `step.ok` 집계로 계산된다.
+- 기본 전체 workflow `status`는 `step.ok` 집계로 계산된다. 재검증 통과 시 이전
+  validation 실패 step은 유효 상태 집계에서 제외한다.
 - validation 실패는 `status=failed`, `ok=false`인 실제 gate 실패다.
 - 재시도 소진 후에는 `status=failed`, `code=VALIDATION_FAILED`를 반환한다.
 - 차단 응답은 `validation_result`와 gate 메타데이터를 유지하지만 최종 판단과
@@ -152,7 +153,7 @@
 - `queued`: 접수 완료, 미실행
 - `running`: worker가 claim 후 실행 중
 - `succeeded`: workflow 결과 저장 완료
-- `failed`: 입력 오류 또는 실행 오류로 종료
+- `failed`: 입력/실행 오류 또는 validation gate 차단으로 종료
 
 ## 관측성
 

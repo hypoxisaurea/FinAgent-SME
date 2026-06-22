@@ -47,7 +47,9 @@ frontend/
 - 최종 응답 구조: `status`, `context`, `steps`, `request_id`
 - 상태 응답 구조: `job_id`, `status`, `submitted_at`, `started_at`, `finished_at`, `error_code`, `message`, `step_summary`
 
-현재 UI는 `decision`, `credit_grade`, `recommended_limit`, `report`, `validation_result`가 `context` 안에 있다는 전제에 맞춰 작성되어 있습니다.
+UI가 가져오는 `succeeded` 결과에는 `decision`, `credit_grade`, `recommended_limit`,
+`report`, `validation_result`가 `context`에 포함됩니다. Validation 차단 결과는 job이
+`failed`가 되어 결과 화면으로 이동하지 않고 검색 화면에서 상태 메시지를 표시합니다.
 
 ## 실행
 

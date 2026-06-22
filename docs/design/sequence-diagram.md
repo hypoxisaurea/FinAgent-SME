@@ -12,6 +12,7 @@ sequenceDiagram
     participant RES as CompanyResolverAgent
     participant NEWS as NewsCollectorAgent
     participant FIN as FinancialAnalystAgent
+    participant DOC as MultiModalDocumentAgent
     participant RISK as RiskEventAgent
     participant IND as IndustryAnalystAgent
     participant DEC as DecisionAgent
@@ -55,6 +56,9 @@ sequenceDiagram
             FIN->>DB: financial_statement_details (우선) / financial_features (보조)
             FIN->>EXT: DART/OpenDART
             FIN-->>ORCH: financial_ratios, grade_cap
+        and pdf_path가 있을 때
+            ORCH->>DOC: run(pdf_path)
+            DOC-->>ORCH: texts, chart_images, page_count
         end
 
         ORCH->>RISK: run(news_data, corp_code)
@@ -76,15 +80,30 @@ sequenceDiagram
         VAL->>LF: score 기록
         VAL-->>ORCH: validation_result
 
+        alt validation 통과
+            ORCH-->>ORCH: validation_gate_status=passed
+        else 첫 validation 실패 및 재시도 가능
+            ORCH->>REP: report 재생성
+            REP-->>ORCH: replacement report
+            ORCH->>VAL: 재검증
+            VAL-->>ORCH: validation_result
+        else 재시도 소진
+            ORCH-->>ORCH: 판단/보고서 차단, VALIDATION_FAILED
+        end
+
         ORCH->>LF: workflow observation 종료
         ORCH-->>WORKER: status + context + steps
     end
 
     WORKER->>DB: workflow_jobs update (succeeded|failed)
-    UI->>API: GET /api/v1/workflows/jobs/{job_id}/result
-    API->>DB: workflow_jobs result 조회
-    API-->>UI: workflow result JSON
-    UI->>User: 리포트 화면 표시
+    alt job succeeded
+        UI->>API: GET /api/v1/workflows/jobs/{job_id}/result
+        API->>DB: workflow_jobs result 조회
+        API-->>UI: workflow result JSON
+        UI->>User: 리포트 화면 표시
+    else job failed
+        UI->>User: 상태 API의 실패 메시지 표시
+    end
 ```
 
 ## 2. fallback / 실패 처리

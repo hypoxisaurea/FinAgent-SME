@@ -52,14 +52,15 @@ Validation 실패 시 기본 1회 `ReportAgent -> ValidationAgent`를 재실행�
 ## 상태 규칙
 
 - `not_target`: resolver가 대상 기업이 아니라고 판단
-- `success`: 모든 step의 `ok=True`
+- `success`: 유효 step이 모두 `ok=True`
 - `partial`: 성공/실패 step 혼재
-- `failed`: 모든 step의 `ok=False`
+- `failed`: 모든 step이 실패했거나 validation gate가 결과를 차단
 
 주의:
 
 - agent의 `status=partial`은 step 내부 메타데이터입니다.
-- 현재 전체 workflow `status`는 `step.ok` 집계 기준입니다.
+- 전체 workflow `status`는 `step.ok` 집계 기준입니다. 단, 재검증이 통과하면 이전
+  validation 실패 step은 이력에 유지하되 상태 집계에서는 제외합니다.
 
 ## 관측성
 

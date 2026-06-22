@@ -39,6 +39,9 @@
 - 일부 step 실패 + `continue_on_error=True`: 후속 단계 지속, 최종 `status=partial`
 - 빈/공백 `company_name`: API `400`
 - 모든 step에 `status`, `error_code`, `fallback_used`, `latency_ms` 존재
+- validation 첫 실패: 보고서 재생성 후 재검증
+- validation 재검증 통과: 최종 결과 공개, 이전 실패 step은 이력 유지
+- validation 재시도 소진: workflow/job `failed`, 판단/보고서 차단
 
 주의:
 

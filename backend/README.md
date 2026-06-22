@@ -18,10 +18,10 @@
 3. 앱 startup 시 시작된 `workflow_job_runner`가 queued job을 claim 합니다.
 4. runner가 background thread에서 `run_credit_workflow()`를 실행합니다.
 5. `CompanyResolverAgent`가 `sme_list`와 `company_profiles` 기반으로 기업을 식별합니다.
-6. 식별 성공 시 `news_collector`, `financial_analyst`가 시작 노드로 실행됩니다.
+6. 식별 성공 시 `news_collector`, `financial_analyst`가 시작 노드로 실행되고, 내부 payload에 `pdf_path`가 있으면 `multimodal_document`도 함께 실행됩니다.
 7. `risk_event`는 뉴스 결과 이후, `industry_analyst`는 재무 결과 이후 실행됩니다.
-8. `decision` -> `report` -> `validation`이 순차 실행됩니다.
-9. runner가 최종 workflow 결과를 저장하고 job을 `succeeded` 또는 `failed`로 마감합니다.
+8. `decision` -> `report` -> `validation`이 순차 실행됩니다. 검증 실패 시 기본 1회 `report` 생성과 검증을 재실행합니다.
+9. 재검증 실패는 판단/보고서를 차단하고, runner가 job을 `failed / VALIDATION_FAILED`로 마감합니다. 그 외 결과는 `succeeded`로 저장합니다.
 10. 프론트는 `GET /api/v1/workflows/jobs/{job_id}`와 `/result`를 polling/fetch 합니다.
 
 참고:
@@ -171,19 +171,20 @@ backend/
 
 - 최종 산출물은 `context` 내부에 누적됩니다.
 - `steps[*]`에는 `agent_name`, `ok`, `status`, `error_code`, `fallback_used`, `latency_ms`, `output`, `error`가 포함됩니다.
-- `not_target`일 때만 `code`, `message`가 함께 반환됩니다.
+- `not_target` 또는 validation 차단일 때 `code`, `message`가 함께 반환됩니다.
 - `GET /api/v1/workflows/jobs/{job_id}/result`는 job이 `succeeded`일 때만 workflow 결과를 반환합니다.
 
 ## 상태 계산 규칙
 
 - `not_target`: `CompanyResolverAgent`가 기업 미존재를 반환한 경우
-- `success`: 모든 step의 `ok=True`
+- `success`: 유효한 최종 validation을 포함한 모든 유효 step의 `ok=True`
 - `partial`: `ok=True`와 `ok=False` step이 혼재한 경우
-- `failed`: 모든 step의 `ok=False`
+- `failed`: 모든 step이 실패했거나 validation gate가 결과를 차단한 경우
 
 주의:
 
 - agent 단위 `partial`이나 `fallback_used=true`가 있어도 step이 `ok=True`이면 전체 workflow 상태는 `success`로 계산될 수 있습니다.
+- validation 재검증이 통과하면 이전 validation 실패 step은 이력에 남지만 상태 집계에서는 제외됩니다.
 - 현재 `continue_on_error`는 내부 워크플로우 옵션이며 공개 API 바디에서는 조정하지 않습니다.
 
 ## Job 상태 규칙
