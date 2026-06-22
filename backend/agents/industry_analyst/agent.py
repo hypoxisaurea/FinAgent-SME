@@ -20,6 +20,7 @@ from backend.schemas.agent_contracts import (
     IndustryAnalystInput,
     IndustryAnalystOutput,
 )
+from backend.tools.kr_grade_mapper import calc_kr_financial_grades
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +95,15 @@ class IndustryAnalystAgent(Agent):
                 validate_dict=True,
             )
             tool_runs.append(outlook_run)
+
+            methodology_sources = industry_outlook.get("methodology_sources") or []
+            sub_sector = methodology_sources[0].get("sub_sector") if methodology_sources else None
+            kr_grades = (
+                calc_kr_financial_grades(company_ratios, sub_sector)
+                if company_ratios and sub_sector
+                else None
+            )
+
             business_cycle, cycle_run = execute_tool_step(
                 logger=logger,
                 agent_name=self.name,
@@ -139,6 +149,7 @@ class IndustryAnalystAgent(Agent):
                     "peer_comparison": industry_avg.get("peer_comparison"),
                     "industry_tool_runs": serialize_tool_runs(tool_runs),
                     "industry_tool_errors": tool_errors,
+                    "kr_financial_grades": kr_grades,
                 },
                 status="partial" if fallback_used else "success",
                 error_code="INDUSTRY_TOOL_FALLBACK" if fallback_used else "OK",

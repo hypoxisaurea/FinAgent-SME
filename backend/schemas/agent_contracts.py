@@ -174,6 +174,7 @@ class IndustryAnalystOutput(AgentOutputModel):
     peer_comparison: dict[str, Any] | None = None
     industry_tool_runs: list[dict[str, Any]] = Field(default_factory=list)
     industry_tool_errors: list[dict[str, Any]] = Field(default_factory=list)
+    kr_financial_grades: dict[str, Any] | None = None
 
 
 class RiskEventInput(AgentInputModel):
