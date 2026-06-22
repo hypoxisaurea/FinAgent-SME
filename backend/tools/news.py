@@ -676,6 +676,23 @@ def execute_news_pipeline(
             corp_name=corp_name,
             stock_code=stock_code,
         )
+        if not companies:
+            fallback_company = _build_fallback_company(
+                company_name=company_name,
+                corp_name=corp_name,
+                stock_code=stock_code,
+            )
+            if fallback_company is not None:
+                companies = [fallback_company]
+                logger.info(
+                    (
+                        "sme_company_filter_fallback_applied company_name=%s "
+                        "corp_name=%s stock_code=%s"
+                    ),
+                    company_name,
+                    corp_name,
+                    stock_code,
+                )
         stats["target_company_count"] = len(companies)
 
         iterable = (
