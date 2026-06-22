@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from views.report_view_model import build_report_view_model
+from frontend.views.report_view_model import build_report_view_model
 
 
 def render() -> None:
@@ -16,6 +16,12 @@ def render() -> None:
         return
 
     result = st.session_state.last_result
+    if _is_validation_blocked(result):
+        message = result.get("message") or "최종 결과 검증에 실패하여 심사 결과가 차단되었습니다."
+        st.error(message)
+        st.caption(f"오류 코드: {result.get('code') or 'VALIDATION_FAILED'}")
+        return
+
     context = result.get("context", {}) if isinstance(result, dict) else {}
     report = context.get("report") if isinstance(context, dict) else None
     steps = result.get("steps", []) if isinstance(result, dict) else []
@@ -56,6 +62,17 @@ def render() -> None:
         if st.button("다시 검색 페이지로 이동"):
             st.session_state.page = "Search"
             st.rerun()
+
+
+def _is_validation_blocked(result: Any) -> bool:
+    if not isinstance(result, dict):
+        return False
+    context = result.get("context")
+    gate_blocked = (
+        isinstance(context, dict)
+        and context.get("validation_gate_status") == "blocked"
+    )
+    return gate_blocked or result.get("code") == "VALIDATION_FAILED"
 
 
 def _inject_styles() -> None:
