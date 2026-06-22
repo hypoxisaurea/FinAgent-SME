@@ -1,0 +1,76 @@
+{
+  "methodology": "제약업",
+  "source_pdf": "2024 제약업 평가방법론.pdf",
+  "metrics": {
+    "ebitda_margin": {
+      "label": "EBITDA마진",
+      "weight_pct": 7.5,
+      "direction": "higher_is_better",
+      "unit": "percent",
+      "thresholds": [
+        {"grade": "AAA", "op": "gte", "value": 20.0},
+        {"grade": "AA",  "op": "gte", "value": 12.0},
+        {"grade": "A",   "op": "gte", "value":  8.0},
+        {"grade": "BBB", "op": "gte", "value":  6.0},
+        {"grade": "BB",  "op": "gte", "value":  4.0},
+        {"grade": "B",   "op": "lt",  "value":  4.0}
+      ]
+    },
+    "net_debt_to_ebitda": {
+      "label": "순차입금/EBITDA",
+      "weight_pct": 15.0,
+      "direction": "lower_is_better",
+      "unit": "times",
+      "thresholds": [
+        {"grade": "AAA", "op": "lte", "value":  0.5},
+        {"grade": "AA",  "op": "lte", "value":  1.5},
+        {"grade": "A",   "op": "lte", "value":  3.5},
+        {"grade": "BBB", "op": "lte", "value":  7.0},
+        {"grade": "BB",  "op": "lte", "value": 10.0},
+        {"grade": "B",   "op": "gt",  "value": 10.0}
+      ]
+    },
+    "ebitda_to_interest": {
+      "label": "EBITDA/총금융비용",
+      "weight_pct": 7.5,
+      "direction": "higher_is_better",
+      "unit": "times",
+      "thresholds": [
+        {"grade": "AAA", "op": "gte", "value": 15.0},
+        {"grade": "AA",  "op": "gte", "value":  8.0},
+        {"grade": "A",   "op": "gte", "value":  4.5},
+        {"grade": "BBB", "op": "gte", "value":  2.5},
+        {"grade": "BB",  "op": "gte", "value":  1.5},
+        {"grade": "B",   "op": "lt",  "value":  1.5}
+      ]
+    },
+    "debt_ratio": {
+      "label": "부채비율",
+      "weight_pct": 10.0,
+      "direction": "lower_is_better",
+      "unit": "percent",
+      "thresholds": [
+        {"grade": "AAA", "op": "lte", "value":  50.0},
+        {"grade": "AA",  "op": "lte", "value": 100.0},
+        {"grade": "A",   "op": "lte", "value": 150.0},
+        {"grade": "BBB", "op": "lte", "value": 200.0},
+        {"grade": "BB",  "op": "lte", "value": 300.0},
+        {"grade": "B",   "op": "gt",  "value": 300.0}
+      ]
+    },
+    "borrow_dep": {
+      "label": "차입금의존도",
+      "weight_pct": 10.0,
+      "direction": "lower_is_better",
+      "unit": "percent",
+      "thresholds": [
+        {"grade": "AAA", "op": "lte", "value": 20.0},
+        {"grade": "AA",  "op": "lte", "value": 27.5},
+        {"grade": "A",   "op": "lte", "value": 35.0},
+        {"grade": "BBB", "op": "lte", "value": 45.0},
+        {"grade": "BB",  "op": "lte", "value": 55.0},
+        {"grade": "B",   "op": "gt",  "value": 55.0}
+      ]
+    }
+  }
+}
