@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import logging
 import re
@@ -11,11 +12,19 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from backend.agents.validation.agent import ValidationAgent
 from backend.common.langfuse import get_langfuse_client, is_langfuse_enabled
 from backend.common.logging import configure_logging
 
 logger = logging.getLogger(__name__)
 DEFAULT_OUTPUT_PATH = "artifacts/langfuse_trace_verification.json"
+VALIDATION_SCORE_NAMES = frozenset(
+    {
+        "validation_pass_rate",
+        "workflow_contract_valid",
+        "failed_check_count",
+    }
+)
 SENSITIVE_KEYS = frozenset(
     {
         "api_key",
@@ -71,11 +80,31 @@ def verify_trace(
             verification_step.update(
                 output={"ingestion_event_created": True}
             )
-        observation.update(output={"status": "completed"})
+        validation_output = asyncio.run(
+            ValidationAgent().run(_build_validation_probe_payload())
+        )
+        observation.update(
+            output={
+                "status": "completed",
+                "validation_result": validation_output["validation_result"],
+            }
+        )
 
     _flush_with_timeout(client, timeout_seconds=flush_timeout_seconds)
-    trace_payload = _fetch_trace_with_retry(client, trace_id, attempts=attempts)
+    trace_payload = _fetch_trace_with_retry(
+        client,
+        trace_id,
+        attempts=attempts,
+        required_score_names=VALIDATION_SCORE_NAMES,
+    )
     trace_data = _redact_sensitive_data(_parse_json_io_fields(_to_json_data(trace_payload)))
+    validation_scores = _extract_scores(trace_data, VALIDATION_SCORE_NAMES)
+    missing_scores = sorted(VALIDATION_SCORE_NAMES - set(validation_scores))
+    if missing_scores:
+        raise RuntimeError(
+            "Langfuse validation score 확인에 실패했습니다: "
+            + ", ".join(missing_scores)
+        )
     observations = _fetch_observations_with_retry(client, trace_id, attempts=attempts)
     trace_data["observations"] = _redact_sensitive_data(
         [
@@ -89,6 +118,7 @@ def verify_trace(
         "trace_id": trace_id,
         "trace_name": trace_data.get("name", "finagent_trace_verification"),
         "trace_url": client.get_trace_url(trace_id=trace_id),
+        "validation_scores": validation_scores,
         "trace": trace_data,
     }
     target_path = Path(output_path)
@@ -103,6 +133,38 @@ def verify_trace(
         target_path,
     )
     return evidence
+
+
+def _build_validation_probe_payload() -> dict[str, Any]:
+    report = {
+        "generated_at": "2026-06-23",
+        "company_name": "Langfuse 검증기업",
+        "corp_name": "Langfuse 검증기업",
+        "corp_code": "00000000",
+        "decision": "approve",
+        "credit_grade": "A",
+        "summary": "검증용 심사 보고서입니다.",
+        "recommendation": "검증용 승인 권고입니다.",
+        "recommended_limit": 100000000,
+        "confidence": 0.9,
+        "key_risks": ["검증용 리스크"],
+    }
+    return {
+        "request_id": "req-langfuse-validation-verification",
+        "company_name": "Langfuse 검증기업",
+        "corp_name": "Langfuse 검증기업",
+        "corp_code": "00000000",
+        "decision": "approve",
+        "credit_grade": "A",
+        "decision_confidence": 0.9,
+        "decision_reasons": ["검증용 리스크"],
+        "recommended_limit": 100000000,
+        "explanation": {
+            "summary": report["summary"],
+            "recommendation": report["recommendation"],
+        },
+        "report": report,
+    }
 
 
 def _to_json_data(value: Any) -> dict[str, Any]:
@@ -154,6 +216,27 @@ def _parse_json_io_fields(value: Any, *, key: str | None = None) -> Any:
     return value
 
 
+def _extract_scores(
+    trace_data: dict[str, Any],
+    score_names: frozenset[str],
+) -> dict[str, dict[str, Any]]:
+    scores = trace_data.get("scores", [])
+    if not isinstance(scores, list):
+        return {}
+    extracted: dict[str, dict[str, Any]] = {}
+    for score in scores:
+        if not isinstance(score, dict):
+            continue
+        score_name = score.get("name")
+        if score_name in score_names:
+            extracted[str(score_name)] = {
+                key: score.get(key)
+                for key in ("name", "value", "dataType", "comment")
+                if key in score
+            }
+    return extracted
+
+
 def _flush_with_timeout(client: Any, *, timeout_seconds: int) -> None:
     def _handle_timeout(signum: int, frame: Any) -> None:
         raise TimeoutError("Langfuse flush가 제한 시간을 초과했습니다.")
@@ -167,15 +250,30 @@ def _flush_with_timeout(client: Any, *, timeout_seconds: int) -> None:
         signal.signal(signal.SIGALRM, previous_handler)
 
 
-def _fetch_trace_with_retry(client: Any, trace_id: str, *, attempts: int) -> Any:
+def _fetch_trace_with_retry(
+    client: Any,
+    trace_id: str,
+    *,
+    attempts: int,
+    required_score_names: frozenset[str] | None = None,
+) -> Any:
     last_error: Exception | None = None
     for attempt in range(1, max(attempts, 1) + 1):
         try:
-            return client.api.trace.get(trace_id)
+            trace_payload = client.api.trace.get(trace_id)
+            if required_score_names is None:
+                return trace_payload
+            trace_data = _to_json_data(trace_payload)
+            present_score_names = set(_extract_scores(trace_data, required_score_names))
+            if required_score_names <= present_score_names:
+                return trace_payload
+            last_error = RuntimeError(
+                "Langfuse score 대기 중: "
+                + ", ".join(sorted(required_score_names - present_score_names))
+            )
         except Exception as exc:  # noqa: BLE001 - SDK 오류는 재시도 후 명시적으로 처리
             last_error = exc
-            if attempt >= max(attempts, 1):
-                break
+        if attempt < max(attempts, 1):
             time.sleep(0.5 * attempt)
     raise RuntimeError("Langfuse trace 확인에 실패했습니다.") from last_error
 

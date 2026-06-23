@@ -1,18 +1,142 @@
 {
   "verified": true,
-  "verified_at": "2026-06-22T14:56:09.463779+00:00",
-  "trace_id": "2bf41c702375099c728c7c2d4e592402",
+  "verified_at": "2026-06-23T13:27:59.051522+00:00",
+  "trace_id": "9e39ef36d2a8d202614a6123e5508523",
   "trace_name": "finagent_trace_verification",
-  "trace_url": "https://cloud.langfuse.com/project/cmq51q9y001iaad0i0wvfmrwf/traces/2bf41c702375099c728c7c2d4e592402",
+  "trace_url": "https://cloud.langfuse.com/project/cmq51q9y001iaad0i0wvfmrwf/traces/9e39ef36d2a8d202614a6123e5508523",
+  "validation_scores": {
+    "failed_check_count": {
+      "name": "failed_check_count",
+      "value": 0.0,
+      "dataType": "NUMERIC",
+      "comment": "All validation checks passed."
+    },
+    "validation_pass_rate": {
+      "name": "validation_pass_rate",
+      "value": 1.0,
+      "dataType": "NUMERIC",
+      "comment": "All validation checks passed."
+    },
+    "workflow_contract_valid": {
+      "name": "workflow_contract_valid",
+      "value": 1.0,
+      "dataType": "BOOLEAN",
+      "comment": "All validation checks passed."
+    }
+  },
   "trace": {
-    "id": "2bf41c702375099c728c7c2d4e592402",
-    "timestamp": "2026-06-22T14:55:45.531000Z",
+    "id": "9e39ef36d2a8d202614a6123e5508523",
+    "timestamp": "2026-06-23T13:27:29.934000Z",
     "name": "finagent_trace_verification",
     "input": {
       "verification": true
     },
     "output": {
-      "status": "completed"
+      "status": "completed",
+      "validation_result": {
+        "validation_passed": true,
+        "pass_rate": 1,
+        "passed_checks": 19,
+        "total_checks": 19,
+        "failed_checks": [],
+        "checks": [
+          {
+            "name": "decision_present",
+            "passed": true,
+            "detail": "decision='approve'"
+          },
+          {
+            "name": "credit_grade_present",
+            "passed": true,
+            "detail": "credit_grade='A'"
+          },
+          {
+            "name": "report_present",
+            "passed": true,
+            "detail": "report_type=dict"
+          },
+          {
+            "name": "decision_confidence_range",
+            "passed": true,
+            "detail": "decision_confidence=0.9"
+          },
+          {
+            "name": "report_generated_at_valid",
+            "passed": true,
+            "detail": "report.generated_at='2026-06-23'"
+          },
+          {
+            "name": "report_company_matches",
+            "passed": true,
+            "detail": "report.company_name='Langfuse 검증기업'"
+          },
+          {
+            "name": "report_corp_name_matches",
+            "passed": true,
+            "detail": "report.corp_name='Langfuse 검증기업'"
+          },
+          {
+            "name": "report_corp_code_matches",
+            "passed": true,
+            "detail": "report.corp_code='00000000'"
+          },
+          {
+            "name": "report_decision_matches",
+            "passed": true,
+            "detail": "report.decision='approve'"
+          },
+          {
+            "name": "report_grade_matches",
+            "passed": true,
+            "detail": "report.credit_grade='A'"
+          },
+          {
+            "name": "report_summary_present",
+            "passed": true,
+            "detail": "report.summary='검증용 심사 보고서입니다.'"
+          },
+          {
+            "name": "report_recommendation_present",
+            "passed": true,
+            "detail": "report.recommendation='검증용 승인 권고입니다.'"
+          },
+          {
+            "name": "report_recommended_limit_matches",
+            "passed": true,
+            "detail": "report.recommended_limit=100000000"
+          },
+          {
+            "name": "report_confidence_matches",
+            "passed": true,
+            "detail": "report.confidence=0.9"
+          },
+          {
+            "name": "report_key_risks_matches",
+            "passed": true,
+            "detail": "report.key_risks=['검증용 리스크']"
+          },
+          {
+            "name": "report_summary_matches_explanation",
+            "passed": true,
+            "detail": "report.summary='검증용 심사 보고서입니다.'"
+          },
+          {
+            "name": "report_recommendation_matches_explanation",
+            "passed": true,
+            "detail": "report.recommendation='검증용 승인 권고입니다.'"
+          },
+          {
+            "name": "recommended_limit_non_negative",
+            "passed": true,
+            "detail": "recommended_limit=100000000"
+          },
+          {
+            "name": "reject_limit_rule",
+            "passed": true,
+            "detail": "decision='approve', recommended_limit=100000000"
+          }
+        ]
+      }
     },
     "metadata": {
       "feature": "observability_verification",
@@ -34,17 +158,17 @@
     "tags": [],
     "public": false,
     "environment": "development",
-    "htmlPath": "/project/cmq51q9y001iaad0i0wvfmrwf/traces/2bf41c702375099c728c7c2d4e592402",
-    "latency": 0.001,
+    "htmlPath": "/project/cmq51q9y001iaad0i0wvfmrwf/traces/9e39ef36d2a8d202614a6123e5508523",
+    "latency": 0.004,
     "totalCost": 0.0,
     "observations": [
       {
-        "id": "43af15a1c8994d4f",
-        "traceId": "2bf41c702375099c728c7c2d4e592402",
-        "startTime": "2026-06-22T14:55:45.531000Z",
-        "endTime": "2026-06-22T14:55:45.531000Z",
+        "id": "42e1f431ca476866",
+        "traceId": "9e39ef36d2a8d202614a6123e5508523",
+        "startTime": "2026-06-23T13:27:29.936000Z",
+        "endTime": "2026-06-23T13:27:29.937000Z",
         "projectId": "cmq51q9y001iaad0i0wvfmrwf",
-        "parentObservationId": "39dfc1a35d1d5f78",
+        "parentObservationId": "6d3beb4ba59c24dd",
         "type": "SPAN",
         "name": "langfuse_ingestion_check",
         "level": "DEFAULT",
@@ -55,8 +179,8 @@
         "public": false,
         "userId": "",
         "sessionId": "",
-        "createdAt": "2026-06-22T14:55:46.350000Z",
-        "updatedAt": "2026-06-22T14:55:46.350000Z",
+        "createdAt": "2026-06-23T13:27:30.723000Z",
+        "updatedAt": "2026-06-23T13:27:30.723000Z",
         "input": {
           "check": "trace_ingestion"
         },
@@ -81,7 +205,7 @@
         "totalCost": 0.0,
         "promptId": "",
         "promptName": "",
-        "latency": 0.0,
+        "latency": 0.001,
         "traceName": "",
         "tags": [],
         "release": "",
@@ -102,10 +226,10 @@
         "usagePricingTierId": null
       },
       {
-        "id": "39dfc1a35d1d5f78",
-        "traceId": "2bf41c702375099c728c7c2d4e592402",
-        "startTime": "2026-06-22T14:55:45.531000Z",
-        "endTime": "2026-06-22T14:55:45.532000Z",
+        "id": "6d3beb4ba59c24dd",
+        "traceId": "9e39ef36d2a8d202614a6123e5508523",
+        "startTime": "2026-06-23T13:27:29.934000Z",
+        "endTime": "2026-06-23T13:27:29.938000Z",
         "projectId": "cmq51q9y001iaad0i0wvfmrwf",
         "type": "CHAIN",
         "name": "finagent_trace_verification",
@@ -117,13 +241,117 @@
         "public": false,
         "userId": "",
         "sessionId": "",
-        "createdAt": "2026-06-22T14:55:46.350000Z",
-        "updatedAt": "2026-06-22T14:55:46.350000Z",
+        "createdAt": "2026-06-23T13:27:30.724000Z",
+        "updatedAt": "2026-06-23T13:27:30.724000Z",
         "input": {
           "verification": true
         },
         "output": {
-          "status": "completed"
+          "status": "completed",
+          "validation_result": {
+            "validation_passed": true,
+            "pass_rate": 1.0,
+            "passed_checks": 19,
+            "total_checks": 19,
+            "failed_checks": [],
+            "checks": [
+              {
+                "name": "decision_present",
+                "passed": true,
+                "detail": "decision='approve'"
+              },
+              {
+                "name": "credit_grade_present",
+                "passed": true,
+                "detail": "credit_grade='A'"
+              },
+              {
+                "name": "report_present",
+                "passed": true,
+                "detail": "report_type=dict"
+              },
+              {
+                "name": "decision_confidence_range",
+                "passed": true,
+                "detail": "decision_confidence=0.9"
+              },
+              {
+                "name": "report_generated_at_valid",
+                "passed": true,
+                "detail": "report.generated_at='2026-06-23'"
+              },
+              {
+                "name": "report_company_matches",
+                "passed": true,
+                "detail": "report.company_name='Langfuse 검증기업'"
+              },
+              {
+                "name": "report_corp_name_matches",
+                "passed": true,
+                "detail": "report.corp_name='Langfuse 검증기업'"
+              },
+              {
+                "name": "report_corp_code_matches",
+                "passed": true,
+                "detail": "report.corp_code='00000000'"
+              },
+              {
+                "name": "report_decision_matches",
+                "passed": true,
+                "detail": "report.decision='approve'"
+              },
+              {
+                "name": "report_grade_matches",
+                "passed": true,
+                "detail": "report.credit_grade='A'"
+              },
+              {
+                "name": "report_summary_present",
+                "passed": true,
+                "detail": "report.summary='검증용 심사 보고서입니다.'"
+              },
+              {
+                "name": "report_recommendation_present",
+                "passed": true,
+                "detail": "report.recommendation='검증용 승인 권고입니다.'"
+              },
+              {
+                "name": "report_recommended_limit_matches",
+                "passed": true,
+                "detail": "report.recommended_limit=100000000"
+              },
+              {
+                "name": "report_confidence_matches",
+                "passed": true,
+                "detail": "report.confidence=0.9"
+              },
+              {
+                "name": "report_key_risks_matches",
+                "passed": true,
+                "detail": "report.key_risks=['검증용 리스크']"
+              },
+              {
+                "name": "report_summary_matches_explanation",
+                "passed": true,
+                "detail": "report.summary='검증용 심사 보고서입니다.'"
+              },
+              {
+                "name": "report_recommendation_matches_explanation",
+                "passed": true,
+                "detail": "report.recommendation='검증용 승인 권고입니다.'"
+              },
+              {
+                "name": "recommended_limit_non_negative",
+                "passed": true,
+                "detail": "recommended_limit=100000000"
+              },
+              {
+                "name": "reject_limit_rule",
+                "passed": true,
+                "detail": "decision='approve', recommended_limit=100000000"
+              }
+            ]
+          }
         },
         "metadata": {
           "feature": "observability_verification",
@@ -143,7 +371,7 @@
         "totalCost": 0.0,
         "promptId": "",
         "promptName": "",
-        "latency": 0.001,
+        "latency": 0.004,
         "traceName": "",
         "tags": [],
         "release": "",
@@ -165,11 +393,75 @@
         "usagePricingTierId": null
       }
     ],
-    "scores": [],
+    "scores": [
+      {
+        "dataType": "NUMERIC",
+        "value": 0.0,
+        "id": "421e2ce325db5e4a",
+        "traceId": "9e39ef36d2a8d202614a6123e5508523",
+        "name": "failed_check_count",
+        "source": "API",
+        "timestamp": "2026-06-23T13:27:29.937000Z",
+        "createdAt": "2026-06-23T13:27:32Z",
+        "updatedAt": "2026-06-23T13:27:36.697000Z",
+        "comment": "All validation checks passed.",
+        "metadata": {},
+        "environment": "development",
+        "projectId": "cmq51q9y001iaad0i0wvfmrwf",
+        "observationId": null,
+        "authorUserId": null,
+        "configId": null,
+        "queueId": null,
+        "executionTraceId": null,
+        "stringValue": null
+      },
+      {
+        "dataType": "NUMERIC",
+        "value": 1.0,
+        "id": "06d8fbbfb95f1fe0",
+        "traceId": "9e39ef36d2a8d202614a6123e5508523",
+        "name": "validation_pass_rate",
+        "source": "API",
+        "timestamp": "2026-06-23T13:27:29.937000Z",
+        "createdAt": "2026-06-23T13:27:32Z",
+        "updatedAt": "2026-06-23T13:27:36.691000Z",
+        "comment": "All validation checks passed.",
+        "metadata": {},
+        "environment": "development",
+        "projectId": "cmq51q9y001iaad0i0wvfmrwf",
+        "observationId": null,
+        "authorUserId": null,
+        "configId": null,
+        "queueId": null,
+        "executionTraceId": null,
+        "stringValue": null
+      },
+      {
+        "dataType": "BOOLEAN",
+        "value": 1.0,
+        "stringValue": "True",
+        "id": "66cdd91b5c027e94",
+        "traceId": "9e39ef36d2a8d202614a6123e5508523",
+        "name": "workflow_contract_valid",
+        "source": "API",
+        "timestamp": "2026-06-23T13:27:29.937000Z",
+        "createdAt": "2026-06-23T13:27:32Z",
+        "updatedAt": "2026-06-23T13:27:36.688000Z",
+        "comment": "All validation checks passed.",
+        "metadata": {},
+        "environment": "development",
+        "projectId": "cmq51q9y001iaad0i0wvfmrwf",
+        "observationId": null,
+        "authorUserId": null,
+        "configId": null,
+        "queueId": null,
+        "executionTraceId": null
+      }
+    ],
     "projectId": "cmq51q9y001iaad0i0wvfmrwf",
     "bookmarked": false,
-    "createdAt": "2026-06-22T14:55:47.000Z",
-    "updatedAt": "2026-06-22T14:55:46.402Z",
+    "createdAt": "2026-06-23T13:27:31.000Z",
+    "updatedAt": "2026-06-23T13:27:30.763Z",
     "sessionId": null,
     "release": null,
     "version": null,
