@@ -58,7 +58,10 @@ _BROWSER_CONSOLE_QUEUE_KEY = "_browser_console_events"
 _BROWSER_CONSOLE_FLUSHED_COUNT_KEY = "_browser_console_flushed_count"
 _JOB_POLL_COUNT_KEY = "_pending_job_poll_count"
 _JOB_QUEUED_SINCE_KEY = "_pending_job_queued_since"
+_JOB_STREAM_EVENTS_KEY = "_pending_job_stream_events"
+_JOB_STREAM_FALLBACK_KEY = "_pending_job_stream_fallback"
 _QUEUE_STALL_WARNING_INTERVAL = 5
+_SSE_TERMINAL_EVENTS = {"complete", "error"}
 
 
 def _normalize_company_name(value: str) -> str:
@@ -174,6 +177,122 @@ def _console_log_job_status(status_payload: dict[str, object]) -> None:
         },
         dedupe_key=f"workflow_job_status:{job_id}:{status}:{json.dumps(step_summary, ensure_ascii=False, sort_keys=True, default=str)}",
     )
+
+
+def _parse_sse_events(lines: list[str]) -> list[dict[str, object]]:
+    events: list[dict[str, object]] = []
+    event_name = "message"
+    data_lines: list[str] = []
+
+    for line in lines:
+        if not line:
+            if data_lines:
+                events.append(_build_sse_event(event_name, data_lines))
+            event_name = "message"
+            data_lines = []
+            continue
+        if line.startswith(":"):
+            continue
+        if line.startswith("event:"):
+            event_name = line.removeprefix("event:").strip() or "message"
+            continue
+        if line.startswith("data:"):
+            data_lines.append(line.removeprefix("data:").strip())
+
+    if data_lines:
+        events.append(_build_sse_event(event_name, data_lines))
+    return events
+
+
+def _build_sse_event(event_name: str, data_lines: list[str]) -> dict[str, object]:
+    raw_data = "\n".join(data_lines)
+    try:
+        data: object = json.loads(raw_data)
+    except json.JSONDecodeError:
+        data = raw_data
+    return {"event": event_name, "data": data}
+
+
+def _append_workflow_stream_event(
+    *,
+    job_id: str,
+    event_name: str,
+    payload: dict[str, object],
+) -> None:
+    stream_events = st.session_state.setdefault(_JOB_STREAM_EVENTS_KEY, [])
+    event_key = (
+        f"{job_id}:{event_name}:"
+        f"{json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)}"
+    )
+    if stream_events and stream_events[-1].get("event_key") == event_key:
+        return
+    stream_events.append(
+        {
+            "event_key": event_key,
+            "timestamp": _utc_timestamp(),
+            "event": event_name,
+            "status": payload.get("status"),
+            "step_summary": payload.get("step_summary"),
+            "message": payload.get("message"),
+        }
+    )
+    st.session_state[_JOB_STREAM_EVENTS_KEY] = stream_events[-8:]
+
+
+def stream_workflow_job_status(job_id: str) -> dict[str, object] | None:
+    url = f"{st.session_state.base_url}/api/v1/workflows/jobs/{job_id}/stream"
+    lines: list[str] = []
+    try:
+        with requests.get(
+            url,
+            stream=True,
+            timeout=(5, 12),
+            headers={"Accept": "text/event-stream"},
+        ) as resp:
+            resp.raise_for_status()
+            for raw_line in resp.iter_lines(decode_unicode=True):
+                line = raw_line if isinstance(raw_line, str) else raw_line.decode()
+                lines.append(line)
+                if line == "":
+                    events = _parse_sse_events(lines)
+                    if events:
+                        latest_event = events[-1]
+                        payload = latest_event.get("data")
+                        if isinstance(payload, dict):
+                            event_name = str(latest_event.get("event") or "message")
+                            _append_workflow_stream_event(
+                                job_id=job_id,
+                                event_name=event_name,
+                                payload=payload,
+                            )
+                            _emit_browser_console(
+                                level="info" if event_name != "error" else "error",
+                                event="workflow_job_stream_event",
+                                payload={
+                                    "job_id": job_id,
+                                    "sse_event": event_name,
+                                    "response": payload,
+                                },
+                                dedupe_key=f"workflow_job_stream_event:{job_id}:{event_name}:{payload.get('status')}:{json.dumps(payload.get('step_summary'), ensure_ascii=False, sort_keys=True, default=str)}",
+                            )
+                            return payload
+                    lines = []
+    except requests.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 404:
+            return None
+        logger.info(
+            "workflow_job_stream_http_failed job_id=%s error=%s",
+            job_id,
+            exc,
+        )
+    except requests.RequestException as exc:
+        logger.info(
+            "workflow_job_stream_transport_failed job_id=%s error=%s",
+            job_id,
+            exc,
+        )
+    st.session_state[_JOB_STREAM_FALLBACK_KEY] = True
+    return None
 
 
 def _render_http_error(response: requests.Response) -> None:
@@ -677,6 +796,45 @@ def _inject_styles() -> None:
             font-size: 0.9rem;
             line-height: 1.6;
         }
+        .stream-log {
+            margin-top: 14px;
+            border: 1px solid #dbe7f4;
+            border-radius: 20px;
+            background: #fbfdff;
+            padding: 16px 18px;
+        }
+        .stream-log-title {
+            color: #24476d;
+            font-size: 0.86rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+        }
+        .stream-log-row {
+            display: grid;
+            grid-template-columns: 120px 110px minmax(0, 1fr);
+            gap: 10px;
+            align-items: center;
+            padding: 9px 0;
+            border-top: 1px solid #ecf2f8;
+            color: #35506d;
+            font-size: 0.86rem;
+        }
+        .stream-log-row:first-of-type {
+            border-top: 0;
+        }
+        .stream-log-event {
+            color: #1d5e9d;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .stream-log-status {
+            color: #183253;
+            font-weight: 800;
+        }
+        .stream-log-detail {
+            color: #60758c;
+            overflow-wrap: anywhere;
+        }
         @keyframes pulseDot {
             0%, 100% { transform: scale(1); opacity: 0.9; }
             50% { transform: scale(1.18); opacity: 1; }
@@ -804,7 +962,7 @@ def _render_search_intro() -> None:
                 </div>
                 <div class="search-note-card">
                     <div class="search-note-label">진행 방식</div>
-                    <div class="search-note-value">job 기반 비동기 처리 + 2초 주기 polling</div>
+                    <div class="search-note-value">SSE 진행 스트림 + polling fallback</div>
                 </div>
                 <div class="search-note-card">
                     <div class="search-note-label">결과 산출물</div>
@@ -843,6 +1001,46 @@ def _render_step_summary(step_summary: dict[str, object]) -> None:
     )
 
 
+def _render_stream_event_log() -> None:
+    stream_events = st.session_state.get(_JOB_STREAM_EVENTS_KEY) or []
+    if not stream_events:
+        return
+
+    rows = "".join(
+        f"""
+        <div class="stream-log-row">
+            <div class="stream-log-event">{escape(str(event.get("event") or "-"))}</div>
+            <div class="stream-log-status">{escape(str(event.get("status") or "-"))}</div>
+            <div class="stream-log-detail">{escape(_summarize_stream_event(event))}</div>
+        </div>
+        """
+        for event in stream_events[-5:]
+    )
+    st.markdown(
+        f"""
+        <div class="stream-log">
+            <div class="stream-log-title">SSE 실시간 진행 로그</div>
+            {rows}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _summarize_stream_event(event: dict[str, object]) -> str:
+    step_summary = event.get("step_summary")
+    if isinstance(step_summary, dict):
+        completed = step_summary.get("completed")
+        success = step_summary.get("success")
+        failed = step_summary.get("failed")
+        if completed is not None:
+            return f"completed={completed}, success={success}, failed={failed}"
+    message = event.get("message")
+    if message:
+        return str(message)
+    return str(event.get("timestamp") or "")
+
+
 def _render_loading_state(
     *,
     status: str,
@@ -875,7 +1073,7 @@ def _render_loading_state(
                 <div class="progress-fill" style="width: {progress}%;"></div>
             </div>
             <div class="refresh-note">
-                2초 간격으로 상태를 새로 확인하고 있습니다. 결과가 준비되면 자동으로 리포트 화면으로 이동합니다.
+                SSE 진행 스트림으로 상태를 우선 수신하고, 연결이 어려우면 2초 주기 polling으로 이어갑니다.
             </div>
         </section>
         """,
@@ -884,6 +1082,7 @@ def _render_loading_state(
 
     if step_summary:
         _render_step_summary(step_summary)
+    _render_stream_event_log()
 
 
 def _submit_pending_job() -> None:
@@ -893,6 +1092,8 @@ def _submit_pending_job() -> None:
 
     st.session_state[_JOB_POLL_COUNT_KEY] = 0
     st.session_state[_JOB_QUEUED_SINCE_KEY] = None
+    st.session_state[_JOB_STREAM_EVENTS_KEY] = []
+    st.session_state[_JOB_STREAM_FALLBACK_KEY] = False
     _render_loading_state(
         status="submitting",
         company_name=company_name,
@@ -914,7 +1115,9 @@ def _render_job_progress() -> None:
     if not job_id:
         return
 
-    status_payload = get_workflow_job_status(job_id)
+    status_payload = stream_workflow_job_status(job_id)
+    if status_payload is None:
+        status_payload = get_workflow_job_status(job_id)
     if status_payload is None:
         return
 
@@ -976,6 +1179,8 @@ def _render_job_progress() -> None:
                 st.session_state.submitting_company_name = None
                 st.session_state[_JOB_POLL_COUNT_KEY] = 0
                 st.session_state[_JOB_QUEUED_SINCE_KEY] = None
+                st.session_state[_JOB_STREAM_EVENTS_KEY] = []
+                st.session_state[_JOB_STREAM_FALLBACK_KEY] = False
                 st.session_state.page = "Search"
                 return
             st.session_state.last_result = result
@@ -984,6 +1189,8 @@ def _render_job_progress() -> None:
             st.session_state.submitting_company_name = None
             st.session_state[_JOB_POLL_COUNT_KEY] = 0
             st.session_state[_JOB_QUEUED_SINCE_KEY] = None
+            st.session_state[_JOB_STREAM_EVENTS_KEY] = []
+            st.session_state[_JOB_STREAM_FALLBACK_KEY] = False
             st.session_state.page = "Report"
             st.rerun()
         return
@@ -1001,6 +1208,8 @@ def _render_job_progress() -> None:
         st.session_state.pending_job_status = None
         st.session_state[_JOB_POLL_COUNT_KEY] = 0
         st.session_state[_JOB_QUEUED_SINCE_KEY] = None
+        st.session_state[_JOB_STREAM_EVENTS_KEY] = []
+        st.session_state[_JOB_STREAM_FALLBACK_KEY] = False
         return
 
     time.sleep(2)
@@ -1038,4 +1247,6 @@ def render() -> None:
             st.session_state[_BROWSER_CONSOLE_FLUSHED_COUNT_KEY] = 0
             st.session_state[_JOB_POLL_COUNT_KEY] = 0
             st.session_state[_JOB_QUEUED_SINCE_KEY] = None
+            st.session_state[_JOB_STREAM_EVENTS_KEY] = []
+            st.session_state[_JOB_STREAM_FALLBACK_KEY] = False
             st.rerun()

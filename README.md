@@ -24,7 +24,7 @@ flowchart LR
 
 | 영역 | 현재 구현 |
 | --- | --- |
-| 사용자 경험 | 회사명 검색, 진행 상태 polling, 심사 리포트와 그래프, JSON 다운로드 |
+| 사용자 경험 | 회사명 검색, SSE 진행 로그, polling fallback, 심사 리포트와 그래프, JSON 다운로드 |
 | 실행 방식 | DB-backed 비동기 job + FastAPI 프로세스 내 단일 background runner |
 | 분석 | 기업, 뉴스, 재무, 산업 방법론 RAG, 거시환경, 리스크 이벤트 |
 | 결과 | 승인 판단, 신용등급, 추천한도, 근거, 최종 보고서, 계약 검증 |
@@ -67,7 +67,7 @@ flowchart LR
 ## 현재 구현 상태
 
 - 기본 심사 진입점: `POST /api/v1/workflows/jobs`
-- 결과 조회 방식: `job submit -> status poll -> result fetch`
+- 결과 조회 방식: `job submit -> SSE status stream -> polling fallback -> result fetch`
 - 호환용 동기 엔드포인트: `POST /api/v1/workflows/orchestrator`, `POST /api/v1/workflows/credit-assessment`
 - 기본 UI: Streamlit 검색/리포트 화면
 - 오케스트레이터 흐름:
