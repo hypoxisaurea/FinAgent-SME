@@ -7,6 +7,11 @@ import requests
 import streamlit as st
 import streamlit.components.v1 as components
 
+from frontend.services.workflow_stream import (
+    parse_sse_events,
+    read_next_workflow_stream_event,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -180,37 +185,7 @@ def _console_log_job_status(status_payload: dict[str, object]) -> None:
 
 
 def _parse_sse_events(lines: list[str]) -> list[dict[str, object]]:
-    events: list[dict[str, object]] = []
-    event_name = "message"
-    data_lines: list[str] = []
-
-    for line in lines:
-        if not line:
-            if data_lines:
-                events.append(_build_sse_event(event_name, data_lines))
-            event_name = "message"
-            data_lines = []
-            continue
-        if line.startswith(":"):
-            continue
-        if line.startswith("event:"):
-            event_name = line.removeprefix("event:").strip() or "message"
-            continue
-        if line.startswith("data:"):
-            data_lines.append(line.removeprefix("data:").strip())
-
-    if data_lines:
-        events.append(_build_sse_event(event_name, data_lines))
-    return events
-
-
-def _build_sse_event(event_name: str, data_lines: list[str]) -> dict[str, object]:
-    raw_data = "\n".join(data_lines)
-    try:
-        data: object = json.loads(raw_data)
-    except json.JSONDecodeError:
-        data = raw_data
-    return {"event": event_name, "data": data}
+    return parse_sse_events(lines)
 
 
 def _append_workflow_stream_event(
@@ -240,43 +215,35 @@ def _append_workflow_stream_event(
 
 
 def stream_workflow_job_status(job_id: str) -> dict[str, object] | None:
-    url = f"{st.session_state.base_url}/api/v1/workflows/jobs/{job_id}/stream"
-    lines: list[str] = []
     try:
-        with requests.get(
-            url,
-            stream=True,
-            timeout=(5, 12),
-            headers={"Accept": "text/event-stream"},
-        ) as resp:
-            resp.raise_for_status()
-            for raw_line in resp.iter_lines(decode_unicode=True):
-                line = raw_line if isinstance(raw_line, str) else raw_line.decode()
-                lines.append(line)
-                if line == "":
-                    events = _parse_sse_events(lines)
-                    if events:
-                        latest_event = events[-1]
-                        payload = latest_event.get("data")
-                        if isinstance(payload, dict):
-                            event_name = str(latest_event.get("event") or "message")
-                            _append_workflow_stream_event(
-                                job_id=job_id,
-                                event_name=event_name,
-                                payload=payload,
-                            )
-                            _emit_browser_console(
-                                level="info" if event_name != "error" else "error",
-                                event="workflow_job_stream_event",
-                                payload={
-                                    "job_id": job_id,
-                                    "sse_event": event_name,
-                                    "response": payload,
-                                },
-                                dedupe_key=f"workflow_job_stream_event:{job_id}:{event_name}:{payload.get('status')}:{json.dumps(payload.get('step_summary'), ensure_ascii=False, sort_keys=True, default=str)}",
-                            )
-                            return payload
-                    lines = []
+        stream_event = read_next_workflow_stream_event(
+            base_url=str(st.session_state.base_url),
+            job_id=job_id,
+            request_get=requests.get,
+        )
+        if stream_event is None:
+            return None
+
+        payload = stream_event.get("data")
+        if isinstance(payload, dict):
+            event_name = str(stream_event.get("event") or "message")
+            _append_workflow_stream_event(
+                job_id=job_id,
+                event_name=event_name,
+                payload=payload,
+            )
+            _emit_browser_console(
+                level="info" if event_name != "error" else "error",
+                event="workflow_job_stream_event",
+                payload={
+                    "job_id": job_id,
+                    "sse_event": event_name,
+                    "response": payload,
+                    "transport": stream_event.get("transport"),
+                },
+                dedupe_key=f"workflow_job_stream_event:{job_id}:{event_name}:{payload.get('status')}:{json.dumps(payload.get('step_summary'), ensure_ascii=False, sort_keys=True, default=str)}",
+            )
+            return payload
     except requests.HTTPError as exc:
         if exc.response is not None and exc.response.status_code == 404:
             return None

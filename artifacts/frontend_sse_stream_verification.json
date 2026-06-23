@@ -1,0 +1,39 @@
+{
+  "verified": true,
+  "frontend_runtime": "streamlit",
+  "stream_transport": "server_side_requests_stream",
+  "browser_native_event_source": false,
+  "endpoint": "http://backend.test/api/v1/workflows/jobs/job-verification/stream",
+  "accept_header": "text/event-stream",
+  "fallback_used": false,
+  "fallback_strategy": "polling",
+  "ui_log_rendered": true,
+  "events": [
+    {
+      "event": "progress",
+      "status": "running",
+      "step_summary": {
+        "completed": 2,
+        "success": 2,
+        "failed": 0
+      }
+    }
+  ],
+  "event_count": 1,
+  "verified_at": "2026-06-23T15:55:45.926000+00:00",
+  "request": {
+    "url": "http://backend.test/api/v1/workflows/jobs/job-verification/stream",
+    "stream": true,
+    "timeout": [
+      5,
+      12
+    ],
+    "headers": {
+      "Accept": "text/event-stream"
+    }
+  },
+  "ui_log": {
+    "component": "frontend.views.search._render_stream_event_log",
+    "label": "SSE 실시간 진행 로그"
+  }
+}

@@ -39,6 +39,11 @@ frontend/
 7. 최종 응답은 `st.session_state.last_result`에 저장됩니다.
 8. `views/report.py`가 `context.report`, `context.decision`, `steps`를 조합해 결과를 렌더링합니다.
 
+Streamlit 구조상 브라우저 네이티브 `EventSource`가 아니라 서버 프로세스의
+`requests(stream=True)` 기반 SSE client를 사용합니다. SSE parsing과 HTTP 소비 계약은
+`frontend/services/workflow_stream.py`에 분리되어 있으며, 수신 이벤트는 검색 화면의
+`SSE 실시간 진행 로그`와 진행률 UI에 반영됩니다.
+
 ## 백엔드 의존성
 
 - Health check: `GET /api/health`
@@ -85,6 +90,7 @@ Compose에서는 `FINAGENT_BACKEND_URL=http://backend:8000`이 자동 설정됩�
 - 라우팅은 `st.session_state.page`로 처리합니다.
 - 백엔드 호출은 브라우저가 아니라 Streamlit 서버 프로세스에서 `requests`로 수행합니다.
 - 진행 상태는 SSE를 먼저 소비하고, 실패 시 `time.sleep(2)` 후 `st.rerun()` polling으로 fallback합니다.
+- SSE client 검증 artifact는 `.venv/bin/python -m frontend.scripts.verify_workflow_stream`으로 생성합니다.
 - 별도 API base URL 입력 UI는 아직 없습니다.
 
 ## 품질 확인

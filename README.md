@@ -366,6 +366,10 @@ docker_smoke_evidence output_path=.../artifacts/docker_smoke_verification.json
 비동기 job 진행 상황을 SSE(`text/event-stream`)로 구독합니다. 이벤트 이름은
 `queued`, `running`, `progress`, `complete`, `error` 중 하나이며, `data`에는
 `GET /api/v1/workflows/jobs/{job_id}`와 동일한 job 상태 payload가 들어갑니다.
+Streamlit 프론트엔드는 브라우저 네이티브 `EventSource` 대신 서버 프로세스의
+`requests(stream=True)` client로 이 endpoint를 우선 소비하고, 수신 이벤트를
+진행률과 `SSE 실시간 진행 로그` UI에 반영합니다. 연결 실패 시 동일 job 상태
+endpoint polling으로 fallback합니다.
 
 ```text
 event: progress
@@ -460,6 +464,16 @@ docker compose -f backend/docker-compose.yml config --quiet
 
 재생성 결과는 `backend/rag/artifacts/industry_rag_eval/` 아래의 `report.json`,
 `agent_report.json`, `regeneration_manifest.json`에서 확인합니다.
+
+프론트 SSE 소비 계약 검증 artifact는 다음 명령으로 생성합니다.
+
+```bash
+.venv/bin/python -m frontend.scripts.verify_workflow_stream
+```
+
+결과는 `artifacts/frontend_sse_stream_verification.json`에 저장되며,
+Streamlit server-side SSE client, `Accept: text/event-stream`, UI 진행 로그,
+polling fallback 전략을 함께 기록합니다.
 
 `frontend/`는 현재 Python Streamlit 앱이므로 `npm run lint` 대상이 아닙니다.
 
