@@ -123,6 +123,7 @@ IndustryAnalystAgent end-to-end 품질:
 flowchart TD
     R[Retriever] --> CP[context_precision\n검색 결과의 관련성]
     R --> CR[context_recall\n정답 근거의 회수율]
+    R --> FC[factual_correctness\n참조 답변 대비 사실성]
     A[Agent] --> CP
     A --> CR
     A --> F[faithfulness\n검색 근거 충실도]
@@ -186,7 +187,17 @@ Hybrid 코드는 `retrieve_industry_methodology(use_hybrid=True)`로 호출해 �
 ```
 
 기본 출력은 `backend/rag/artifacts/industry_rag_eval/report.json`과
-`backend/rag/artifacts/industry_rag_eval/agent_report.json`입니다.
+`backend/rag/artifacts/industry_rag_eval/agent_report.json`입니다. 실행 요약은
+`backend/rag/artifacts/industry_rag_eval/regeneration_manifest.json`에 저장되며,
+각 artifact의 target, dataset path, model, case count, summary를 확인할 수 있습니다.
+
+특정 target만 재생성하거나 출력 위치를 바꾸려면 다음 옵션을 사용합니다.
+
+```bash
+.venv/bin/python -m backend.scripts.regenerate_industry_rag_artifacts \
+  --targets retriever \
+  --artifact-dir artifacts/industry_rag_eval
+```
 
 ## 운영 체크리스트
 

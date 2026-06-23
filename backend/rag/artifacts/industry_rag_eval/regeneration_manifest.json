@@ -1,0 +1,65 @@
+{
+  "regenerated_at": "2026-06-23T06:35:03.730271+00:00",
+  "artifact_dir": "backend/rag/artifacts/industry_rag_eval",
+  "model_override": null,
+  "artifact_count": 2,
+  "artifacts": [
+    {
+      "target": "retriever",
+      "dataset_path": "backend/rag/eval_datasets/industry_methodology.jsonl",
+      "output_path": "backend/rag/artifacts/industry_rag_eval/report.json",
+      "evaluation_target": "retriever",
+      "model_name": "openai/gpt-4o-mini",
+      "case_count": 9,
+      "unavailable_case_count": 0,
+      "summary": {
+        "context_precision": {
+          "mean": 0.9588,
+          "scored_cases": 9,
+          "skipped_cases": 0
+        },
+        "context_recall": {
+          "mean": 0.8889,
+          "scored_cases": 9,
+          "skipped_cases": 0
+        }
+      }
+    },
+    {
+      "target": "agent",
+      "dataset_path": "backend/rag/eval_datasets/industry_agent.jsonl",
+      "output_path": "backend/rag/artifacts/industry_rag_eval/agent_report.json",
+      "evaluation_target": "agent",
+      "model_name": "openai/gpt-4o-mini",
+      "case_count": 8,
+      "unavailable_case_count": 0,
+      "summary": {
+        "context_precision": {
+          "mean": 0.9552,
+          "scored_cases": 8,
+          "skipped_cases": 0
+        },
+        "context_recall": {
+          "mean": 1.0,
+          "scored_cases": 8,
+          "skipped_cases": 0
+        },
+        "faithfulness": {
+          "mean": 0.5839,
+          "scored_cases": 8,
+          "skipped_cases": 0
+        },
+        "response_groundedness": {
+          "mean": 0.75,
+          "scored_cases": 8,
+          "skipped_cases": 0
+        },
+        "factual_correctness": {
+          "mean": 0.2512,
+          "scored_cases": 8,
+          "skipped_cases": 0
+        }
+      }
+    }
+  ]
+}

@@ -31,7 +31,7 @@ RAGAS_METRIC_NAMES = (
     "factual_correctness",
 )
 RAGAS_TARGET_METRICS: dict[EvaluationTarget, tuple[str, ...]] = {
-    "retriever": ("context_precision", "context_recall"),
+    "retriever": ("context_precision", "context_recall", "factual_correctness"),
     "agent": RAGAS_METRIC_NAMES,
 }
 RAGAS_EVALUATOR_MAX_TOKENS = 4096

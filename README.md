@@ -403,6 +403,15 @@ docker compose -f backend/docker-compose.yml config --quiet
   --target retriever
 ```
 
+고정 retriever/agent RAGAS 결과 artifact를 모두 재생성하려면 다음 명령을 사용합니다.
+
+```bash
+.venv/bin/python -m backend.scripts.regenerate_industry_rag_artifacts
+```
+
+재생성 결과는 `backend/rag/artifacts/industry_rag_eval/` 아래의 `report.json`,
+`agent_report.json`, `regeneration_manifest.json`에서 확인합니다.
+
 `frontend/`는 현재 Python Streamlit 앱이므로 `npm run lint` 대상이 아닙니다.
 
 ## 관련 문서
