@@ -1,0 +1,13 @@
+{
+  "verified": true,
+  "verified_at": "2026-06-23T13:45:59Z",
+  "compose_file": "/Users/princess1004/Desktop/MY/Projects/FinAgent-SME/backend/docker-compose.yml",
+  "project_name": "finagent-smoke",
+  "command": "docker compose -p finagent-smoke -f /Users/princess1004/Desktop/MY/Projects/FinAgent-SME/backend/docker-compose.yml up --build -d",
+  "services": ["postgres", "backend", "frontend"],
+  "health_endpoints": {
+    "backend": "http://127.0.0.1:18000/api/health",
+    "frontend": "http://127.0.0.1:18501/_stcore/health"
+  },
+  "cleanup": "docker compose -p finagent-smoke -f /Users/princess1004/Desktop/MY/Projects/FinAgent-SME/backend/docker-compose.yml down --remove-orphans --volumes"
+}

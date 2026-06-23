@@ -244,6 +244,30 @@ Compose 내부에서는 frontend가 `FINAGENT_BACKEND_URL=http://backend:8000`�
 backend를 호출합니다. 호스트 공개 포트는 `BACKEND_PORT`, `FRONTEND_PORT`,
 `POSTGRES_PORT` 환경 변수로 변경할 수 있습니다.
 
+Docker 빌드와 health endpoint까지 한 번에 검증하려면 smoke 스크립트를 실행합니다.
+이 스크립트는 compose stack을 `up --build`로 띄운 뒤 backend `/api/health`와
+frontend `/_stcore/health`가 응답하는지 확인하고, 종료 시 stack을 정리합니다.
+성공 증거는 `artifacts/docker_smoke_verification.json`에 저장됩니다.
+
+```bash
+./scripts/docker-smoke.sh
+```
+
+성공 시 아래 형식의 로그가 남습니다.
+
+```text
+docker_smoke_started project=finagent-smoke compose_file=.../backend/docker-compose.yml
+NAME                         IMAGE                      SERVICE    STATUS
+finagent-smoke-backend-1     finagent-smoke-backend     backend    Up ... (healthy)
+finagent-smoke-frontend-1    finagent-smoke-frontend    frontend   Up ... (healthy)
+finagent-smoke-postgres-1    postgres:16-alpine         postgres   Up ... (healthy)
+docker_smoke_passed backend=http://127.0.0.1:18000/api/health frontend=http://127.0.0.1:18501/_stcore/health
+docker_smoke_evidence output_path=.../artifacts/docker_smoke_verification.json
+```
+
+동일한 검증은 `.github/workflows/docker-smoke.yml`에서도 수동 실행하거나 Docker 관련
+파일 변경 PR에서 실행할 수 있습니다.
+
 ### 7. 개별 개발 실행
 
 ```bash

@@ -35,6 +35,7 @@ def test_compose_defines_database_and_application_services() -> None:
     )
     assert services["backend"]["build"]["dockerfile"] == "backend/Dockerfile"
     assert services["frontend"]["build"]["dockerfile"] == "frontend/Dockerfile"
+    assert all("container_name" not in service for service in services.values())
 
 
 def test_dockerfiles_run_as_non_root_with_healthchecks() -> None:
@@ -51,3 +52,28 @@ def test_backend_dockerfile_installs_cpu_only_torch() -> None:
 
     assert "https://download.pytorch.org/whl/cpu" in content
     assert "TORCH_VERSION=2.12.1+cpu" in content
+
+
+def test_docker_smoke_script_exercises_compose_healthchecks() -> None:
+    content = (PROJECT_ROOT / "scripts" / "docker-smoke.sh").read_text(
+        encoding="utf-8"
+    )
+
+    assert "docker compose" in content
+    assert "up --build -d" in content
+    assert "/api/health" in content
+    assert "/_stcore/health" in content
+    assert "artifacts/docker_smoke_verification.json" in content
+    assert "docker_smoke_passed" in content
+    assert "docker_smoke_evidence" in content
+
+
+def test_docker_smoke_workflow_runs_script() -> None:
+    workflow_path = PROJECT_ROOT / ".github" / "workflows" / "docker-smoke.yml"
+    workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+
+    assert workflow["name"] == "Docker Smoke"
+    assert "workflow_dispatch" in workflow[True]
+    assert workflow["jobs"]["docker-smoke"]["steps"][-1]["run"] == (
+        "./scripts/docker-smoke.sh"
+    )
