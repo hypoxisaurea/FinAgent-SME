@@ -1,9 +1,32 @@
 from __future__ import annotations
 
+import importlib
+import sys
+from types import ModuleType
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from frontend.views import report
+
+def _import_report_module() -> ModuleType:
+    try:
+        return importlib.import_module("frontend.views.report")
+    except ModuleNotFoundError as exc:
+        if exc.name != "streamlit":
+            raise
+
+    streamlit = ModuleType("streamlit")
+    components = ModuleType("streamlit.components")
+    components_v1 = ModuleType("streamlit.components.v1")
+    components_v1.html = MagicMock()
+    components.v1 = components_v1
+    streamlit.components = components
+    sys.modules["streamlit"] = streamlit
+    sys.modules["streamlit.components"] = components
+    sys.modules["streamlit.components.v1"] = components_v1
+    return importlib.import_module("frontend.views.report")
+
+
+report = _import_report_module()
 
 
 def test_report_render_stops_when_validation_is_blocked(monkeypatch) -> None:
