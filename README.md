@@ -1,5 +1,8 @@
 # FinAgent-SME
 
+[![CI](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/ci.yml/badge.svg)](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/ci.yml)
+[![Docker Smoke](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/docker-smoke.yml/badge.svg)](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/docker-smoke.yml)
+
 FinAgent-SME는 중소기업 대상 B2B 거래 리스크 심사를 지원하는 멀티 에이전트 시스템입니다. 현재 저장소는 FastAPI 백엔드, Streamlit 프론트엔드, PostgreSQL 기반 기업/재무 데이터 저장소, LangGraph 오케스트레이터를 포함합니다.
 
 > 회사명 하나로 기업 식별, 재무·산업·뉴스·리스크 분석, 신용 판단, 리포트 생성과 결과 검증까지 연결합니다.
@@ -267,6 +270,8 @@ docker_smoke_evidence output_path=.../artifacts/docker_smoke_verification.json
 
 동일한 검증은 `.github/workflows/docker-smoke.yml`에서도 수동 실행하거나 Docker 관련
 파일 변경 PR에서 실행할 수 있습니다.
+최근 CI 실행 결과는 [Docker Smoke workflow run 목록](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/docker-smoke.yml)에서 확인할 수 있으며,
+성공한 run에는 `docker-smoke-verification` artifact로 동일한 검증 JSON이 첨부됩니다.
 
 ### 7. 개별 개발 실행
 

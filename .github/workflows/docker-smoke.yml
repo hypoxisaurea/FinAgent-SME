@@ -12,6 +12,9 @@ on:
       - "requirements.txt"
       - "frontend/requirements.txt"
 
+permissions:
+  contents: read
+
 jobs:
   docker-smoke:
     runs-on: ubuntu-latest
@@ -27,3 +30,10 @@ jobs:
 
       - name: Run Docker Compose smoke test
         run: ./scripts/docker-smoke.sh
+
+      - name: Upload Docker smoke evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-smoke-verification
+          path: artifacts/docker_smoke_verification.json
+          if-no-files-found: error
