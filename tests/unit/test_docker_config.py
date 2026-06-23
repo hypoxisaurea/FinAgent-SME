@@ -71,9 +71,15 @@ def test_docker_smoke_script_exercises_compose_healthchecks() -> None:
 def test_docker_smoke_workflow_runs_script() -> None:
     workflow_path = PROJECT_ROOT / ".github" / "workflows" / "docker-smoke.yml"
     workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+    steps = workflow["jobs"]["docker-smoke"]["steps"]
 
     assert workflow["name"] == "Docker Smoke"
     assert "workflow_dispatch" in workflow[True]
-    assert workflow["jobs"]["docker-smoke"]["steps"][-1]["run"] == (
-        "./scripts/docker-smoke.sh"
+    assert any(step.get("run") == "./scripts/docker-smoke.sh" for step in steps)
+    assert any(
+        step.get("uses") == "actions/upload-artifact@v4"
+        and step.get("with", {}).get("name") == "docker-smoke-verification"
+        and step.get("with", {}).get("path")
+        == "artifacts/docker_smoke_verification.json"
+        for step in steps
     )
