@@ -198,7 +198,16 @@ Python 실행/검증 명령은 모두 `.venv/bin/...` 기준으로 통일합니�
 .venv/bin/python -m backend.rag.ingest_industry_docs
 ```
 
-### 4. 백엔드와 프론트 실행
+### 4. Industry RAG MCP 서버 실행
+
+산업 방법론 RAG 검색기는 MCP tool로도 노출됩니다. MCP client는
+`lookup_industry_methodology` tool을 `list_tools`로 발견하고 `call_tool`로 호출할 수 있습니다.
+
+```bash
+.venv/bin/python -m backend.mcp.industry_server
+```
+
+### 5. 백엔드와 프론트 실행
 
 ```bash
 ./scripts/run-server.sh up
@@ -212,7 +221,7 @@ Python 실행/검증 명령은 모두 `.venv/bin/...` 기준으로 통일합니�
 ./scripts/run-server.sh down
 ```
 
-### 5. 전체 스택 한 번에 실행
+### 6. 전체 스택 한 번에 실행
 
 ```bash
 ./scripts/run-all.sh up
@@ -235,7 +244,7 @@ Compose 내부에서는 frontend가 `FINAGENT_BACKEND_URL=http://backend:8000`�
 backend를 호출합니다. 호스트 공개 포트는 `BACKEND_PORT`, `FRONTEND_PORT`,
 `POSTGRES_PORT` 환경 변수로 변경할 수 있습니다.
 
-### 6. 개별 개발 실행
+### 7. 개별 개발 실행
 
 ```bash
 ./scripts/setup-env.sh
