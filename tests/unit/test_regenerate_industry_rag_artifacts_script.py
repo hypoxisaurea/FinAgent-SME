@@ -6,6 +6,20 @@ from pathlib import Path
 from backend.scripts import regenerate_industry_rag_artifacts
 
 
+def test_committed_rag_artifact_manifest_matches_report_files() -> None:
+    manifest_path = Path("backend/rag/artifacts/industry_rag_eval/regeneration_manifest.json")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    assert manifest["artifact_count"] == len(manifest["artifacts"])
+    for artifact in manifest["artifacts"]:
+        report = json.loads(Path(artifact["output_path"]).read_text(encoding="utf-8"))
+        assert artifact["evaluation_target"] == report["evaluation_target"]
+        assert artifact["model_name"] == report["model_name"]
+        assert artifact["case_count"] == report["case_count"]
+        assert artifact["unavailable_case_count"] == report["unavailable_case_count"]
+        assert artifact["summary"] == report["summary"]
+
+
 def test_regenerate_artifacts_runs_both_fixed_evaluation_targets(
     monkeypatch,
     tmp_path: Path,

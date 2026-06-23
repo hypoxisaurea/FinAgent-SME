@@ -1,7 +1,7 @@
 {
-  "regenerated_at": "2026-06-23T06:49:39.249485+00:00",
+  "regenerated_at": "2026-06-23T11:10:33.247000+00:00",
   "artifact_dir": "backend/rag/artifacts/industry_rag_eval",
-  "model_override": null,
+  "model_override": "openai/gpt-4o-mini",
   "artifact_count": 1,
   "artifacts": [
     {
@@ -19,12 +19,12 @@
           "skipped_cases": 0
         },
         "context_recall": {
-          "mean": 0.8333,
+          "mean": 0.8889,
           "scored_cases": 9,
           "skipped_cases": 0
         },
         "factual_correctness": {
-          "mean": 0.3756,
+          "mean": 0.3644,
           "scored_cases": 9,
           "skipped_cases": 0
         }
