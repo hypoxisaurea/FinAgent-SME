@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/ci.yml/badge.svg)](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/ci.yml)
 [![Docker Smoke](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/docker-smoke.yml/badge.svg)](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/docker-smoke.yml)
+[![RAGAS Artifacts](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/ragas-artifacts.yml/badge.svg)](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/ragas-artifacts.yml)
 
 FinAgent-SME는 중소기업 대상 B2B 거래 리스크 심사를 지원하는 멀티 에이전트 시스템입니다. 현재 저장소는 FastAPI 백엔드, Streamlit 프론트엔드, PostgreSQL 기반 기업/재무 데이터 저장소, LangGraph 오케스트레이터를 포함합니다.
 
@@ -464,6 +465,17 @@ docker compose -f backend/docker-compose.yml config --quiet
 
 재생성 결과는 `backend/rag/artifacts/industry_rag_eval/` 아래의 `report.json`,
 `agent_report.json`, `regeneration_manifest.json`에서 확인합니다.
+커밋된 RAGAS artifact가 manifest와 일치하고 실제 점수 summary를 포함하는지는 아래
+smoke 명령으로 확인합니다.
+
+```bash
+.venv/bin/python -m backend.scripts.verify_industry_rag_artifacts
+```
+
+검증 결과는 `artifacts/industry_rag_artifact_verification.json`에 저장됩니다.
+동일한 검증은 [RAGAS Artifacts workflow](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/ragas-artifacts.yml)에서도
+수동 실행하거나 관련 파일 변경 PR에서 실행할 수 있으며, 성공한 run에는
+`industry-ragas-artifact-verification` artifact가 첨부됩니다.
 
 프론트 SSE 소비 계약 검증 artifact는 다음 명령으로 생성합니다.
 
