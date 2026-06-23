@@ -7,6 +7,10 @@
 
 ## 2. 엔터티 관계도
 
+Mermaid 컬럼은 현재 코드가 생성·조회하는 저장 컬럼 기준입니다. DataFrame 저장
+테이블은 논리 키를 `PK`로 표시하고, ORM/SQL DDL 기반 테이블은 실제 제약에 맞춰
+`PK`/`UK`를 표시합니다.
+
 ```mermaid
 erDiagram
     SME_LIST ||--o| COMPANY_PROFILES : enriches
@@ -130,12 +134,24 @@ erDiagram
 `workflow_jobs`는 기업 master와 외래키로 묶이지 않는 실행 이력입니다. 입력 당시 회사명과 추적 ID를 보존하고, 성공한 workflow payload를 JSON 문자열로 저장합니다. 시간 값은 ISO 8601 문자열을 PostgreSQL `TEXT` 컬럼에 기록합니다.
 
 Mermaid의 `DAUM_NEWS_ARTICLES.stock_code`, `url`에 표시한 `UK`는 두 컬럼을
-합친 복합 유니크 제약 `uq_daum_news_stock_code_url`을 뜻합니다. DataFrame 기반
-테이블의 `created_at`은 현재 `YYYY-MM-DD` 문자열로 적재됩니다.
+합친 복합 유니크 제약 `uq_daum_news_stock_code_url`을 뜻합니다. `created_at`을
+가진 DataFrame 기반 테이블은 현재 `YYYY-MM-DD` 문자열로 적재됩니다.
 
 `financial_features`, `financial_statement_details`, `financial_error_logs`의 복수
 `PK` 표시는 repository upsert에 사용하는 논리적 복합 키입니다. DataFrame으로
 생성되는 PostgreSQL 테이블에 물리적 `PRIMARY KEY` 제약을 추가한다는 뜻은 아닙니다.
+
+컬럼 정의의 코드 기준:
+
+| 테이블 | 코드 기준 |
+| --- | --- |
+| `sme_list` | `backend.tools.company_registry.build_sme_list_dataframe` |
+| `company_profiles` | `backend.tools.company_registry.COMPANY_PROFILE_COLUMNS` + `created_at` |
+| `financial_features` | `backend.tools.company_registry.build_final_dataframe` + `created_at` |
+| `financial_statement_details` | `backend.tools.company_registry.STATEMENT_DETAIL_COLUMNS` |
+| `financial_error_logs` | `backend.tools.company_registry.add_error_log`와 오류별 `response`/`traceback` 확장 |
+| `daum_news_articles` | `backend.tools.news.DaumNewsArticle` ORM 모델 |
+| `workflow_jobs` | `backend.data.repositories.workflow_job._ensure_workflow_job_table` |
 
 ## 3. 테이블 설명
 
@@ -261,7 +277,8 @@ Mermaid의 `DAUM_NEWS_ARTICLES.stock_code`, `url`에 표시한 `UK`는 두 컬�
 - 비동기 심사 job의 queue와 결과 저장소
 - repository가 최초 접근 시 `CREATE TABLE IF NOT EXISTS`로 생성
 - `job_id`가 기본 키이며 `request_id`로 로그·Langfuse trace와 연결
-- `result_json`, `step_summary_json`은 성공 완료 시 기록
+- `result_json`은 성공 완료 시 기록
+- `step_summary_json`은 실행 중 progress와 성공 완료 시 모두 갱신될 수 있음
 - validation gate 차단은 `failed / VALIDATION_FAILED`로 기록하며 결과 JSON은 저장하지 않음
 - 서버 재시작 시 미완료 job은 `failed / WORKER_RESTARTED`로 전이
 
