@@ -116,13 +116,27 @@ def complete_workflow_job(job_id: str, result_payload: dict[str, Any]) -> None:
     """성공한 워크플로우 결과를 저장하고 job을 완료 처리한다."""
     workflow_response = build_workflow_response(result_payload)
     serialized_result = workflow_response.model_dump(mode="json", exclude_none=True)
-    step_summary = summarize_steps(serialized_result["steps"])
+    step_summary = _build_job_step_summary(serialized_result["steps"])
     timestamp = _utcnow_isoformat()
     workflow_job_repository.complete_workflow_job(
         job_id=job_id,
         result_json=json.dumps(serialized_result, ensure_ascii=False),
         step_summary_json=json.dumps(step_summary, ensure_ascii=False),
         finished_at=timestamp,
+        updated_at=timestamp,
+    )
+
+
+def update_workflow_job_progress(
+    job_id: str,
+    steps: list[dict[str, Any]],
+) -> None:
+    """실행 중인 워크플로우 job의 단계별 진행 요약을 저장한다."""
+    step_summary = _build_job_step_summary(steps)
+    timestamp = _utcnow_isoformat()
+    workflow_job_repository.update_workflow_job_progress(
+        job_id=job_id,
+        step_summary_json=json.dumps(step_summary, ensure_ascii=False),
         updated_at=timestamp,
     )
 
@@ -157,6 +171,12 @@ def fail_incomplete_workflow_jobs() -> int:
 
 def _utcnow_isoformat() -> str:
     return datetime.now(UTC).isoformat()
+
+
+def _build_job_step_summary(steps: list[dict[str, Any]]) -> dict[str, int]:
+    step_summary = summarize_steps(steps)
+    step_summary["completed"] = len(steps)
+    return step_summary
 
 
 def _optional_str(value: Any) -> str | None:

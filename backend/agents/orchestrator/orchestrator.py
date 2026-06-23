@@ -9,7 +9,7 @@ from backend.agents.financial_analyst.agent import FinancialAnalystAgent
 from backend.agents.industry_analyst.agent import IndustryAnalystAgent
 from backend.agents.multimodal_document.agent import MultiModalDocumentAgent
 from backend.agents.news_collector.agent import NewsCollectorAgent
-from backend.agents.orchestrator.graph import WorkflowGraphBuilder
+from backend.agents.orchestrator.graph import ProgressCallback, WorkflowGraphBuilder
 from backend.agents.orchestrator.results import build_result, summarize_steps
 from backend.agents.orchestrator.state import WorkflowState
 from backend.agents.report.agent import ReportAgent
@@ -35,11 +35,13 @@ class WorkflowOrchestrator:
         parallel_agents: list[Agent] | None = None,
         sequential_agents: list[Agent] | None = None,
         continue_on_error: bool = False,
+        progress_callback: ProgressCallback | None = None,
     ) -> None:
         self._resolver_agent = resolver_agent
         self._parallel_agents = parallel_agents or []
         self._sequential_agents = sequential_agents or []
         self._continue_on_error = continue_on_error
+        self._progress_callback = progress_callback
         self._validate_agents()
         self._graph = self._build_graph()
 
@@ -143,6 +145,7 @@ class WorkflowOrchestrator:
             parallel_agents=self._parallel_agents,
             sequential_agents=self._sequential_agents,
             continue_on_error=self._continue_on_error,
+            progress_callback=self._progress_callback,
         ).build()
 
 
@@ -153,6 +156,7 @@ def create_credit_workflow(
     *,
     payload: dict[str, Any] | None = None,
     continue_on_error: bool = False,
+    progress_callback: ProgressCallback | None = None,
 ) -> WorkflowOrchestrator:
     """신용심사 워크플로우 오케스트레이터 팩토리."""
     workflow_payload = payload or {}
@@ -174,6 +178,7 @@ def create_credit_workflow(
         parallel_agents=resolved_parallel,
         sequential_agents=resolved_sequential,
         continue_on_error=continue_on_error,
+        progress_callback=progress_callback,
     )
 
 
@@ -185,6 +190,7 @@ async def run_credit_workflow(
     sequential_agents: list[Agent] | None = None,
     extra_payload: dict[str, Any] | None = None,
     continue_on_error: bool = False,
+    progress_callback: ProgressCallback | None = None,
 ) -> dict[str, Any]:
     """멀티 에이전트 심사 파이프라인 진입점.
 
@@ -216,6 +222,7 @@ async def run_credit_workflow(
         sequential_agents=sequential_agents,
         payload=payload,
         continue_on_error=continue_on_error,
+        progress_callback=progress_callback,
     )
 
     result = await orchestrator.run(payload)

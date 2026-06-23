@@ -332,6 +332,17 @@ backend를 호출합니다. 호스트 공개 포트는 `BACKEND_PORT`, `FRONTEND
 
 `status`는 `queued`, `running`, `succeeded`, `failed` 중 하나입니다.
 
+### `GET /api/v1/workflows/jobs/{job_id}/stream`
+
+비동기 job 진행 상황을 SSE(`text/event-stream`)로 구독합니다. 이벤트 이름은
+`queued`, `running`, `progress`, `complete`, `error` 중 하나이며, `data`에는
+`GET /api/v1/workflows/jobs/{job_id}`와 동일한 job 상태 payload가 들어갑니다.
+
+```text
+event: progress
+data: {"job_id":"job-123456789abc","status":"running","step_summary":{"success":2,"partial":0,"failed":0,"fallback":0,"completed":2}}
+```
+
 ### `GET /api/v1/workflows/jobs/{job_id}/result`
 
 완료된 job의 최종 결과는 아래처럼 반환됩니다.

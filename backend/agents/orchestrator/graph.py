@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import asdict
+from inspect import isawaitable
 from typing import Any
 
 from backend.agents.orchestrator.results import summarize_steps
@@ -19,6 +21,7 @@ MAX_VALIDATION_RETRY_ATTEMPTS = 3
 VALIDATION_GATE_PASSED = "passed"
 VALIDATION_GATE_RETRYING = "retrying"
 VALIDATION_GATE_BLOCKED = "blocked"
+ProgressCallback = Callable[[dict[str, Any]], Awaitable[None] | None]
 
 
 class WorkflowGraphBuilder:
@@ -31,11 +34,13 @@ class WorkflowGraphBuilder:
         parallel_agents: list[Agent],
         sequential_agents: list[Agent],
         continue_on_error: bool,
+        progress_callback: ProgressCallback | None = None,
     ) -> None:
         self._resolver_agent = resolver_agent
         self._parallel_agents = parallel_agents
         self._sequential_agents = sequential_agents
         self._continue_on_error = continue_on_error
+        self._progress_callback = progress_callback
         self._news_agent = self._find_parallel_agent("news_collector")
         self._financial_agent = self._find_parallel_agent("financial_analyst")
 
@@ -182,10 +187,30 @@ class WorkflowGraphBuilder:
                     agent.name,
                     step.status,
                 )
+                await self._emit_progress(asdict(step), context)
 
             return node_state
 
         return _node
+
+    async def _emit_progress(
+        self,
+        step: dict[str, Any],
+        context: dict[str, Any],
+    ) -> None:
+        if self._progress_callback is None:
+            return
+        try:
+            result = self._progress_callback(step)
+            if isawaitable(result):
+                await result
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "workflow_progress_callback_failed company_name=%s agent_name=%s",
+                context.get("company_name"),
+                step.get("agent_name"),
+                exc_info=True,
+            )
 
     def _build_validation_gate_context(
         self,

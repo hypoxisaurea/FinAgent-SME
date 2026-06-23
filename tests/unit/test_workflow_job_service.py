@@ -84,3 +84,46 @@ def test_get_workflow_job_status_exposes_restart_failure_message(
         response.message
         == "서버 재시작으로 이전 작업이 종료되었습니다. 다시 시도해주세요."
     )
+
+
+def test_update_workflow_job_progress_stores_step_summary(monkeypatch) -> None:
+    captured: dict[str, str] = {}
+
+    def fake_update_workflow_job_progress(
+        *,
+        job_id: str,
+        step_summary_json: str,
+        updated_at: str,
+    ) -> None:
+        captured["job_id"] = job_id
+        captured["step_summary_json"] = step_summary_json
+        captured["updated_at"] = updated_at
+
+    monkeypatch.setattr(
+        workflow_job_service.workflow_job_repository,
+        "update_workflow_job_progress",
+        fake_update_workflow_job_progress,
+    )
+
+    workflow_job_service.update_workflow_job_progress(
+        "job-123",
+        [
+            {
+                "agent_name": "news_collector",
+                "status": "success",
+                "fallback_used": False,
+            },
+            {
+                "agent_name": "industry_analyst",
+                "status": "partial",
+                "fallback_used": True,
+            },
+        ],
+    )
+
+    assert captured["job_id"] == "job-123"
+    assert '"success": 1' in captured["step_summary_json"]
+    assert '"partial": 1' in captured["step_summary_json"]
+    assert '"fallback": 1' in captured["step_summary_json"]
+    assert '"completed": 2' in captured["step_summary_json"]
+    assert captured["updated_at"]

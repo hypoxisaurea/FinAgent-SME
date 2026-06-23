@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 import backend.data.services.workflow_job_service as workflow_job_service
+from backend.agents.orchestrator.graph import ProgressCallback
 from backend.agents.orchestrator.orchestrator import run_credit_workflow
 from backend.common.settings import settings
 
@@ -15,12 +16,14 @@ logger = logging.getLogger(__name__)
 def run_credit_workflow_in_background(
     company_name: str,
     request_id: str,
+    progress_callback: ProgressCallback | None = None,
 ) -> dict[str, Any]:
     """별도 스레드에서 workflow coroutine을 독립 이벤트 루프로 실행한다."""
     return asyncio.run(
         run_credit_workflow(
             company_name,
             extra_payload={"request_id": request_id},
+            progress_callback=progress_callback,
         )
     )
 
@@ -158,12 +161,22 @@ class WorkflowJobRunner:
             company_name,
             request_id,
         )
+        progress_steps: list[dict[str, Any]] = []
+
+        def progress_callback(step: dict[str, Any]) -> None:
+            progress_steps.append(dict(step))
+            workflow_job_service.update_workflow_job_progress(
+                job_id,
+                list(progress_steps),
+            )
+
         try:
             result = await asyncio.wait_for(
                 asyncio.to_thread(
                     run_credit_workflow_in_background,
                     company_name,
                     request_id,
+                    progress_callback,
                 ),
                 timeout=self._job_timeout_seconds,
             )
