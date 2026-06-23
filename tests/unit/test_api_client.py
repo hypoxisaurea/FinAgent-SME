@@ -22,6 +22,9 @@ def _clear_llm_env(monkeypatch) -> None:
         "OPENAI_API_KEY",
         "OPEN_API_KEY",
         "OPENAI_MODEL",
+        "OPEN_ROUTER_RISK_EVENT_MODEL",
+        "OPEN_ROUTER_DECISION_MODEL",
+        "OPEN_ROUTER_NEWS_SUMMARY_MODEL",
     ):
         monkeypatch.delenv(env_name, raising=False)
 
@@ -43,17 +46,43 @@ def test_get_llm_client_config_prefers_open_router_settings(monkeypatch) -> None
     }
 
 
-def test_get_model_name_defaults_to_open_router_model(monkeypatch) -> None:
+def test_get_model_name_defaults_to_openai_model_when_no_explicit_model(monkeypatch) -> None:
     _clear_llm_env(monkeypatch)
     monkeypatch.setenv("OPEN_ROUTER_API_KEY", "sk-openrouter")
 
-    assert api_client.get_model_name() == api_client.DEFAULT_OPEN_ROUTER_MODEL
+    assert api_client.get_model_name() == api_client.DEFAULT_OPENAI_MODEL
 
 
 def test_get_model_name_defaults_to_openai_model_without_api_key(monkeypatch) -> None:
     _clear_llm_env(monkeypatch)
 
     assert api_client.get_model_name() == api_client.DEFAULT_OPENAI_MODEL
+
+
+def test_get_risk_event_model_name_prefers_stage_specific_env(monkeypatch) -> None:
+    _clear_llm_env(monkeypatch)
+    monkeypatch.setenv("OPEN_ROUTER_RISK_EVENT_MODEL", "google/gemma-3-12b-it")
+
+    assert api_client.get_risk_event_model_name() == "google/gemma-3-12b-it"
+
+
+def test_get_risk_event_model_name_uses_default_when_env_missing(monkeypatch) -> None:
+    _clear_llm_env(monkeypatch)
+
+    assert api_client.get_risk_event_model_name() == api_client.DEFAULT_RISK_EVENT_MODEL
+
+
+def test_get_decision_model_name_prefers_stage_specific_env(monkeypatch) -> None:
+    _clear_llm_env(monkeypatch)
+    monkeypatch.setenv("OPEN_ROUTER_DECISION_MODEL", "openai/gpt-4o-mini")
+
+    assert api_client.get_decision_model_name() == "openai/gpt-4o-mini"
+
+
+def test_get_decision_model_name_uses_default_when_env_missing(monkeypatch) -> None:
+    _clear_llm_env(monkeypatch)
+
+    assert api_client.get_decision_model_name() == api_client.DEFAULT_DECISION_MODEL
 
 
 def test_build_llm_client_kwargs_falls_back_to_legacy_openai_key(monkeypatch) -> None:
@@ -104,3 +133,10 @@ def test_news_get_openai_client_uses_open_router_kwargs(monkeypatch) -> None:
             "X-Title": "FinAgent-SME",
         },
     }
+
+
+def test_news_summary_model_prefers_stage_specific_env(monkeypatch) -> None:
+    _clear_llm_env(monkeypatch)
+    monkeypatch.setenv("OPEN_ROUTER_NEWS_SUMMARY_MODEL", "qwen/qwen-2.5-7b-instruct")
+
+    assert news.get_news_summary_model() == "qwen/qwen-2.5-7b-instruct"
