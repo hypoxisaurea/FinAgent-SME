@@ -20,7 +20,12 @@ from backend.agents.decision.models import (
     GradeCalculationResult,
     LimitRecommendationResult,
 )
-from backend.common.api_client import call_openai, get_client, parse_json_response
+from backend.common.api_client import (
+    call_openai,
+    get_client,
+    get_decision_model_name,
+    parse_json_response,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +78,7 @@ async def generate_explanation(
         reasons,
         context,
     )
+    model_name = get_decision_model_name()
 
     try:
         async with get_client() as client:
@@ -80,6 +86,7 @@ async def generate_explanation(
                 client=client,
                 messages=[{"role": "user", "content": prompt}],
                 system=_SYSTEM_PROMPT,
+                model=model_name,
                 max_tokens=1000,
                 response_format={"type": "json_object"},
             )

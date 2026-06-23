@@ -32,6 +32,8 @@ logger = logging.getLogger(__name__)
 DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
 DEFAULT_OPEN_ROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 DEFAULT_OPEN_ROUTER_MODEL = "openai/gpt-4o-mini"
+DEFAULT_RISK_EVENT_MODEL = "qwen/qwen3-8b"
+DEFAULT_DECISION_MODEL = "openai/gpt-4o-mini"
 PRIMARY_LLM_API_KEY_ENV_NAMES = ("OPEN_ROUTER_API_KEY", "OPENROUTER_API_KEY")
 LEGACY_LLM_API_KEY_ENV_NAMES = ("OPEN_AI_API_KEY", "OPENAI_API_KEY", "OPEN_API_KEY")
 
@@ -67,18 +69,21 @@ def _build_open_router_headers() -> dict[str, str] | None:
 
 
 def get_model_name() -> str:
-    model_name = _get_env_value(
-        "OPEN_ROUTER_MODEL",
-        "OPENROUTER_MODEL",
-        "OPENAI_MODEL",
-    )
+    model_name = _get_env_value("OPENAI_MODEL")
     if model_name:
         return model_name
 
-    if _get_env_value(*PRIMARY_LLM_API_KEY_ENV_NAMES):
-        return DEFAULT_OPEN_ROUTER_MODEL
-
     return DEFAULT_OPENAI_MODEL
+
+
+def get_risk_event_model_name() -> str:
+    model_name = _get_env_value("OPEN_ROUTER_RISK_EVENT_MODEL")
+    return model_name or DEFAULT_RISK_EVENT_MODEL
+
+
+def get_decision_model_name() -> str:
+    model_name = _get_env_value("OPEN_ROUTER_DECISION_MODEL")
+    return model_name or DEFAULT_DECISION_MODEL
 
 
 def get_llm_client_config() -> LLMClientConfig:
@@ -154,6 +159,7 @@ async def call_openai(
     client: Any,
     messages: list[dict[str, Any]],
     system: str,
+    model: str | None = None,
     max_tokens: int = 1000,
     response_format: dict[str, str] | None = None,
     observation_name: str | None = None,
@@ -163,7 +169,7 @@ async def call_openai(
 ) -> str:
     request_messages = [{"role": "system", "content": system}, *messages]
     payload: dict[str, Any] = {
-        "model": get_model_name(),
+        "model": model or get_model_name(),
         "messages": request_messages,
         "max_tokens": max_tokens,
         "temperature": 0,

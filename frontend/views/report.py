@@ -7,7 +7,7 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from frontend.views.report_view_model import build_report_view_model
+from views.report_view_model import build_report_view_model
 
 
 def render() -> None:
@@ -41,6 +41,7 @@ def render() -> None:
     _render_table_section(sections["company"])
     _render_financial_health_section(sections["financial_health"])
     _render_growth_trend_section(sections["growth_trend"])
+    _render_industry_analysis_section(sections["industry_analysis"])
     _render_non_financial_events_section(sections["non_financial_events"])
     _render_default_risk_section(sections["default_risk"])
     _render_decision_rationale_section(sections["decision_rationale"])
@@ -431,6 +432,20 @@ def _inject_styles() -> None:
             margin-bottom: 0.45rem;
             line-height: 1.7;
         }
+        .methodology-box {
+            border: 1px solid #dbe4ef;
+            border-radius: 18px;
+            padding: 18px 20px;
+            background: #fbfdff;
+            min-height: 100%;
+        }
+        .methodology-body {
+            color: #334155;
+            font-size: 0.96rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
         @media (max-width: 900px) {
             .metrics-grid,
             .split-grid,
@@ -605,6 +620,37 @@ def _render_growth_trend_section(section: dict[str, Any]) -> None:
                 '<div class="item-chip">표시할 최근 연도 추세 데이터가 없습니다.</div>',
                 unsafe_allow_html=True,
             )
+
+
+def _render_industry_analysis_section(section: dict[str, Any]) -> None:
+    st.markdown(
+        f"""
+        <div class="report-card">
+            <div class="card-title">{escape(str(section["title"]))}</div>
+            <div class="split-grid">
+                <div>
+                    <div class="subsection-title">업종 특성 및 업황</div>
+                    <div class="item-chip">{escape(str(section.get("sector_note") or "-"))}</div>
+                    <div class="item-chip">업황 점수: {escape(str(section.get("outlook_score") or "-"))}</div>
+                    <div class="item-chip">경기 국면: {escape(str(section.get("business_cycle_phase") or "-"))}</div>
+                    <div class="item-chip">{escape(str(section.get("outlook_note") or "-"))}</div>
+                    <div class="item-chip">{escape(str(section.get("macro_note") or "-"))}</div>
+                    <div class="subsection-title">동종업계 비교 하이라이트</div>
+                    {_render_chip_list(section.get("peer_highlights"), "item-chip")}
+                    <div class="subsection-title" style="margin-top: 1rem;">주요 산업 리스크</div>
+                    {_render_chip_list(section.get("methodology_risks"), "item-chip item-risk")}
+                </div>
+                <div>
+                    <div class="subsection-title">산업 방법론 요약</div>
+                    <div class="methodology-box">
+                        <div class="methodology-body">{_format_methodology_summary_html(section.get("methodology_summary"))}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def _render_non_financial_events_section(section: dict[str, Any]) -> None:
@@ -1165,6 +1211,24 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
       </div>
 
       <div class="card">
+        <div class="section-title">{escape(str(sections["industry_analysis"]["title"]))}</div>
+        <div class="two-col">
+          <div>
+            <div class="box">{escape(str(sections["industry_analysis"].get("sector_note") or "-"))}</div>
+            <div class="box">업황 점수: {escape(str(sections["industry_analysis"].get("outlook_score") or "-"))}</div>
+            <div class="box">경기 국면: {escape(str(sections["industry_analysis"].get("business_cycle_phase") or "-"))}</div>
+            <div class="box">{escape(str(sections["industry_analysis"].get("outlook_note") or "-"))}</div>
+            <div class="box">{escape(str(sections["industry_analysis"].get("macro_note") or "-"))}</div>
+          </div>
+          <div>
+            <div class="box"><ul>{render_list(sections["industry_analysis"].get("peer_highlights", []))}</ul></div>
+            <div class="box">{_format_methodology_summary_html(sections["industry_analysis"].get("methodology_summary"))}</div>
+            <div class="box"><ul>{render_list(sections["industry_analysis"].get("methodology_risks", []))}</ul></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="section-title">{escape(str(sections["non_financial_events"]["title"]))}</div>
         <div class="two-col">
           <div>
@@ -1367,6 +1431,16 @@ def _ensure_sentence_end(text: str) -> str:
     if value[-1] in ".!?":
         return value
     return f"{value}."
+
+
+def _format_methodology_summary_html(value: Any) -> str:
+    text = str(value or "-").strip()
+    if not text:
+        return "-"
+    normalized = " ".join(text.split())
+    normalized = normalized.replace("] ", "]\n")
+    normalized = normalized.replace(". ", ".\n\n")
+    return escape(normalized)
 
 
 def _format_decision(decision: str) -> str:

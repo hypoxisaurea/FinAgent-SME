@@ -91,12 +91,16 @@ def build_report_view_model(
                 "history_rows": _build_trend_history_rows(context),
                 "chart_rows": _build_trend_chart_rows(context),
             },
+            "industry_analysis": {
+                "title": "4. 산업/업황 분석",
+                **_build_industry_analysis_section(context),
+            },
             "non_financial_events": {
-                "title": "4. 비금융 이벤트 분석",
+                "title": "5. 비금융 이벤트 분석",
                 **_build_non_financial_event_section(context, risk_event_result),
             },
             "default_risk": {
-                "title": "5. 부도위험 및 등급 제한 요인",
+                "title": "6. 부도위험 및 등급 제한 요인",
                 "z_score": _format_decimal(altman_z.get("z_prime")),
                 "zone": altman_z.get("zone") or "-",
                 "grade_cap": context.get("grade_cap") or risk_filters.get("grade_cap") or "-",
@@ -104,7 +108,7 @@ def build_report_view_model(
                 "filter_details": _flatten_filter_details(risk_filters.get("filter_detail")),
             },
             "decision_rationale": {
-                "title": "6. 종합 신용판단 근거",
+                "title": "7. 종합 신용판단 근거",
                 "summary": explanation.get("summary") or report_payload.get("summary") or "-",
                 "connected_reason": _build_connected_reason(context, explanation),
                 "reasons": decision_reasons,
@@ -115,7 +119,7 @@ def build_report_view_model(
                 "risk_factors": _build_decision_risk_factors(context, explanation),
             },
             "monitoring": {
-                "title": "7. 권고안 및 모니터링 포인트",
+                "title": "8. 권고안 및 모니터링 포인트",
                 "recommendation": report_payload.get("recommendation")
                 or explanation.get("recommendation")
                 or "-",
@@ -353,6 +357,90 @@ def _build_non_financial_event_section(
         "positive_event_items": positive_event_items,
         "total_event_count": total_event_count,
     }
+
+
+def _build_industry_analysis_section(context: dict[str, Any]) -> dict[str, Any]:
+    industry_summary = context.get("industry_summary")
+    if not isinstance(industry_summary, dict):
+        industry_summary = {}
+    industry_outlook = context.get("industry_outlook")
+    if not isinstance(industry_outlook, dict):
+        industry_outlook = {}
+    business_cycle = context.get("business_cycle")
+    if not isinstance(business_cycle, dict):
+        business_cycle = {}
+    macro_indicators = context.get("macro_indicators")
+    if not isinstance(macro_indicators, dict):
+        macro_indicators = {}
+    peer_comparison = context.get("peer_comparison")
+    if not isinstance(peer_comparison, dict):
+        peer_comparison = {}
+
+    methodology = industry_outlook.get("industry_methodology")
+    if not isinstance(methodology, dict):
+        methodology = {}
+
+    return {
+        "sector_note": str(industry_summary.get("sector_note") or "업종 특성 데이터가 없습니다."),
+        "outlook_score": str(industry_outlook.get("outlook_score") or context.get("outlook_score") or "-"),
+        "outlook_note": str(industry_outlook.get("note") or "업황 해석 정보가 없습니다."),
+        "business_cycle_phase": str(
+            business_cycle.get("phase")
+            or business_cycle.get("business_cycle_phase")
+            or "-"
+        ),
+        "macro_note": _build_macro_note(macro_indicators),
+        "peer_highlights": _build_peer_highlights(peer_comparison),
+        "methodology_summary": str(methodology.get("summary") or "산업 방법론 요약이 없습니다."),
+        "methodology_risks": _as_list(methodology.get("key_risk_factors"))[:3],
+    }
+
+
+def _build_macro_note(macro_indicators: dict[str, Any]) -> str:
+    for key in ("fx_impact", "note"):
+        value = str(macro_indicators.get(key) or "").strip()
+        if value:
+            return value
+
+    base_rate = macro_indicators.get("base_rate")
+    usd_krw = macro_indicators.get("usd_krw")
+    rate_trend = str(macro_indicators.get("rate_trend") or "").strip()
+    parts: list[str] = []
+    if base_rate not in (None, ""):
+        parts.append(f"기준금리 {base_rate}")
+    if usd_krw not in (None, ""):
+        parts.append(f"원달러 환율 {usd_krw}")
+    if rate_trend:
+        parts.append(f"금리 추세 {rate_trend}")
+    return ", ".join(parts) if parts else "거시 영향 해석 정보가 없습니다."
+
+
+def _build_peer_highlights(peer_comparison: dict[str, Any]) -> list[str]:
+    highlights: list[str] = []
+    name_map = {
+        "op_margin": "영업이익률",
+        "debt_ratio": "부채비율",
+        "current_ratio": "유동비율",
+        "interest_coverage": "이자보상배율",
+        "borrow_dep": "차입금의존도",
+        "receivable_turnover": "매출채권회전율",
+        "asset_turnover": "총자산회전율",
+        "sales_growth": "매출액증가율",
+    }
+    judgment_map = {
+        "better": "산업 평균 대비 우위",
+        "worse": "산업 평균 대비 열위",
+        "in-line": "산업 평균 수준",
+    }
+    for key, item in peer_comparison.items():
+        if not isinstance(item, dict):
+            continue
+        judgment = str(item.get("judgment") or "").strip()
+        if judgment not in judgment_map:
+            continue
+        label = name_map.get(key, key)
+        highlights.append(f"{label}: {judgment_map[judgment]}")
+    return highlights[:4]
 
 
 def _extract_timeline_event_items(context: dict[str, Any], limit: int = 5) -> list[dict[str, str]]:

@@ -16,7 +16,12 @@ from backend.agents.risk_event.models import (
     SentimentAnalysisResult,
     SentimentLabel,
 )
-from backend.common.api_client import call_openai, get_client, parse_json_response
+from backend.common.api_client import (
+    call_openai,
+    get_client,
+    get_risk_event_model_name,
+    parse_json_response,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +79,7 @@ async def analyze_sentiment(
 
     # 모든 기사를 하나의 프롬프트로 묶기
     prompt = _build_batch_prompt(company_name, news_data)
+    model_name = get_risk_event_model_name()
 
     results: list[dict] = []
     try:
@@ -82,6 +88,7 @@ async def analyze_sentiment(
                 client=client,
                 messages=[{"role": "user", "content": prompt}],
                 system=_SYSTEM_PROMPT,
+                model=model_name,
                 max_tokens=1500,
                 observation_name="risk_event.sentiment_analysis",
                 request_id=request_id,
@@ -90,6 +97,7 @@ async def analyze_sentiment(
                     "agent_name": "risk_event",
                     "company_name": company_name,
                     "news_count": len(news_data),
+                    "model_name": model_name,
                 },
             )
         results = parse_json_response(raw)

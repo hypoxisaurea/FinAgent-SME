@@ -55,7 +55,7 @@ DEFAULT_PAGE_SIZE = 20
 DEFAULT_REQUEST_TIMEOUT = 10
 DEFAULT_LIST_DELAY_SEC = 0.4
 DEFAULT_CONTENT_DELAY_SEC = 1.0
-DEFAULT_SUMMARY_MODEL = os.getenv("NEWS_SUMMARY_MODEL", "qwen/qwen3-8b").strip()
+DEFAULT_SUMMARY_MODEL = "qwen/qwen-2.5-7b-instruct"
 DEFAULT_SUMMARIZE = True
 NEWS_SUMMARY_PROVIDER = "openrouter"
 
@@ -103,6 +103,10 @@ class SMECompany:
 
 def _normalize_text(value: str | None) -> str:
     return str(value or "").strip()
+
+
+def get_news_summary_model() -> str:
+    return os.getenv("OPEN_ROUTER_NEWS_SUMMARY_MODEL", DEFAULT_SUMMARY_MODEL).strip()
 
 
 def resolve_database_url() -> str:
@@ -507,7 +511,7 @@ def get_openai_client() -> Any:
 def get_llm_summary(
     text: str,
     client: Any | None = None,
-    model_name: str = DEFAULT_SUMMARY_MODEL,
+    model_name: str | None = None,
     *,
     corp_name: str | None = None,
     request_id: str | None = None,
@@ -517,11 +521,11 @@ def get_llm_summary(
 
     summary_client = client or get_openai_client()
     prompt = NEWS_SUMMARY_PROMPT_TEMPLATE.format(text=text)
-
+    resolved_model_name = (model_name or get_news_summary_model()).strip()
     start_time = time.time()
     try:
         response = summary_client.chat.completions.create(
-            model=model_name,
+            model=resolved_model_name,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt},
@@ -536,7 +540,7 @@ def get_llm_summary(
                     "company_name": corp_name,
                     "input_length": len(text),
                     "provider": NEWS_SUMMARY_PROVIDER,
-                    "model_name": model_name,
+                    "model_name": resolved_model_name,
                 },
             ),
         )
@@ -544,7 +548,7 @@ def get_llm_summary(
         latency = time.time() - start_time
         logger.info(
             "daum_news_summary_completed model=%s input_length=%s latency_sec=%.2f",
-            model_name,
+            resolved_model_name,
             len(text),
             latency,
         )
@@ -553,7 +557,7 @@ def get_llm_summary(
         reason = describe_llm_error(exc)
         logger.exception(
             "daum_news_summary_failed model=%s input_length=%s reason=%s",
-            model_name,
+            resolved_model_name,
             len(text),
             reason,
         )
@@ -567,7 +571,7 @@ def build_article_payload(
     news: dict[str, Any],
     summarize: bool = DEFAULT_SUMMARIZE,
     summary_client: Any | None = None,
-    model_name: str = DEFAULT_SUMMARY_MODEL,
+    model_name: str | None = None,
     request_id: str | None = None,
 ) -> tuple[dict[str, Any], str | None]:
     article_content = (news.get("content") or "").strip()
@@ -660,7 +664,7 @@ def execute_news_pipeline(
     lookback_days: int = DEFAULT_LOOKBACK_DAYS,
     max_articles: int = DEFAULT_MAX_ARTICLES,
     summarize: bool = DEFAULT_SUMMARIZE,
-    model_name: str = DEFAULT_SUMMARY_MODEL,
+    model_name: str | None = None,
     company_limit: int | None = None,
     show_progress: bool = True,
     company_name: str | None = None,
@@ -670,6 +674,7 @@ def execute_news_pipeline(
 ) -> dict[str, Any]:
     engine = create_db_engine(database_url)
     create_tables(engine)
+    resolved_model_name = (model_name or get_news_summary_model()).strip()
 
     stats = {
         "company_count": 0,
@@ -758,7 +763,7 @@ def execute_news_pipeline(
                     news=news,
                     summarize=summarize,
                     summary_client=summary_client,
-                    model_name=model_name,
+                    model_name=resolved_model_name,
                     request_id=request_id,
                 )
                 articles.append(article)
