@@ -29,8 +29,9 @@ def build_report_view_model(
         recommended_limit = context.get("recommended_limit")
 
     recent_risk_events = _extract_recent_risk_events(context)
-    financial_flags = _as_list(context.get("financial_flags"))
+    financial_flags = [_format_financial_flag(item) for item in _as_list(context.get("financial_flags"))]
     decision_reasons = _as_list(context.get("decision_reasons"))
+    grouped_decision_reasons = _group_decision_reasons(decision_reasons)
     news_result = context.get("news_result", {}) if isinstance(context, dict) else {}
     risk_event_result = context.get("risk_event_result", {}) if isinstance(context, dict) else {}
     if not isinstance(risk_event_result, dict) or not risk_event_result:
@@ -50,7 +51,7 @@ def build_report_view_model(
             "confidence": _format_confidence(confidence),
             "recommended_limit": _format_currency(recommended_limit),
             "overall_risk_level": _format_risk_level(context.get("overall_risk_level")),
-            "key_reasons": decision_reasons[:3],
+            "key_reasons": grouped_decision_reasons[:3],
             "api_warnings": api_warnings,
         },
         "sections": {
@@ -111,7 +112,7 @@ def build_report_view_model(
                 "title": "7. 종합 신용판단 근거",
                 "summary": explanation.get("summary") or report_payload.get("summary") or "-",
                 "connected_reason": _build_connected_reason(context, explanation),
-                "reasons": _group_decision_reasons(decision_reasons),
+                "reasons": grouped_decision_reasons,
                 "positive_factors": _build_decision_event_factors(
                     context,
                     explanation.get("key_positive_factors"),
@@ -792,8 +793,8 @@ def _build_financial_credit_impact(context: dict[str, Any]) -> str:
     grade_cap = context.get("grade_cap")
     overall_risk_level = _format_risk_level(context.get("overall_risk_level"))
     if grade_cap:
-        return f"재무 필터에 따라 등급 상한 {grade_cap}가 적용되어 최종 판단 여력을 제약합니다. 비금융 리스크 수준은 {overall_risk_level}입니다."
-    return f"재무 지표만으로 강한 등급 제한은 없으나, 최종 신용판단에는 비금융 리스크 수준 {overall_risk_level}가 함께 반영됩니다."
+        return f"재무 필터에 따라 등급 상한 {grade_cap}가 적용되어 최종 판단 여력을 제약합니다. 통합 리스크 이벤트 분석 결과는 {overall_risk_level}입니다."
+    return f"재무 지표만으로 강한 등급 제한은 없으나, 최종 신용판단에는 통합 리스크 이벤트 분석 결과 {overall_risk_level}가 함께 반영됩니다."
 
 
 def _build_connected_reason(context: dict[str, Any], explanation: dict[str, Any]) -> str:
@@ -1009,6 +1010,58 @@ def _as_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
     return [str(item) for item in value if str(item).strip()]
+
+
+def _format_financial_flag(flag: str) -> str:
+    text = str(flag).strip()
+    if not text:
+        return "-"
+
+    parts = text.split("_")
+    if len(parts) < 3:
+        return text
+
+    year = parts[0] if parts[0].isdigit() else ""
+    label = "_".join(parts[1:])
+
+    if label.startswith("revenue_drop_"):
+        value = label.removeprefix("revenue_drop_")
+        return _with_year_prefix(year, f"매출이 {value.lstrip('-')} 감소했습니다.")
+    if label.startswith("op_margin_drop_"):
+        value = label.removeprefix("op_margin_drop_")
+        return _with_year_prefix(year, f"영업이익률이 {value.lstrip('-')}p 하락했습니다.")
+    if label.startswith("debt_ratio_rise_"):
+        value = label.removeprefix("debt_ratio_rise_")
+        return _with_year_prefix(year, f"부채비율이 {value}p 상승했습니다.")
+    if label.startswith("asset_shrink_"):
+        value = label.removeprefix("asset_shrink_")
+        return _with_year_prefix(year, f"총자산이 {value.lstrip('-')} 감소했습니다.")
+    if label.startswith("net_income_drop_"):
+        value = label.removeprefix("net_income_drop_")
+        return _with_year_prefix(year, f"당기순이익이 {value.lstrip('-')} 감소했습니다.")
+    if label.startswith("icr_caution_"):
+        value = label.removeprefix("icr_caution_")
+        return _with_year_prefix(year, f"이자보상배율이 {value}배로 낮아 주의가 필요합니다.")
+    if label.startswith("current_ratio_drop_"):
+        value = label.removeprefix("current_ratio_drop_")
+        return _with_year_prefix(year, f"유동비율이 {value.lstrip('-')}p 하락했습니다.")
+    if label == "negative_operating_cashflow":
+        return _with_year_prefix(year, "영업활동현금흐름이 음수입니다.")
+    if label == "negative_free_cashflow":
+        return _with_year_prefix(year, "잉여현금흐름이 음수입니다.")
+    if label == "net_loss":
+        return _with_year_prefix(year, "당기순손실이 발생했습니다.")
+    if label == "operating_loss":
+        return _with_year_prefix(year, "영업손실이 발생했습니다.")
+
+    readable = label.replace("_", " ")
+    return _with_year_prefix(year, readable)
+
+
+def _with_year_prefix(year: str, text: str) -> str:
+    if year:
+        return f"{year}년: {text}"
+    return text
 
 
 def _format_decision(decision: Any) -> str:

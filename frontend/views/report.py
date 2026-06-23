@@ -658,11 +658,11 @@ def _render_non_financial_events_section(section: dict[str, Any]) -> None:
                 ],
                 "item-chip",
             )
+            st.markdown('<div class="subsection-title" style="margin-top: 1rem;">재무 이상 탐지</div>', unsafe_allow_html=True)
+            _render_timeline_items(section.get("financial_anomaly_items"))
         with event_col:
             st.markdown('<div class="subsection-title">핵심 리스크 이벤트</div>', unsafe_allow_html=True)
             _render_timeline_items(section.get("key_event_items"))
-            st.markdown('<div class="subsection-title" style="margin-top: 1rem;">재무 이상 탐지</div>', unsafe_allow_html=True)
-            _render_timeline_items(section.get("financial_anomaly_items"))
             st.markdown('<div class="subsection-title" style="margin-top: 1rem;">긍정 이벤트</div>', unsafe_allow_html=True)
             _render_timeline_items(section.get("positive_event_items"))
 
