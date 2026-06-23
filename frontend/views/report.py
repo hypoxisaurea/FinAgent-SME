@@ -435,20 +435,6 @@ def _inject_styles() -> None:
             margin-bottom: 0.45rem;
             line-height: 1.7;
         }
-        .methodology-box {
-            border: 1px solid #dbe4ef;
-            border-radius: 18px;
-            padding: 18px 20px;
-            background: #fbfdff;
-            min-height: 100%;
-        }
-        .methodology-body {
-            color: #334155;
-            font-size: 0.96rem;
-            line-height: 1.8;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
         @media (max-width: 900px) {
             .metrics-grid,
             .split-grid,
@@ -640,14 +626,10 @@ def _render_industry_analysis_section(section: dict[str, Any]) -> None:
                     <div class="item-chip">{escape(str(section.get("macro_note") or "-"))}</div>
                     <div class="subsection-title">동종업계 비교 하이라이트</div>
                     {_render_chip_list(section.get("peer_highlights"), "item-chip")}
-                    <div class="subsection-title" style="margin-top: 1rem;">주요 산업 리스크</div>
-                    {_render_chip_list(section.get("methodology_risks"), "item-chip item-risk")}
                 </div>
                 <div>
-                    <div class="subsection-title">산업 방법론 요약</div>
-                    <div class="methodology-box">
-                        <div class="methodology-body">{_format_methodology_summary_html(section.get("methodology_summary"))}</div>
-                    </div>
+                    <div class="subsection-title">주요 산업 리스크</div>
+                    {_render_chip_list(section.get("methodology_risks"), "item-chip item-risk")}
                 </div>
             </div>
         </div>
@@ -677,8 +659,10 @@ def _render_non_financial_events_section(section: dict[str, Any]) -> None:
                 "item-chip",
             )
         with event_col:
-            st.markdown('<div class="subsection-title">Critical / High 중심 핵심 이벤트</div>', unsafe_allow_html=True)
+            st.markdown('<div class="subsection-title">핵심 리스크 이벤트</div>', unsafe_allow_html=True)
             _render_timeline_items(section.get("key_event_items"))
+            st.markdown('<div class="subsection-title" style="margin-top: 1rem;">재무 이상 탐지</div>', unsafe_allow_html=True)
+            _render_timeline_items(section.get("financial_anomaly_items"))
             st.markdown('<div class="subsection-title" style="margin-top: 1rem;">긍정 이벤트</div>', unsafe_allow_html=True)
             _render_timeline_items(section.get("positive_event_items"))
 
@@ -834,12 +818,14 @@ def _render_timeline_items(items: list[dict[str, Any]] | None) -> None:
         severity_raw = str(item.get("severity_raw") or "").lower()
         severity = escape(str(item.get("severity") or "-"))
         date_text = escape(str(item.get("date") or "-"))
+        event_type = escape(str(item.get("event_type") or "-"))
+        source = escape(str(item.get("source") or "-"))
         title = escape(str(item.get("title") or "-"))
         impact = escape(str(item.get("impact") or "-"))
         st.markdown(
             f"""
             <div class="timeline-item severity-{severity_raw}">
-                <div class="timeline-meta">{date_text} | {severity}</div>
+                <div class="timeline-meta">{date_text} | {severity} | {event_type} | {source}</div>
                 <div class="timeline-title">{title}</div>
                 <div class="timeline-impact">{impact}</div>
             </div>
@@ -1222,10 +1208,9 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
             <div class="box">경기 국면: {escape(str(sections["industry_analysis"].get("business_cycle_phase") or "-"))}</div>
             <div class="box">{escape(str(sections["industry_analysis"].get("outlook_note") or "-"))}</div>
             <div class="box">{escape(str(sections["industry_analysis"].get("macro_note") or "-"))}</div>
+            <div class="box"><ul>{render_list(sections["industry_analysis"].get("peer_highlights", []))}</ul></div>
           </div>
           <div>
-            <div class="box"><ul>{render_list(sections["industry_analysis"].get("peer_highlights", []))}</ul></div>
-            <div class="box">{_format_methodology_summary_html(sections["industry_analysis"].get("methodology_summary"))}</div>
             <div class="box"><ul>{render_list(sections["industry_analysis"].get("methodology_risks", []))}</ul></div>
           </div>
         </div>
@@ -1434,16 +1419,6 @@ def _ensure_sentence_end(text: str) -> str:
     if value[-1] in ".!?":
         return value
     return f"{value}."
-
-
-def _format_methodology_summary_html(value: Any) -> str:
-    text = str(value or "-").strip()
-    if not text:
-        return "-"
-    normalized = " ".join(text.split())
-    normalized = normalized.replace("] ", "]\n")
-    normalized = normalized.replace(". ", ".\n\n")
-    return escape(normalized)
 
 
 def _format_decision(decision: str) -> str:

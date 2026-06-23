@@ -96,7 +96,7 @@ def build_report_view_model(
                 **_build_industry_analysis_section(context),
             },
             "non_financial_events": {
-                "title": "5. 비금융 이벤트 분석",
+                "title": "5. 통합 리스크 이벤트 분석",
                 **_build_non_financial_event_section(context, risk_event_result),
             },
             "default_risk": {
@@ -111,7 +111,7 @@ def build_report_view_model(
                 "title": "7. 종합 신용판단 근거",
                 "summary": explanation.get("summary") or report_payload.get("summary") or "-",
                 "connected_reason": _build_connected_reason(context, explanation),
-                "reasons": decision_reasons,
+                "reasons": _group_decision_reasons(decision_reasons),
                 "positive_factors": _build_decision_event_factors(
                     context,
                     explanation.get("key_positive_factors"),
@@ -154,35 +154,73 @@ def _pick_value(step: dict[str, Any] | None, context: dict[str, Any], key: str) 
     return context.get(key)
 
 
+def _group_decision_reasons(items: list[str]) -> list[str]:
+    if not items:
+        return []
+
+    grouped: list[str] = []
+    index = 0
+    while index < len(items):
+        current = str(items[index]).strip()
+        if not current:
+            index += 1
+            continue
+
+        if "리스크 이벤트" in current:
+            block_lines = [current]
+            lookahead = index + 1
+            while lookahead < len(items):
+                candidate = str(items[lookahead]).strip()
+                if not candidate:
+                    lookahead += 1
+                    continue
+                if candidate.startswith("- "):
+                    block_lines.append(candidate)
+                    lookahead += 1
+                    continue
+                break
+            grouped.append("\n".join(block_lines))
+            index = lookahead
+            continue
+
+        grouped.append(current)
+        index += 1
+
+    return grouped
+
+
 def _extract_recent_risk_events(context: dict[str, Any]) -> list[str]:
     timeline = context.get("timeline")
     if not isinstance(timeline, list):
         return []
 
     cutoff = date.today() - timedelta(days=RISK_LOOKBACK_DAYS)
-    recent_events: list[tuple[date, str]] = []
+    recent_events: list[tuple[int, date, str]] = []
 
     for entry in timeline:
         if not isinstance(entry, dict):
             continue
         entry_date = _parse_date(entry.get("date"))
-        if entry_date is None or entry_date < cutoff:
-            continue
         events = entry.get("events")
         if not isinstance(events, list):
             continue
         for event_wrapper in events:
-            if not isinstance(event_wrapper, dict):
+            severity_raw = _normalize_severity(_object_get(event_wrapper, "severity"))
+            include_without_date = entry_date is None and severity_raw in {"critical", "high"}
+            if entry_date is not None and entry_date < cutoff:
                 continue
-            event = event_wrapper.get("event", {})
-            severity = _format_risk_level(event_wrapper.get("severity"))
-            title = "-"
-            if isinstance(event, dict):
-                title = str(event.get("title") or event.get("description") or "-")
-            recent_events.append((entry_date, f"{entry_date.isoformat()} | {severity} | {title}"))
+            if entry_date is None and not include_without_date:
+                continue
+            event = _object_get(event_wrapper, "event", {})
+            severity = _format_risk_level(severity_raw)
+            title = str(_object_get(event, "title") or _object_get(event, "description") or "-")
+            date_label = entry_date.isoformat() if entry_date is not None else "무일자"
+            sort_date = entry_date or date.min
+            dated_priority = 1 if entry_date is not None else 0
+            recent_events.append((dated_priority, sort_date, f"{date_label} | {severity} | {title}"))
 
-    recent_events.sort(key=lambda item: item[0], reverse=True)
-    return [text for _, text in recent_events[:5]]
+    recent_events.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return [text for _, _, text in recent_events[:5]]
 
 
 def _parse_date(value: Any) -> date | None:
@@ -285,8 +323,15 @@ def _build_non_financial_event_section(
     context: dict[str, Any],
     risk_event_result: dict[str, Any],
 ) -> dict[str, Any]:
-    timeline_events = _extract_timeline_event_items(context, limit=5)
-    severe_events = [item for item in timeline_events if item["severity_raw"] in {"critical", "high"}]
+    all_event_items = _extract_timeline_event_items(
+        context,
+        risk_event_result=risk_event_result,
+        limit=20,
+    )
+    timeline_events = all_event_items[:5]
+    severe_events = [
+        item for item in all_event_items if _normalize_severity(item.get("severity_raw")) in {"critical", "high"}
+    ]
     repeated_title_count = _count_repeated_titles(timeline_events)
     overall_risk_level = _format_risk_level(context.get("overall_risk_level"))
 
@@ -301,6 +346,7 @@ def _build_non_financial_event_section(
         overall_sentiment = _format_sentiment(sentiment_result.get("overall_sentiment"))
         positive_sentiment_count = int(sentiment_result.get("positive_count", 0) or 0)
         positive_event_items = _extract_positive_sentiment_items(sentiment_result, limit=5)
+    financial_anomaly_items = _extract_financial_anomaly_items(context, risk_event_result, limit=5)
 
     critical_count = int(context.get("critical_count", 0) or 0)
     high_count = int(context.get("high_count", 0) or 0)
@@ -312,20 +358,21 @@ def _build_non_financial_event_section(
     elif high_count > 0:
         repayment_impact = "HIGH 이벤트가 확인되어 상환 재원 안정성 저하 가능성을 보수적으로 점검할 필요가 있습니다."
     elif medium_count >= 2:
-        repayment_impact = "중간 수준 이벤트가 반복되어 비금융 요인이 상환능력에 간접 영향을 줄 수 있습니다."
+        repayment_impact = "중간 수준 이벤트가 반복되어 감지 이벤트가 상환능력에 간접 영향을 줄 수 있습니다."
     else:
-        repayment_impact = "최근 비금융 이벤트가 상환능력에 미치는 직접 영향은 제한적으로 보입니다."
+        repayment_impact = "최근 감지 이벤트가 상환능력에 미치는 직접 영향은 제한적으로 보입니다."
 
     if repeated_title_count > 0:
-        repeat_summary = f"동일하거나 유사한 부정 이벤트가 최근 90일 내 {repeated_title_count}건 반복 관측되었습니다."
+        repeat_summary = f"동일하거나 유사한 감지 이벤트가 최근 90일 내 {repeated_title_count}건 반복 관측되었습니다."
     else:
         repeat_summary = "최근 90일 기준 반복적으로 누적된 동일 이슈는 제한적입니다."
 
+    visible_event_count = critical_count + high_count + medium_count
     severity_summary = (
-        f"최근 90일 이벤트 {len(timeline_events)}건 중 "
+        f"최근 90일 이벤트 {visible_event_count}건 중 "
         f"CRITICAL {critical_count}건, HIGH {high_count}건, MEDIUM {medium_count}건으로 집계됩니다."
-        if timeline_events
-        else "최근 90일 내 표시할 비금융 이벤트가 없습니다."
+        if visible_event_count > 0
+        else "최근 90일 내 표시할 통합 리스크 이벤트가 없습니다."
     )
 
     key_event_lines = [
@@ -355,6 +402,7 @@ def _build_non_financial_event_section(
         "timeline_items": timeline_events,
         "key_event_items": severe_events[:3] if severe_events else timeline_events[:3],
         "positive_event_items": positive_event_items,
+        "financial_anomaly_items": financial_anomaly_items,
         "total_event_count": total_event_count,
     }
 
@@ -443,50 +491,113 @@ def _build_peer_highlights(peer_comparison: dict[str, Any]) -> list[str]:
     return highlights[:4]
 
 
-def _extract_timeline_event_items(context: dict[str, Any], limit: int = 5) -> list[dict[str, str]]:
+def _extract_timeline_event_items(
+    context: dict[str, Any],
+    risk_event_result: dict[str, Any] | None = None,
+    limit: int = 5,
+) -> list[dict[str, str]]:
+    classified_items = _extract_classified_event_items(context, risk_event_result)
+    if classified_items:
+        return classified_items[:limit]
+
     timeline = context.get("timeline")
     if not isinstance(timeline, list):
         return []
 
     cutoff = date.today() - timedelta(days=RISK_LOOKBACK_DAYS)
-    items: list[tuple[date, dict[str, str]]] = []
+    items: list[tuple[int, date, dict[str, str]]] = []
 
     for entry in timeline:
         if not isinstance(entry, dict):
             continue
         entry_date = _parse_date(entry.get("date"))
-        if entry_date is None or entry_date < cutoff:
-            continue
         events = entry.get("events")
         if not isinstance(events, list):
             continue
         for event_wrapper in events:
-            if not isinstance(event_wrapper, dict):
+            event = _object_get(event_wrapper, "event", {})
+            severity_raw = _normalize_severity(_object_get(event_wrapper, "severity"))
+            include_without_date = entry_date is None and severity_raw in {"critical", "high"}
+            if entry_date is not None and entry_date < cutoff:
                 continue
-            event = event_wrapper.get("event", {})
-            if not isinstance(event, dict):
-                event = {}
-            severity_raw = str(event_wrapper.get("severity") or "").lower()
+            if entry_date is None and not include_without_date:
+                continue
             severity = _format_risk_level(severity_raw)
-            title = str(event.get("title") or event.get("description") or "-").strip()
-            rationale = str(event_wrapper.get("rationale") or "").strip()
-            description = str(event.get("description") or "").strip()
+            title = str(_object_get(event, "title") or _object_get(event, "description") or "-").strip()
+            rationale = str(_object_get(event_wrapper, "rationale") or "").strip()
+            description = str(_object_get(event, "description") or "").strip()
             impact = rationale or description or "구체 영향 설명 정보가 없습니다."
+            display_date = entry_date.isoformat() if entry_date is not None else "무일자"
+            sort_date = entry_date or date.min
+            dated_priority = 1 if entry_date is not None else 0
             items.append(
                 (
-                    entry_date,
+                    dated_priority,
+                    sort_date,
                     {
-                        "date": entry_date.isoformat(),
+                        "date": display_date,
                         "severity_raw": severity_raw,
                         "severity": severity,
+                        "event_type": _format_event_type(_object_get(event, "event_type")),
+                        "source": _format_event_source(_object_get(event, "source")),
                         "title": title or "-",
                         "impact": impact,
                     },
                 )
             )
 
-    items.sort(key=lambda item: item[0], reverse=True)
-    return [payload for _, payload in items[:limit]]
+    items.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return [payload for _, _, payload in items[:limit]]
+
+
+def _extract_classified_event_items(
+    context: dict[str, Any],
+    risk_event_result: dict[str, Any] | None = None,
+) -> list[dict[str, str]]:
+    source = risk_event_result if isinstance(risk_event_result, dict) and risk_event_result else context
+    classified_events = source.get("classified_events")
+    if not isinstance(classified_events, list):
+        return []
+
+    cutoff = date.today() - timedelta(days=RISK_LOOKBACK_DAYS)
+    items: list[tuple[int, date, dict[str, str]]] = []
+
+    for wrapper in classified_events:
+        event = _object_get(wrapper, "event")
+        if event is None:
+            continue
+        severity_raw = _normalize_severity(_object_get(wrapper, "severity"))
+        detected_at = _parse_date(_object_get(event, "detected_at"))
+        include_without_date = detected_at is None and severity_raw in {"critical", "high"}
+        if detected_at is not None and detected_at < cutoff:
+            continue
+        if detected_at is None and not include_without_date:
+            continue
+        severity = _format_risk_level(severity_raw)
+        title = str(_object_get(event, "title") or _object_get(event, "description") or "-").strip() or "-"
+        rationale = str(_object_get(wrapper, "rationale") or "").strip()
+        description = str(_object_get(event, "description") or "").strip()
+        impact = rationale or description or "구체 영향 설명 정보가 없습니다."
+        sort_date = detected_at or date.min
+        dated_priority = 1 if detected_at is not None else 0
+        items.append(
+            (
+                dated_priority,
+                sort_date,
+                {
+                    "date": detected_at.isoformat() if detected_at is not None else "무일자",
+                    "severity_raw": severity_raw,
+                    "severity": severity,
+                    "event_type": _format_event_type(_object_get(event, "event_type")),
+                    "source": _format_event_source(_object_get(event, "source")),
+                    "title": title,
+                    "impact": impact,
+                },
+            )
+        )
+
+    items.sort(key=lambda item: (item[0], item[1]), reverse=True)
+    return [payload for _, _, payload in items]
 
 
 def _extract_positive_sentiment_items(
@@ -517,8 +628,49 @@ def _extract_positive_sentiment_items(
                     "date": published_at.isoformat(),
                     "severity_raw": "positive",
                     "severity": "긍정",
+                    "event_type": "긍정 뉴스",
+                    "source": "뉴스",
                     "title": title,
                     "impact": reason,
+                },
+            )
+        )
+
+    items.sort(key=lambda item: item[0], reverse=True)
+    return [payload for _, payload in items[:limit]]
+
+
+def _extract_financial_anomaly_items(
+    context: dict[str, Any],
+    risk_event_result: dict[str, Any] | None = None,
+    limit: int = 5,
+) -> list[dict[str, str]]:
+    source = risk_event_result if isinstance(risk_event_result, dict) and risk_event_result else context
+    financial_result = source.get("financial_result")
+    if financial_result is None:
+        financial_result = context.get("financial_result")
+
+    anomalies = _object_get(financial_result, "anomalies", [])
+    if not isinstance(anomalies, list):
+        return []
+
+    items: list[tuple[date, dict[str, str]]] = []
+    for event in anomalies:
+        detected_at = _parse_date(_object_get(event, "detected_at"))
+        sort_date = detected_at or date.min
+        title = str(_object_get(event, "title") or _object_get(event, "description") or "-").strip() or "-"
+        impact = str(_object_get(event, "description") or "구체 영향 설명 정보가 없습니다.").strip()
+        items.append(
+            (
+                sort_date,
+                {
+                    "date": detected_at.isoformat() if detected_at is not None else "무일자",
+                    "severity_raw": _infer_financial_anomaly_severity(event),
+                    "severity": _format_risk_level(_infer_financial_anomaly_severity(event)),
+                    "event_type": "재무 이상 탐지",
+                    "source": "재무 데이터",
+                    "title": title,
+                    "impact": impact,
                 },
             )
         )
@@ -543,6 +695,64 @@ def _format_sentiment(value: Any) -> str:
         "neutral": "중립",
         "positive": "긍정",
     }.get(str(value).lower(), str(value or "-"))
+
+
+def _infer_financial_anomaly_severity(event: Any) -> str:
+    title = str(_object_get(event, "title") or "").lower()
+    description = str(_object_get(event, "description") or "").lower()
+    combined = f"{title} {description}"
+    if "급감" in combined or "적자" in combined:
+        return "high"
+    return "medium"
+
+
+def _format_event_type(value: Any) -> str:
+    normalized = str(value or "").strip().lower()
+    return {
+        "financial_anomaly": "재무 이상 탐지",
+        "negative_sentiment": "부정 뉴스",
+        "negative_keyword": "부정 키워드",
+        "disclosure_anomaly": "공시 이상",
+        "legal_risk": "법률 리스크",
+    }.get(normalized, str(value or "-"))
+
+
+def _format_event_source(value: Any) -> str:
+    normalized = str(value or "").strip().lower()
+    return {
+        "financial_data": "재무 데이터",
+        "news": "뉴스",
+        "disclosure": "공시",
+        "court": "법원",
+    }.get(normalized, str(value or "-"))
+
+
+def _object_get(value: Any, key: str, default: Any = None) -> Any:
+    if isinstance(value, dict):
+        return value.get(key, default)
+    return getattr(value, key, default)
+
+
+def _normalize_severity(value: Any) -> str:
+    if value is None:
+        return ""
+    text = str(value).strip().lower()
+    if not text:
+        return ""
+    if "." in text:
+        text = text.split(".")[-1]
+    if "(" in text:
+        text = text.split("(", 1)[0].strip()
+    alias_map = {
+        "critical": "critical",
+        "high": "high",
+        "medium": "medium",
+        "low": "low",
+        "positive": "positive",
+        "negative": "negative",
+        "neutral": "neutral",
+    }
+    return alias_map.get(text, text)
 
 
 def _build_financial_interpretation(context: dict[str, Any]) -> str:
@@ -598,19 +808,25 @@ def _build_connected_reason(context: dict[str, Any], explanation: dict[str, Any]
     elif isinstance(context.get("financial_flags"), list) and context["financial_flags"]:
         financial_phrase = "재무 추세상 주의 플래그가 관찰됩니다"
 
-    industry_phrase = "산업·거시 판단 정보가 제한적입니다"
+    industry_phrase = ""
     if isinstance(industry_summary, str) and industry_summary.strip():
-        industry_phrase = industry_summary.strip()
+        candidate = industry_summary.strip()
+        if candidate != "산업·거시 판단 정보가 제한적입니다":
+            industry_phrase = candidate
+        else:
+            industry_phrase = "산업 분석 데이터 미확보"
 
     explanation_summary = ""
     if isinstance(explanation, dict):
         explanation_summary = str(explanation.get("summary") or "").strip()
 
-    sentence = (
-        f"{financial_phrase} "
-        f"동시에 {industry_phrase} "
+    sentence_parts = [financial_phrase]
+    if industry_phrase:
+        sentence_parts.append(f"동시에 {industry_phrase}")
+    sentence_parts.append(
         f"비금융 리스크 수준은 {overall_risk_level}로 평가되어 최종적으로 {decision} 판단을 내렸습니다."
     )
+    sentence = " ".join(part for part in sentence_parts if part)
     if explanation_summary:
         return f"{sentence} {explanation_summary}"
     return sentence
@@ -651,7 +867,7 @@ def _build_decision_event_factors(
     recent_event_items = _extract_timeline_event_items(context, limit=20)
     severity_examples: dict[str, list[str]] = {"critical": [], "high": [], "medium": [], "low": []}
     for item in recent_event_items:
-        severity_raw = str(item.get("severity_raw") or "").lower()
+        severity_raw = _normalize_severity(item.get("severity_raw"))
         title = str(item.get("title") or "-").strip()
         if severity_raw not in severity_examples or not title or title == "-":
             continue
@@ -804,15 +1020,17 @@ def _format_decision(decision: Any) -> str:
 
 
 def _format_risk_level(level: Any) -> str:
+    normalized = _normalize_severity(level)
     return {
-        "critical": "매우 높음",
-        "high": "높음",
-        "medium": "보통",
-        "low": "낮음",
-        "safe": "안정",
-        "grey": "경계",
-        "distress": "위험",
-    }.get(str(level).lower(), str(level or "-"))
+        "critical": "CRITICAL(매우 높음)",
+        "high": "HIGH(높음)",
+        "medium": "MEDIUM(보통)",
+        "low": "LOW(낮음)",
+        "safe": "SAFE(안정)",
+        "grey": "GREY(경계)",
+        "distress": "DISTRESS(위험)",
+        "positive": "POSITIVE(긍정)",
+    }.get(normalized or str(level).lower(), str(level or "-"))
 
 
 def _format_confidence(confidence: Any) -> str:
