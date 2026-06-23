@@ -11,6 +11,10 @@ def test_committed_rag_artifact_manifest_matches_report_files() -> None:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     assert manifest["artifact_count"] == len(manifest["artifacts"])
+    assert {artifact["target"] for artifact in manifest["artifacts"]} == {
+        "retriever",
+        "agent",
+    }
     for artifact in manifest["artifacts"]:
         report = json.loads(Path(artifact["output_path"]).read_text(encoding="utf-8"))
         assert artifact["evaluation_target"] == report["evaluation_target"]
