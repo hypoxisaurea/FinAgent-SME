@@ -1,8 +1,13 @@
 import streamlit as st
 
-from config import get_backend_url
-from streamlit_ui import configure_page
-from views import report, search
+try:
+    from config import get_backend_url
+    from streamlit_ui import configure_page
+    from views import report, search
+except ModuleNotFoundError:  # pragma: no cover - package import fallback
+    from frontend.config import get_backend_url
+    from frontend.streamlit_ui import configure_page
+    from frontend.views import report, search
 
 configure_page()
 

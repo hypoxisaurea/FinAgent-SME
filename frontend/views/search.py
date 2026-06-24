@@ -7,10 +7,16 @@ import requests
 import streamlit as st
 import streamlit.components.v1 as components
 
-from frontend.services.workflow_stream import (
-    parse_sse_events,
-    read_next_workflow_stream_event,
-)
+try:
+    from frontend.services.workflow_stream import (
+        parse_sse_events,
+        read_next_workflow_stream_event,
+    )
+except ModuleNotFoundError:  # pragma: no cover - direct Streamlit entrypoint fallback
+    from services.workflow_stream import (
+        parse_sse_events,
+        read_next_workflow_stream_event,
+    )
 
 logger = logging.getLogger(__name__)
 
