@@ -308,12 +308,14 @@ def _inject_styles() -> None:
             margin-bottom: 12px;
         }
         .timeline-item.severity-critical {
-            border-left-color: #c23b49;
-            background: #fff5f6;
+            border-left-color: #dc2626;
+            background: #fff1f2;
+            border-color: #fecdd3;
         }
         .timeline-item.severity-high {
-            border-left-color: #d06c2c;
-            background: #fff8f2;
+            border-left-color: #dc2626;
+            background: #fff1f2;
+            border-color: #fecdd3;
         }
         .timeline-item.severity-medium {
             border-left-color: #d0a52c;
@@ -324,8 +326,26 @@ def _inject_styles() -> None:
             background: #f5fbf7;
         }
         .timeline-item.severity-positive {
-            border-left-color: #2b8a5a;
-            background: #effaf4;
+            border-left-color: #2563eb;
+            background: #eff6ff;
+        }
+        .timeline-item.event-positive {
+            border-left-color: #2563eb;
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+        .timeline-item.event-positive .timeline-meta,
+        .timeline-item.event-positive .timeline-title {
+            color: #1d4ed8;
+        }
+        .timeline-item.event-negative {
+            border-left-color: #dc2626 !important;
+            background: #fff1f2 !important;
+            border-color: #fecdd3 !important;
+        }
+        .timeline-item.event-negative .timeline-meta,
+        .timeline-item.event-negative .timeline-title {
+            color: #be123c;
         }
         .timeline-meta {
             color: #627287;
@@ -816,6 +836,7 @@ def _render_timeline_items(items: list[dict[str, Any]] | None) -> None:
 
     for item in items:
         severity_raw = str(item.get("severity_raw") or "").lower()
+        event_tone_class = _timeline_event_tone_class(item)
         severity = escape(str(item.get("severity") or "-"))
         date_text = escape(str(item.get("date") or "-"))
         event_type = escape(str(item.get("event_type") or "-"))
@@ -824,7 +845,7 @@ def _render_timeline_items(items: list[dict[str, Any]] | None) -> None:
         impact = escape(str(item.get("impact") or "-"))
         st.markdown(
             f"""
-            <div class="timeline-item severity-{severity_raw}">
+            <div class="timeline-item severity-{severity_raw} {event_tone_class}">
                 <div class="timeline-meta">{date_text} | {severity} | {event_type} | {source}</div>
                 <div class="timeline-title">{title}</div>
                 <div class="timeline-impact">{impact}</div>
@@ -832,6 +853,20 @@ def _render_timeline_items(items: list[dict[str, Any]] | None) -> None:
             """,
             unsafe_allow_html=True,
         )
+
+
+def _timeline_event_tone_class(item: dict[str, Any]) -> str:
+    severity_raw = str(item.get("severity_raw") or "").strip().lower()
+    event_type = str(item.get("event_type") or "").strip().lower()
+    title = str(item.get("title") or "").strip().lower()
+
+    if severity_raw == "positive" or "긍정" in event_type or "positive" in event_type:
+        return "event-positive"
+    if severity_raw in {"critical", "high", "medium", "low", "negative"}:
+        return "event-negative"
+    if any(keyword in event_type or keyword in title for keyword in ("부정", "리스크", "위험", "이상")):
+        return "event-negative"
+    return ""
 
 
 def _render_default_risk_section(section: dict[str, Any]) -> None:

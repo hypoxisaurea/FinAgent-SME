@@ -922,26 +922,12 @@ def _render_search_intro() -> None:
     st.markdown(
         """
         <section class="search-hero">
-            <div class="search-eyebrow">FinAgent Workspace</div>
-            <h2 class="search-title">기업 심사 워크플로우를 한 번에 시작하세요.</h2>
+            <div class="search-eyebrow">FinAgent Credit Review</div>
+            <h2 class="search-title">FinAgent로 더 빠르고 정교한 신용평가를 경험하세요.</h2>
             <p class="search-copy">
-                회사명을 입력하면 다중 에이전트가 신용·리스크 신호를 수집하고,
-                최종 의사결정 리포트까지 자동으로 정리합니다.
+                기업명만 입력하면 재무, 산업, 비금융 리스크를 한 번에 분석해
+                심사 담당자가 바로 활용할 수 있는 근거 중심 리포트를 제공합니다.
             </p>
-            <div class="search-note">
-                <div class="search-note-card">
-                    <div class="search-note-label">분석 범위</div>
-                    <div class="search-note-value">재무 상태, 리스크 요인, 권고 한도</div>
-                </div>
-                <div class="search-note-card">
-                    <div class="search-note-label">진행 방식</div>
-                    <div class="search-note-value">SSE 진행 스트림 + polling fallback</div>
-                </div>
-                <div class="search-note-card">
-                    <div class="search-note-label">결과 산출물</div>
-                    <div class="search-note-value">심사 리포트, 결정 사유, 원본 JSON</div>
-                </div>
-            </div>
         </section>
         """,
         unsafe_allow_html=True,
