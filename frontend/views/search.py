@@ -76,7 +76,7 @@ _SSE_TERMINAL_EVENTS = {"complete", "error"}
 
 
 def _normalize_company_name(value: str) -> str:
-    return "".join(str(value or "").split())
+    return str(value or "").strip()
 
 
 def _utc_timestamp() -> str:
