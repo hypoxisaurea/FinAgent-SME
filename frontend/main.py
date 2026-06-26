@@ -3,11 +3,11 @@ import streamlit as st
 try:
     from config import get_backend_url
     from streamlit_ui import configure_page
-    from views import report, search
+    from views import loading, report, search
 except ModuleNotFoundError:  # pragma: no cover - package import fallback
     from frontend.config import get_backend_url
     from frontend.streamlit_ui import configure_page
-    from frontend.views import report, search
+    from frontend.views import loading, report, search
 
 configure_page()
 
@@ -39,5 +39,7 @@ st.markdown(
 
 if st.session_state.page == "Search":
     search.render()
+elif st.session_state.page == "Loading":
+    loading.render()
 else:
     report.render()

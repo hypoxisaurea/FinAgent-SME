@@ -1,7 +1,6 @@
 import json
 import logging
 import time
-from html import escape
 
 import requests
 import streamlit as st
@@ -20,49 +19,6 @@ except ModuleNotFoundError:  # pragma: no cover - direct Streamlit entrypoint fa
 logger = logging.getLogger(__name__)
 
 
-STATUS_META: dict[str, dict[str, str | int]] = {
-    "submitting": {
-        "label": "접수 중",
-        "headline": "심사 작업을 생성하고 있습니다.",
-        "description": "입력한 기업 정보를 확인한 뒤 분석용 job을 등록하는 중입니다.",
-        "progress": 8,
-    },
-    "queued": {
-        "label": "접수 완료",
-        "headline": "심사 대기열에 작업이 등록되었습니다.",
-        "description": "수집 파이프라인을 준비하고 첫 번째 에이전트를 깨우는 중입니다.",
-        "progress": 18,
-    },
-    "running": {
-        "label": "분석 진행 중",
-        "headline": "에이전트들이 재무·리스크 신호를 읽고 있습니다.",
-        "description": "기업 정보 수집, 리스크 판단, 보고서 조립을 순차적으로 진행합니다.",
-        "progress": 64,
-    },
-    "succeeded": {
-        "label": "완료 직전",
-        "headline": "최종 보고서를 정리했습니다.",
-        "description": "결과 화면으로 전환할 준비를 마쳤습니다.",
-        "progress": 100,
-    },
-    "failed": {
-        "label": "처리 실패",
-        "headline": "심사 작업이 중단되었습니다.",
-        "description": "상세 상태를 확인한 뒤 다시 시도해주세요.",
-        "progress": 100,
-    },
-}
-
-AGGREGATE_STEP_KEYS = {
-    "total",
-    "completed",
-    "succeeded",
-    "failed",
-    "running",
-    "queued",
-    "pending",
-}
-
 _BROWSER_CONSOLE_DEDUPE_KEY = "_browser_console_emitted_events"
 _BROWSER_CONSOLE_QUEUE_KEY = "_browser_console_events"
 _BROWSER_CONSOLE_FLUSHED_COUNT_KEY = "_browser_console_flushed_count"
@@ -70,7 +26,6 @@ _JOB_POLL_COUNT_KEY = "_pending_job_poll_count"
 _JOB_QUEUED_SINCE_KEY = "_pending_job_queued_since"
 _JOB_STREAM_EVENTS_KEY = "_pending_job_stream_events"
 _JOB_STREAM_FALLBACK_KEY = "_pending_job_stream_fallback"
-_QUEUE_STALL_WARNING_INTERVAL = 5
 _SSE_TERMINAL_EVENTS = {"complete", "error"}
 
 
@@ -1221,89 +1176,6 @@ def _inject_styles() -> None:
     )
 
 
-def _resolve_status_meta(status: str) -> dict[str, str | int]:
-    return STATUS_META.get(status, STATUS_META["running"])
-
-
-def _normalize_status_value(raw_status: object) -> str:
-    if not isinstance(raw_status, str):
-        return "default"
-
-    status = raw_status.lower()
-    if status in {"succeeded", "success", "completed", "done", "finished"}:
-        return "status-done"
-    if status in {"running", "processing", "in_progress", "active"}:
-        return "status-active"
-    if status in {"failed", "error", "cancelled", "rejected"}:
-        return "status-error"
-    if status in {"queued", "pending", "waiting"}:
-        return "status-waiting"
-    return "default"
-
-
-def _format_label(raw_key: str) -> str:
-    return raw_key.replace("_", " ").strip().title()
-
-
-def _summarize_step_value(value: object) -> tuple[str, str]:
-    if isinstance(value, dict):
-        for key in ("status", "state", "result"):
-            nested_value = value.get(key)
-            if isinstance(nested_value, str):
-                return nested_value.replace("_", " ").title(), _normalize_status_value(
-                    nested_value
-                )
-        return f"{len(value)}개 필드", "default"
-
-    if isinstance(value, list):
-        return f"{len(value)}개 항목", "default"
-
-    if isinstance(value, bool):
-        return ("완료" if value else "대기"), ("status-done" if value else "status-waiting")
-
-    if isinstance(value, str):
-        return value.replace("_", " ").title(), _normalize_status_value(value)
-
-    return str(value), "default"
-
-
-def _extract_step_cards(step_summary: dict[str, object]) -> list[tuple[str, str, str]]:
-    cards: list[tuple[str, str, str]] = []
-    for key, value in step_summary.items():
-        label = _format_label(key)
-        if key in AGGREGATE_STEP_KEYS and isinstance(value, int):
-            cards.append((label, str(value), "default"))
-            continue
-
-        summary, tone = _summarize_step_value(value)
-        cards.append((label, summary, tone))
-    return cards[:6]
-
-
-def _estimate_progress(status: str, step_summary: dict[str, object]) -> int:
-    default_progress = int(_resolve_status_meta(status)["progress"])
-    if status in {"submitting", "succeeded", "failed"}:
-        return default_progress
-
-    total = step_summary.get("total")
-    completed = step_summary.get("completed", step_summary.get("succeeded"))
-    running = step_summary.get("running")
-    if isinstance(total, int) and total > 0 and isinstance(completed, int):
-        running_count = running if isinstance(running, int) else 0
-        progress = int(((completed + (running_count * 0.45)) / total) * 100)
-        return max(default_progress, min(progress, 94))
-
-    detailed_cards = _extract_step_cards(step_summary)
-    if not detailed_cards:
-        return default_progress
-
-    completed_count = sum(1 for _, _, tone in detailed_cards if tone == "status-done")
-    active_count = sum(1 for _, _, tone in detailed_cards if tone == "status-active")
-    total_count = len(detailed_cards)
-    progress = int(((completed_count + (active_count * 0.45)) / total_count) * 100)
-    return max(default_progress, min(progress, 94))
-
-
 def _render_search_intro() -> None:
     st.markdown(
         """
@@ -1361,265 +1233,18 @@ def _render_search_intro() -> None:
     )
 
 
-def _render_step_summary(step_summary: dict[str, object]) -> None:
-    step_cards = _extract_step_cards(step_summary)
-    if not step_cards:
-        return
-
-    cards_markup = "".join(
-        f"""
-        <div class="step-card {tone}">
-            <div class="step-name">{escape(label)}</div>
-            <div class="step-value">{escape(value)}</div>
-        </div>
-        """
-        for label, value, tone in step_cards
-    )
-
-    st.markdown(
-        f"""
-        <div class="loading-panel">
-            <div class="loading-panel-title">현재 수집된 진행 정보</div>
-            <div class="step-grid">{cards_markup}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def _render_stream_event_log() -> None:
-    stream_events = st.session_state.get(_JOB_STREAM_EVENTS_KEY) or []
-    if not stream_events:
-        return
-
-    rows = "".join(
-        f"""
-        <div class="stream-log-row">
-            <div class="stream-log-event">{escape(str(event.get("event") or "-"))}</div>
-            <div class="stream-log-status">{escape(str(event.get("status") or "-"))}</div>
-            <div class="stream-log-detail">{escape(_summarize_stream_event(event))}</div>
-        </div>
-        """
-        for event in stream_events[-5:]
-    )
-    st.markdown(
-        f"""
-        <div class="stream-log">
-            <div class="stream-log-title">SSE 실시간 진행 로그</div>
-            {rows}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def _summarize_stream_event(event: dict[str, object]) -> str:
-    step_summary = event.get("step_summary")
-    if isinstance(step_summary, dict):
-        completed = step_summary.get("completed")
-        success = step_summary.get("success")
-        failed = step_summary.get("failed")
-        if completed is not None:
-            return f"completed={completed}, success={success}, failed={failed}"
-    message = event.get("message")
-    if message:
-        return str(message)
-    return str(event.get("timestamp") or "")
-
-
-def _render_loading_state(
-    *,
-    status: str,
-    company_name: str,
-    job_label: str,
-    step_summary: dict[str, object] | None = None,
-) -> None:
-    meta = _resolve_status_meta(status)
-    progress = _estimate_progress(status, step_summary or {})
-
-    st.markdown(
-        f"""
-        <section class="loading-shell">
-            <div class="loading-head">
-                <div>
-                    <div class="loading-kicker">{escape(str(meta["label"]))}</div>
-                    <div class="loading-title">{escape(str(meta["headline"]))}</div>
-                    <p class="loading-copy">{escape(str(meta["description"]))}</p>
-                </div>
-                <div class="loading-visual" aria-hidden="true">
-                    <div class="job-chip">
-                        <div class="job-chip-label">{escape(job_label)}</div>
-                        <div class="job-chip-value">{escape(company_name)}</div>
-                    </div>
-                    <div class="loading-orbit-card">
-                        <div class="loading-orbit-dot"></div>
-                        <div class="loading-orbit-line"></div>
-                        <div class="loading-orbit-line short"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="progress-meta">
-                <div class="progress-label">심사 상태: {escape(status.replace("_", " ").title())}</div>
-                <div class="progress-value">{progress}%</div>
-            </div>
-            <div class="progress-rail">
-                <div class="progress-fill" style="width: {progress}%;"></div>
-            </div>
-            <div class="refresh-note">
-                분석 상태를 실시간으로 확인하고 있으며, 완료되는 즉시 결과 리포트로 이동합니다.
-            </div>
-        </section>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    if step_summary:
-        _render_step_summary(step_summary)
-    _render_stream_event_log()
-
-
-def _submit_pending_job() -> None:
-    company_name = st.session_state.submitting_company_name
-    if not company_name:
-        return
-
-    st.session_state[_JOB_POLL_COUNT_KEY] = 0
-    st.session_state[_JOB_QUEUED_SINCE_KEY] = None
-    st.session_state[_JOB_STREAM_EVENTS_KEY] = []
-    st.session_state[_JOB_STREAM_FALLBACK_KEY] = False
-    _render_loading_state(
-        status="submitting",
-        company_name=company_name,
-        job_label="심사 대상",
-    )
-
-    job = submit_workflow_job(company_name)
-    st.session_state.submitting_company_name = None
-    if job is None:
-        return
-
-    st.session_state.pending_job_id = job["job_id"]
-    st.session_state.pending_job_status = job
-    st.rerun()
-
-
-def _render_job_progress() -> None:
-    job_id = st.session_state.pending_job_id
-    if not job_id:
-        return
-
-    status_payload = stream_workflow_job_status(job_id)
-    if status_payload is None:
-        status_payload = get_workflow_job_status(job_id)
-    if status_payload is None:
-        return
-
-    st.session_state.pending_job_status = status_payload
-    status = str(status_payload.get("status") or "queued")
-    company_name = str(status_payload.get("company_name") or "-")
-    raw_step_summary = status_payload.get("step_summary")
-    step_summary = raw_step_summary if isinstance(raw_step_summary, dict) else {}
-    _console_log_job_status(status_payload)
-
-    if status == "queued":
-        queued_since = st.session_state.get(_JOB_QUEUED_SINCE_KEY)
-        if queued_since is None:
-            queued_since = _utc_timestamp()
-            st.session_state[_JOB_QUEUED_SINCE_KEY] = queued_since
-
-        poll_count = int(st.session_state.get(_JOB_POLL_COUNT_KEY, 0))
-        if poll_count >= _QUEUE_STALL_WARNING_INTERVAL and poll_count % _QUEUE_STALL_WARNING_INTERVAL == 0:
-            health_payload = get_backend_health()
-            _emit_browser_console(
-                level="warning",
-                event="workflow_job_queue_stalled",
-                payload={
-                    "job_id": job_id,
-                    "poll_count": poll_count,
-                    "queued_since": queued_since,
-                    "message": "job status가 queued에서 진행되지 않고 있습니다.",
-                    "status_payload": status_payload,
-                    "backend_health": health_payload,
-                },
-                dedupe_key=f"workflow_job_queue_stalled:{job_id}:{poll_count}",
-            )
-            st.warning(
-                "심사 작업이 예상보다 오래 대기 중입니다. 잠시만 기다려주세요."
-            )
-    else:
-        st.session_state[_JOB_QUEUED_SINCE_KEY] = None
-
-    _render_loading_state(
-        status=status,
-        company_name=company_name,
-        job_label="심사 대상",
-        step_summary=step_summary,
-    )
-    _render_browser_console_bridge()
-
-    if status == "succeeded":
-        result = get_workflow_job_result(job_id)
-        if result is not None:
-            context = result.get("context", {}) if isinstance(result, dict) else {}
-            company_found = context.get("company_found", True) if isinstance(context, dict) else True
-            if company_found is False:
-                message = "입력한 회사명을 찾을 수 없습니다. 회사명을 다시 확인해주세요."
-                if isinstance(context, dict):
-                    message = str(context.get("workflow_message") or message)
-                st.error(message)
-                st.session_state.last_result = None
-                st.session_state.pending_job_id = None
-                st.session_state.pending_job_status = None
-                st.session_state.submitting_company_name = None
-                st.session_state[_JOB_POLL_COUNT_KEY] = 0
-                st.session_state[_JOB_QUEUED_SINCE_KEY] = None
-                st.session_state[_JOB_STREAM_EVENTS_KEY] = []
-                st.session_state[_JOB_STREAM_FALLBACK_KEY] = False
-                st.session_state.page = "Search"
-                return
-            st.session_state.last_result = result
-            st.session_state.pending_job_id = None
-            st.session_state.pending_job_status = None
-            st.session_state.submitting_company_name = None
-            st.session_state[_JOB_POLL_COUNT_KEY] = 0
-            st.session_state[_JOB_QUEUED_SINCE_KEY] = None
-            st.session_state[_JOB_STREAM_EVENTS_KEY] = []
-            st.session_state[_JOB_STREAM_FALLBACK_KEY] = False
-            st.session_state.page = "Report"
-            st.rerun()
-        return
-
-    if status == "failed":
-        st.error(
-            str(
-                status_payload.get("message")
-                or "심사 작업이 실패했습니다. 잠시 후 다시 시도해주세요."
-            )
-        )
-        if status_payload.get("error_code"):
-            st.caption(f"오류 코드: {status_payload['error_code']}")
-        st.session_state.pending_job_id = None
-        st.session_state.pending_job_status = None
-        st.session_state[_JOB_POLL_COUNT_KEY] = 0
-        st.session_state[_JOB_QUEUED_SINCE_KEY] = None
-        st.session_state[_JOB_STREAM_EVENTS_KEY] = []
-        st.session_state[_JOB_STREAM_FALLBACK_KEY] = False
-        return
-
-    time.sleep(2)
-    st.rerun()
-
-
 def render() -> None:
     _inject_styles()
     _render_browser_console_bridge()
 
     if st.session_state.submitting_company_name:
-        _submit_pending_job()
+        st.session_state.page = "Loading"
+        st.rerun()
         return
 
     if st.session_state.pending_job_id:
-        _render_job_progress()
+        st.session_state.page = "Loading"
+        st.rerun()
         return
 
     with st.container(border=False, key="landing-shell"):
@@ -1659,4 +1284,5 @@ def render() -> None:
                     st.session_state[_JOB_QUEUED_SINCE_KEY] = None
                     st.session_state[_JOB_STREAM_EVENTS_KEY] = []
                     st.session_state[_JOB_STREAM_FALLBACK_KEY] = False
+                    st.session_state.page = "Loading"
                     st.rerun()
