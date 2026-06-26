@@ -579,6 +579,27 @@ def _render_financial_health_section(section: dict[str, Any]) -> None:
             f'<div class="item-chip">{escape(str(section.get("credit_impact") or "-"))}</div>',
             unsafe_allow_html=True,
         )
+        kr_reference = section.get("kr_reference")
+        if isinstance(kr_reference, dict) and kr_reference.get("rows"):
+            st.markdown(
+                '<div class="subsection-title" style="margin-top: 1rem;">KR 업종별 참고지표</div>',
+                unsafe_allow_html=True,
+            )
+            methodology = str(kr_reference.get("methodology") or "-")
+            st.markdown(
+                f'<div class="item-chip">방법론: {escape(methodology)}</div>',
+                unsafe_allow_html=True,
+            )
+            st.table(
+                [
+                    {"지표": metric, "등급": grade, "가중치": weight}
+                    for metric, grade, weight in kr_reference.get("rows", [])
+                ]
+            )
+            st.markdown(
+                f'<div class="item-chip">{escape(str(kr_reference.get("scope_note") or "-"))}</div>',
+                unsafe_allow_html=True,
+            )
 
 
 def _render_growth_trend_section(section: dict[str, Any]) -> None:
@@ -1055,6 +1076,21 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
             for year, total_assets, total_equity, total_assets_statement, revenue, operating_income, net_income in rows
         )
 
+    def render_kr_reference(kr_reference: dict[str, Any] | None) -> str:
+        if not isinstance(kr_reference, dict) or not kr_reference.get("rows"):
+            return ""
+        rows_html = "".join(
+            f"<tr><td>{escape(str(metric))}</td><td>{escape(str(grade))}</td><td>{escape(str(weight))}</td></tr>"
+            for metric, grade, weight in kr_reference.get("rows", [])
+        )
+        return (
+            f"<div class='box' style='margin-top: 12px;'>방법론: {escape(str(kr_reference.get('methodology') or '-'))}</div>"
+            "<table style='margin-top: 8px;'>"
+            "<thead><tr><th>지표</th><th>등급</th><th>가중치</th></tr></thead>"
+            f"<tbody>{rows_html}</tbody></table>"
+            f"<div class='box'>{escape(str(kr_reference.get('scope_note') or '-'))}</div>"
+        )
+
     return f"""
     <!doctype html>
     <html lang="ko">
@@ -1212,6 +1248,7 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
         <div class="metric-grid">{render_metrics(sections["financial_health"].get("metrics", []))}</div>
         <div class="box" style="margin-top: 12px;">{escape(str(sections["financial_health"].get("interpretation") or "-"))}</div>
         <div class="box">{escape(str(sections["financial_health"].get("credit_impact") or "-"))}</div>
+        {render_kr_reference(sections["financial_health"].get("kr_reference"))}
       </div>
 
       <div class="card">

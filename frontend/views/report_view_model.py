@@ -18,6 +18,7 @@ def build_report_view_model(
     risk_filters = context.get("risk_filters") or {} if isinstance(context, dict) else {}
     altman_z = context.get("altman_z") or {} if isinstance(context, dict) else {}
     financial_ratios = context.get("financial_ratios") or {} if isinstance(context, dict) else {}
+    kr_financial_grades = _extract_kr_financial_grades(context)
 
     decision = report_payload.get("decision") or context.get("decision") or "-"
     credit_grade = report_payload.get("credit_grade") or context.get("credit_grade") or "-"
@@ -84,6 +85,7 @@ def build_report_view_model(
                 "interpretation": _build_financial_interpretation(context),
                 "credit_impact": _build_financial_credit_impact(context),
                 "ratio_groups": _build_financial_ratio_groups(financial_ratios),
+                "kr_reference": _build_kr_reference_section(kr_financial_grades),
             },
             "growth_trend": {
                 "title": "3. 성장성 및 추세 분석",
@@ -318,6 +320,50 @@ def _build_financial_ratio_groups(financial_ratios: dict[str, Any]) -> list[dict
             ],
         },
     ]
+
+
+def _extract_kr_financial_grades(context: dict[str, Any]) -> dict[str, Any] | None:
+    if not isinstance(context, dict):
+        return None
+
+    direct_value = context.get("kr_financial_grades")
+    if isinstance(direct_value, dict):
+        return direct_value
+
+    industry_section = context.get("industry")
+    if isinstance(industry_section, dict):
+        nested_value = industry_section.get("kr_financial_grades")
+        if isinstance(nested_value, dict):
+            return nested_value
+
+    return None
+
+
+def _build_kr_reference_section(kr_financial_grades: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(kr_financial_grades, dict):
+        return None
+
+    per_metric_grades = kr_financial_grades.get("per_metric_grades")
+    if not isinstance(per_metric_grades, dict) or not per_metric_grades:
+        return None
+
+    rows: list[tuple[str, str, str]] = []
+    for metric_key, item in per_metric_grades.items():
+        if not isinstance(item, dict):
+            continue
+        grade = str(item.get("grade") or "-")
+        weight = str(item.get("weight") or "-")
+        rows.append((_format_kr_metric_label(metric_key), grade, weight))
+
+    if not rows:
+        return None
+
+    return {
+        "title": "KR 업종별 참고지표",
+        "methodology": str(kr_financial_grades.get("methodology") or "-"),
+        "rows": rows,
+        "scope_note": str(kr_financial_grades.get("scope_note") or "-"),
+    }
 
 
 def _build_non_financial_event_section(
@@ -1062,6 +1108,16 @@ def _with_year_prefix(year: str, text: str) -> str:
     if year:
         return f"{year}년: {text}"
     return text
+
+
+def _format_kr_metric_label(metric_key: Any) -> str:
+    return {
+        "ebitda_margin": "EBITDA 마진",
+        "net_debt_to_ebitda": "순차입금/EBITDA",
+        "ebitda_to_interest": "EBITDA/이자비용",
+        "debt_ratio": "부채비율",
+        "borrow_dep": "차입금의존도",
+    }.get(str(metric_key or "").strip(), str(metric_key or "-"))
 
 
 def _format_decision(decision: Any) -> str:
