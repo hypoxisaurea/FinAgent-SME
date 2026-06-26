@@ -67,7 +67,6 @@ flowchart LR
 | Agent | `DecisionAgent` | 등급/판단/한도 산출 |
 | Agent | `ReportAgent` | 보고서 생성 |
 | Agent | `ValidationAgent` | 결과 검증과 score 기록 |
-| Agent | `MultiModalDocumentAgent` | PDF 텍스트와 차트 이미지 추출 |
 | Agent | `CompanyRegistryAgent` | DART 기업/재무 registry 구축 실행 |
 | Data | Repository / Service | DB 조회/저장, use-case 처리 |
 | Retrieval | Chroma / Industry RAG | 산업 방법론 PDF 검색과 출처 제공 |
@@ -132,9 +131,6 @@ flowchart LR
 | Agents | `backend/agents/decision/models.py` | decision 내부 모델 |
 | Agents | `backend/agents/report/agent.py` | 최종 보고서 생성 |
 | Agents | `backend/agents/validation/agent.py` | 최종 결과 정합성 검사와 score 기록 |
-| Agents | `backend/agents/multimodal_document/agent.py` | 문서 처리 task 계획과 결과 계약 |
-| Agents | `backend/agents/multimodal_document/processor.py` | PDF 텍스트/차트 이미지 추출 |
-| Agents | `backend/agents/multimodal_document/dart.py` | DART 문서 다운로드/파싱 보조 |
 | Tools | `backend/tools/news.py` | 뉴스 검색/수집 tool |
 | Tools | `backend/tools/financial.py` | 재무 데이터 조회/분석 tool |
 | Tools | `backend/tools/industry.py` | 산업 방법론 조회 tool |
@@ -255,13 +251,6 @@ Validation gate는 `report -> validation` 뒤에 조건부 edge를 둔다. 실�
 - 특이사항: 실패는 `status=failed`이며 orchestrator validation gate를 작동시킴
 - Langfuse score는 활성화된 경우만 기록
 
-### `MultiModalDocumentAgent`
-
-- 입력: 선택적 `pdf_path`
-- 의존성: `backend/agents/multimodal_document/processor.py`, `dart.py`
-- 출력: `document_result`, `texts`, `chart_images`, `page_count`
-- 특이사항: 현재 공개 HTTP body에는 `pdf_path`가 노출되지 않은 비공개 확장 경로
-
 ### `CompanyRegistryAgent`
 
 - 입력: `year`, 선택적 `sample_size`, `skip_db_save`
@@ -321,7 +310,7 @@ Validation gate는 `report -> validation` 뒤에 조건부 edge를 둔다. 실�
 
 ## 10. 현재 확장 포인트
 
-- 공개 API body 확장 (`pdf_path`, `continue_on_error` 등)
+- 공개 API body 확장 (`continue_on_error` 등)
 - 추가 agent 노드 연결
 - UI 업로드/진행상태 기능
 - job runner의 별도 worker 프로세스/분산 queue 전환

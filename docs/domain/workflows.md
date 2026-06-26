@@ -14,7 +14,6 @@
 - `DecisionAgent`: 심사 결정, 등급, 추천 한도, 설명을 생성한다.
 - `ReportAgent`: 최종 리포트를 생성한다.
 - `ValidationAgent`: 결과 정합성을 검증하고 Langfuse score를 기록한다.
-- `MultiModalDocumentAgent`: 내부 payload에 `pdf_path`가 있을 때만 실행된다.
 
 ## 공개 입력 계약
 
@@ -24,7 +23,7 @@
 
 주의:
 
-- `pdf_path`, `continue_on_error`는 내부 워크플로우 확장 포인트로는 존재하지만 현재 공개 API 스키마에는 없다.
+- `continue_on_error`는 내부 워크플로우 확장 포인트로는 존재하지만 현재 공개 API 스키마에는 없다.
 - 공백만 있는 `company_name`은 API 계층에서 `400 INVALID_INPUT`으로 처리된다.
 
 ## 공개 Job API 계약
@@ -105,7 +104,6 @@ Streamlit 프론트엔드는 `stream` SSE endpoint를 우선 소비하고, 연�
 4. **시작 분석 노드**
    - `NewsCollectorAgent`
    - `FinancialAnalystAgent`
-   - 내부 payload에 `pdf_path`가 있을 때 `MultiModalDocumentAgent`
 
 5. **의존 분석 노드**
    - `RiskEventAgent`는 `news_collector` 이후 실행된다.

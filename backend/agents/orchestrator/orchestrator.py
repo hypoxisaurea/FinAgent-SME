@@ -7,7 +7,6 @@ from backend.agents.company_resolver.agent import CompanyResolverAgent
 from backend.agents.decision.agent import DecisionAgent
 from backend.agents.financial_analyst.agent import FinancialAnalystAgent
 from backend.agents.industry_analyst.agent import IndustryAnalystAgent
-from backend.agents.multimodal_document.agent import MultiModalDocumentAgent
 from backend.agents.news_collector.agent import NewsCollectorAgent
 from backend.agents.orchestrator.graph import ProgressCallback, WorkflowGraphBuilder
 from backend.agents.orchestrator.results import build_result, summarize_steps
@@ -199,7 +198,6 @@ async def run_credit_workflow(
       2. 1차 병렬 단계
          - NewsCollectorAgent
          - FinancialAnalystAgent
-         - MultiModalDocumentAgent (pdf_path 있을 때만)
       3. 의존 단계
          - NewsCollectorAgent 이후 RiskEventAgent
          - FinancialAnalystAgent 이후 IndustryAnalystAgent
@@ -231,15 +229,12 @@ async def run_credit_workflow(
 
 
 def _build_parallel_agents(payload: dict[str, Any]) -> list[Agent]:
-    parallel_agents: list[Agent] = [
+    return [
         NewsCollectorAgent(),
         FinancialAnalystAgent(),
         RiskEventAgent(),
         IndustryAnalystAgent(),
     ]
-    if payload.get("pdf_path"):
-        parallel_agents.append(MultiModalDocumentAgent())
-    return parallel_agents
 
 
 def _build_sequential_agents() -> list[Agent]:

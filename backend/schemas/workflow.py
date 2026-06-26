@@ -153,16 +153,10 @@ class WorkflowDecisionSection(BaseModel):
 
 
 class WorkflowArtifactSection(BaseModel):
-    """최종 산출물 및 문서 처리 결과 섹션."""
+    """최종 산출물 섹션."""
 
     report: WorkflowReportPayload | dict[str, Any] | None = None
     validation_result: ValidationResultPayload | dict[str, Any] | None = None
-    document_result: dict[str, Any] | None = None
-    pdf_path: str | None = None
-    output_dir: str | None = None
-    texts: list[str] = Field(default_factory=list)
-    chart_images: list[Any] = Field(default_factory=list)
-    page_count: int | None = None
 
 
 class WorkflowContext(BaseModel):
@@ -218,7 +212,6 @@ class WorkflowContext(BaseModel):
     industry_tool_runs: list[dict[str, Any]] = Field(default_factory=list)
     industry_tool_errors: list[dict[str, Any]] = Field(default_factory=list)
     risk_event_result: dict[str, Any] | None = None
-    document_result: dict[str, Any] | None = None
     overall_risk_level: str | None = None
     critical_count: int | None = None
     high_count: int | None = None
@@ -246,12 +239,6 @@ class WorkflowContext(BaseModel):
     validation_attempt: int | None = None
     validation_retry_attempts: int | None = None
     validation_gate_status: Literal["passed", "retrying", "blocked"] | None = None
-    pdf_path: str | None = None
-    output_dir: str | None = None
-    texts: list[str] = Field(default_factory=list)
-    chart_images: list[Any] = Field(default_factory=list)
-    page_count: int | None = None
-
     runtime: WorkflowRuntimeSection = Field(default_factory=WorkflowRuntimeSection)
     company: WorkflowCompanySection = Field(default_factory=WorkflowCompanySection)
     collection: WorkflowCollectionSection = Field(default_factory=WorkflowCollectionSection)
@@ -356,12 +343,6 @@ class WorkflowContext(BaseModel):
         self.artifacts = WorkflowArtifactSection(
             report=self.report,
             validation_result=self.validation_result,
-            document_result=self.document_result,
-            pdf_path=self.pdf_path,
-            output_dir=self.output_dir,
-            texts=list(self.texts),
-            chart_images=list(self.chart_images),
-            page_count=self.page_count,
         )
         return self
 
