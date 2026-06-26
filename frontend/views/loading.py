@@ -284,6 +284,7 @@ def _inject_styles() -> None:
             position: relative;
             z-index: 1;
             max-width: 650px;
+            margin-top: 92px;
         }
         .failure-kicker {
             display: inline-flex;
@@ -314,26 +315,64 @@ def _inject_styles() -> None:
             font-size: 1rem;
             font-weight: 700;
             line-height: 1.7;
-            margin: 0 0 1.5rem;
+            margin: 0;
+        }
+        .st-key-loading-retry {
+            position: relative;
+            z-index: 1;
+            max-width: 520px;
+            margin-top: -292px;
+            margin-left: 64px;
         }
         .failure-company {
-            display: inline-flex;
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+            height: 3.2rem;
+            min-height: 3.2rem;
             max-width: 100%;
             color: #9f1239;
             background: #fff1f3;
             border: 1px solid #ffc9d2;
             border-radius: 12px;
-            padding: 12px 14px;
+            padding: 0 14px;
             font-size: 0.95rem;
             font-weight: 800;
             overflow-wrap: anywhere;
         }
-        .st-key-loading-retry {
-            position: relative;
-            z-index: 1;
-            max-width: 180px;
-            margin-top: -260px;
-            margin-left: 64px;
+        .st-key-loading-retry [data-testid="stHorizontalBlock"] {
+            align-items: stretch;
+            gap: 12px;
+        }
+        .st-key-loading-retry [data-testid="column"] {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+        .st-key-loading-retry [data-testid="column"] > div,
+        .st-key-loading-retry [data-testid="stVerticalBlock"],
+        .st-key-loading-retry [data-testid="stElementContainer"],
+        .st-key-loading-retry .stMarkdown,
+        .st-key-loading-retry .stButton,
+        .st-key-loading-retry div[data-testid="stButton"] {
+            height: 3.2rem !important;
+            min-height: 3.2rem !important;
+        }
+        .st-key-loading-retry .stMarkdown,
+        .st-key-loading-retry .stButton {
+            margin: 0 !important;
+            display: flex;
+            align-items: stretch;
+        }
+        .st-key-loading-retry .stMarkdown > div,
+        .st-key-loading-retry .stButton > button {
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+        }
+        .st-key-loading-retry div[data-testid="stMarkdownContainer"] {
+            display: flex;
+            align-items: stretch;
+            height: 3.2rem !important;
+            min-height: 3.2rem !important;
         }
         .st-key-loading-retry .stButton > button {
             height: 3.2rem;
@@ -404,13 +443,17 @@ def _inject_styles() -> None:
                 padding: 34px 24px 130px;
                 min-height: auto;
             }
+            .failure-content {
+                margin-top: 0;
+            }
             .failure-title {
                 font-size: 1.75rem;
             }
             .st-key-loading-retry {
-                margin-top: -102px;
+                margin-top: -100px;
                 margin-left: 24px;
-                max-width: 170px;
+                margin-right: 24px;
+                max-width: none;
             }
         }
         </style>
@@ -529,15 +572,23 @@ def _render_company_not_found_state() -> None:
                 <div class="failure-kicker">조회 불가</div>
                 <div class="failure-title">기업 정보를 확인할 수 없습니다.</div>
                 <p class="failure-copy">{escape(message)}</p>
-                <div class="failure-company">조회 기업: {escape(company_name)}</div>
             </div>
         </section>
         """,
         unsafe_allow_html=True,
     )
     with st.container(border=False, key="loading-retry"):
-        if st.button("다시 검색하기", width="stretch"):
-            _return_to_search()
+        company_col, button_col = st.columns([2.1, 1])
+        with company_col:
+            st.markdown(
+                f"""
+                <div class="failure-company">조회 기업: {escape(company_name)}</div>
+                """,
+                unsafe_allow_html=True,
+            )
+        with button_col:
+            if st.button("다시 검색하기", width="stretch"):
+                _return_to_search()
 
 
 def _submit_pending_job() -> None:
