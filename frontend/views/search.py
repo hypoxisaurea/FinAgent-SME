@@ -799,6 +799,14 @@ def _inject_styles() -> None:
         .st-key-review-panel .stButton > button {
             height: 3.55rem;
         }
+        .st-key-review-panel .stTextInput div[data-baseweb="input"] {
+            border-color: rgba(215, 231, 243, 0.72) !important;
+            box-shadow: none !important;
+        }
+        .st-key-review-panel .stTextInput div[data-baseweb="input"]:focus-within {
+            border-color: rgba(215, 231, 243, 0.72) !important;
+            box-shadow: none !important;
+        }
         .stTextInput label,
         .stButton button {
             font-weight: 700;
@@ -813,9 +821,10 @@ def _inject_styles() -> None:
             box-shadow: none;
         }
         .stTextInput input:focus {
-            border-color: rgba(115, 108, 255, 0.45);
-            background: #ffffff;
-            box-shadow: none;
+            border-color: rgba(215, 231, 243, 0.72) !important;
+            background: #fbfdff;
+            box-shadow: none !important;
+            outline: none;
         }
         .stButton > button {
             border-radius: 12px;
