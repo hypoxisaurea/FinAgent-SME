@@ -28,7 +28,6 @@ def render() -> None:
     context = result.get("context", {}) if isinstance(result, dict) else {}
     report = context.get("report") if isinstance(context, dict) else None
     steps = result.get("steps", []) if isinstance(result, dict) else []
-    report_step = _find_step_output(steps, "report")
     decision_step = _find_step_output(steps, "decision")
     report_payload = report if isinstance(report, dict) else {}
 

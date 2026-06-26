@@ -80,7 +80,7 @@
 
 | 항목 | 내용 |
 | --- | --- |
-| 주체 | `NewsCollectorAgent`, `FinancialAnalystAgent`, `RiskEventAgent`, `IndustryAnalystAgent`, 선택적 `MultiModalDocumentAgent` |
+| 주체 | `NewsCollectorAgent`, `FinancialAnalystAgent`, `RiskEventAgent`, `IndustryAnalystAgent` |
 | 입력 | `company_name`, `corp_code`, `corp_name` |
 | 출력 | 뉴스, 재무, 산업, 리스크 관련 context |
 
@@ -89,7 +89,6 @@
 - 시작 노드는 `news_collector`, `financial_analyst`
 - `risk_event`는 뉴스 결과를 사용
 - `industry_analyst`는 재무 비율을 사용
-- 내부 payload에 `pdf_path`가 있으면 `multimodal_document`를 시작 노드에 추가
 - fallback 발생 시 step 메타데이터에 반영
 
 ### UC-04 심사 판단 생성
@@ -179,5 +178,4 @@ Langfuse 활성화 시 아래 score를 기록한다.
 
 - 공개 API는 `company_name`만 받는다
 - UI에서 base URL 수정 기능이 없다
-- 문서 업로드/PDF 분석은 공개 UI/API로 아직 노출되지 않았다
 - worker는 현재 FastAPI 앱 프로세스 내부에서 함께 실행된다

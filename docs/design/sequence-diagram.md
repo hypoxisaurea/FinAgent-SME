@@ -12,7 +12,6 @@ sequenceDiagram
     participant RES as CompanyResolverAgent
     participant NEWS as NewsCollectorAgent
     participant FIN as FinancialAnalystAgent
-    participant DOC as MultiModalDocumentAgent
     participant RISK as RiskEventAgent
     participant IND as IndustryAnalystAgent
     participant DEC as DecisionAgent
@@ -62,9 +61,6 @@ sequenceDiagram
             FIN->>DB: financial_statement_details (우선) / financial_features (보조)
             FIN->>EXT: DART/OpenDART
             FIN-->>ORCH: financial_ratios, grade_cap
-        and pdf_path가 있을 때
-            ORCH->>DOC: run(pdf_path)
-            DOC-->>ORCH: texts, chart_images, page_count
         end
 
         ORCH->>RISK: run(news_data, corp_code)

@@ -20,7 +20,6 @@
 
 - `request_id`
 - `collect_sources`
-- `pdf_path`
 - `continue_on_error`
 - `target_year`
 - agent별 timeout/retry 관련 payload
@@ -60,8 +59,6 @@ Validation 실패 시 기본 1회 `ReportAgent -> ValidationAgent`를 재실행�
 `0`으로 강제하고 즉시 `blocked` 처리한다. `continue_on_error=True`여도 validation
 gate에는 적용되지 않으며, 차단된 판단·한도·보고서는 `context`와 `steps[].output`
 모두에서 제거한다.
-
-`pdf_path`가 있으면 `MultiModalDocumentAgent`가 병렬 노드에 추가됩니다.
 
 ## 상태 규칙
 

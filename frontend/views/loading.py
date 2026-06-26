@@ -355,18 +355,40 @@ def _inject_styles() -> None:
             min-height: 3.2rem !important;
         }
         .st-key-loading-retry .stButton > button {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            width: 100%;
             height: 3.2rem;
             min-height: 3.2rem;
+            padding: 0 1rem;
             border: 0;
             border-radius: 12px;
             background: linear-gradient(135deg, #ff6b7a 0%, #d92d4c 100%);
-            color: #ffffff;
+            color: transparent;
+            font-size: 0;
             font-weight: 800;
+            line-height: 1;
             box-shadow: 0 18px 32px rgba(217, 45, 76, 0.18);
+        }
+        .st-key-loading-retry .stButton > button::after {
+            content: "다시 검색하기";
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1;
+            pointer-events: none;
         }
         .st-key-loading-retry .stButton > button:hover {
             background: linear-gradient(135deg, #f45f70 0%, #be2441 100%);
-            color: #ffffff;
+            color: transparent;
         }
         @keyframes pulseDot {
             0%, 100% { transform: scale(1); opacity: 0.9; }
@@ -564,7 +586,7 @@ def _render_company_not_found_state() -> None:
                 unsafe_allow_html=True,
             )
         with button_col:
-            if st.button("다시 검색하기", width="stretch"):
+            if st.button(" ", key="company-not-found-retry", width="stretch"):
                 _return_to_search()
 
 

@@ -311,7 +311,6 @@ class Agent(Protocol):
 
 코드 레벨에서는 아래 값들이 존재하지만, 공개 HTTP 요청 모델에는 포함되지 않는다.
 
-- `pdf_path`
 - `continue_on_error`
 - `target_year`
 - agent별 timeout/retry override 필드

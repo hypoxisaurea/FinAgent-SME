@@ -238,7 +238,6 @@ class CreditState(BaseModel):
 
     # ── 기타 에이전트 결과 (추후 적재) ───────────────────────────────────
     risk_event_result: dict[str, Any] | None = None   # Risk Event Agent
-    document_result:   dict[str, Any] | None = None   # Multimodal Document Agent
 
     # ── XAI / Decision Agent 결과 ─────────────────────────────────────────
     final_grade:      str | None           = None   # 최종 신용등급

@@ -261,16 +261,3 @@ class ValidationInput(AgentInputModel):
 class ValidationOutput(AgentOutputModel):
     validation_result: ValidationResultPayload
 
-
-class MultiModalDocumentInput(AgentInputModel):
-    pdf_path: str
-    output_dir: str | None = None
-
-
-class MultiModalDocumentOutput(AgentOutputModel):
-    name: str
-    pdf_path: str
-    output_dir: str
-    texts: list[str] = Field(default_factory=list)
-    chart_images: list[Any] = Field(default_factory=list)
-    page_count: int

@@ -715,6 +715,16 @@ def _inject_styles() -> None:
             padding: 0;
             max-width: 500px;
         }
+        .st-key-review-panel div[data-testid="stForm"] {
+            border: 0 !important;
+            background: transparent !important;
+            padding: 0 !important;
+        }
+        .st-key-review-panel div[data-testid="stForm"] > form {
+            border: 0 !important;
+            background: transparent !important;
+            padding: 0 !important;
+        }
         .st-key-review-panel div[data-testid="column"]:first-child {
             padding-right: 0;
         }
@@ -1260,19 +1270,22 @@ def render() -> None:
                 """,
                 unsafe_allow_html=True,
             )
-            input_col, button_col = st.columns([2.7, 1])
-            with input_col:
-                company_name = st.text_input(
-                    "기업명",
-                    key="company_name_input",
-                    placeholder="기업명을 입력하세요",
-                    label_visibility="collapsed",
-                )
-            with button_col:
-                start_clicked = st.button("심사 시작", width="stretch")
+            with st.form("company-review-form", clear_on_submit=False):
+                input_col, button_col = st.columns([2.7, 1])
+                with input_col:
+                    st.text_input(
+                        "기업명",
+                        key="company_name_input",
+                        placeholder="기업명을 입력하세요",
+                        label_visibility="collapsed",
+                    )
+                with button_col:
+                    start_clicked = st.form_submit_button("심사 시작", width="stretch")
 
             if start_clicked:
-                normalized_company_name = _normalize_company_name(company_name)
+                normalized_company_name = _normalize_company_name(
+                    str(st.session_state.get("company_name_input") or "")
+                )
                 if not normalized_company_name:
                     st.warning("회사명을 입력하세요.")
                 else:

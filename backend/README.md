@@ -18,7 +18,7 @@
 3. 앱 startup 시 시작된 `workflow_job_runner`가 queued job을 claim 합니다.
 4. runner가 background thread에서 `run_credit_workflow()`를 실행합니다.
 5. `CompanyResolverAgent`가 `sme_list`와 `company_profiles` 기반으로 기업을 식별합니다.
-6. 식별 성공 시 `news_collector`, `financial_analyst`가 시작 노드로 실행되고, 내부 payload에 `pdf_path`가 있으면 `multimodal_document`도 함께 실행됩니다.
+6. 식별 성공 시 `news_collector`, `financial_analyst`가 시작 노드로 실행됩니다.
 7. `risk_event`는 뉴스 결과 이후, `industry_analyst`는 재무 결과 이후 실행됩니다.
 8. `decision` -> `report` -> `validation`이 순차 실행됩니다. 검증 실패 시 기본 1회 `report` 생성과 검증을 재실행합니다.
 9. 재검증 실패는 판단/보고서를 차단하고, runner가 job을 `failed / VALIDATION_FAILED`로 마감합니다. 그 외 결과는 `succeeded`로 저장합니다.
@@ -86,7 +86,6 @@ backend/
 - `decision`: 승인/검토/거절과 등급/한도 산출
 - `report`: 사람이 읽기 쉬운 리포트 생성
 - `validation`: 결과 정합성 검사와 Langfuse score 기록
-- `multimodal_document`: 내부 payload에 `pdf_path`가 있을 때만 추가
 
 ### `data/`
 

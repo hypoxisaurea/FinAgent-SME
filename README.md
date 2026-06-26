@@ -42,13 +42,11 @@ flowchart LR
     B -->|아니오| X[not_target]
     B -->|예| N[News Collector]
     B -->|예| F[Financial Analyst]
-    B -.->|pdf_path가 있을 때| M[MultiModal Document]
     N --> K[Risk Event]
     F --> I[Industry Analyst\n산업 방법론 RAG]
     K --> D[Decision]
     I --> D
     F --> D
-    M --> D
     D --> R[Report]
     R --> V[Validation]
     V -->|통과| Z[최종 context + steps]
@@ -79,11 +77,10 @@ flowchart LR
   2. 시작 분석 노드: `NewsCollectorAgent`, `FinancialAnalystAgent`
   3. 의존 분석 노드: `RiskEventAgent`(`news_collector` 이후), `IndustryAnalystAgent`(`financial_analyst` 이후)
   4. 후속 단계: `DecisionAgent` -> `ReportAgent` -> `ValidationAgent`
-- 선택 기능: 내부 워크플로우 payload에 `pdf_path`가 있을 때 `MultiModalDocumentAgent` 추가 가능
 - 관측성: `request_id` 기반 구조화 로그, Langfuse trace/score 연동 지원
 - 실행 모델: FastAPI 앱 시작 시 background job runner가 queued job을 처리
 
-현재 공개 HTTP API 스키마는 `company_name`만 받습니다. `pdf_path`, `continue_on_error` 같은 옵션은 코드 레벨 확장 포인트로는 존재하지만, 공개 요청 스키마에는 아직 노출되지 않았습니다.
+현재 공개 HTTP API 스키마는 `company_name`만 받습니다. `continue_on_error` 같은 옵션은 코드 레벨 확장 포인트로는 존재하지만, 공개 요청 스키마에는 아직 노출되지 않았습니다.
 
 ## 저장소 구조
 

@@ -295,6 +295,19 @@ def test_default_credit_workflow_includes_validation_agent() -> None:
     ]
 
 
+def test_default_credit_workflow_excludes_multimodal_document_agent() -> None:
+    orchestrator = create_credit_workflow(
+        payload={"company_name": "테스트기업", "pdf_path": "/tmp/source.pdf"}
+    )
+
+    assert [agent.name for agent in orchestrator._parallel_agents] == [
+        "news_collector",
+        "financial_analyst",
+        "risk_event",
+        "industry_analyst",
+    ]
+
+
 def test_orchestrator_retries_report_then_blocks_failed_validation(caplog: Any) -> None:
     resolver = _FakeAgent(
         "company_resolver",
