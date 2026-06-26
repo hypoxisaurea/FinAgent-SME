@@ -77,6 +77,10 @@ def test_docker_smoke_script_exercises_compose_healthchecks() -> None:
     assert "artifacts/docker_smoke_verification.json" in content
     assert "docker_smoke_passed" in content
     assert "docker_smoke_evidence" in content
+    assert 'BACKEND_ENV_FILE="$PROJECT_ROOT/backend/.env"' in content
+    assert "prepare_backend_env_file" in content
+    assert "docker_smoke_created_temporary_env" in content
+    assert 'CREATED_SMOKE_ENV_FILE="true"' in content
 
 
 def test_stack_database_status_uses_compose_service_container() -> None:
