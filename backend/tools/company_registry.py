@@ -487,11 +487,9 @@ def classify_interest_expense_quality(source_account: str | None) -> str | None:
         return None
     if normalized_source.startswith("이자비용"):
         return "high"
-    if normalized_source in {"금융비용"}:
-        return "medium"
-    if normalized_source in {"금융원가", "총금융비용", "지급이자"}:
+    if normalized_source in {"금융비용", "금융원가", "총금융비용", "지급이자"}:
         return "low"
-    return "medium"
+    return "low"
 
 
 def build_statement_detail_records(
@@ -532,8 +530,13 @@ def build_statement_detail_records(
                     candidate_names,
                 )
                 quality = classify_interest_expense_quality(source_account)
-                if value is not None and quality == "low":
-                    value = abs(value)
+                normalized_source = normalize_account_name(source_account)
+                if (
+                    value is not None
+                    and value < 0
+                    and normalized_source in {"금융비용", "금융원가", "총금융비용"}
+                ):
+                    value = None
                 record["interest_expense_source_account"] = source_account
                 record["interest_expense_quality"] = quality
             else:

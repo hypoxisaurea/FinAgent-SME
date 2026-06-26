@@ -88,8 +88,7 @@ def build_report_view_model(
                 ],
                 "metric_badge_guide": [
                     ("HIGH", "이자비용 계정 기반으로 직접 산출된 높은 신뢰도"),
-                    ("MEDIUM", "금융비용 계정을 활용한 보통 수준의 신뢰도"),
-                    ("LOW", "금융원가 등 대체 계정 기반 추정치로 해석에 주의 필요"),
+                    ("LOW", "금융비용 계정을 활용한 보통 수준의 신뢰도"),
                 ],
                 "interpretation": _build_financial_interpretation(context),
                 "credit_impact": _build_financial_credit_impact(context),
@@ -361,8 +360,8 @@ def _build_kr_reference_section(kr_financial_grades: dict[str, Any] | None) -> d
     for metric_key, item in per_metric_grades.items():
         if not isinstance(item, dict):
             continue
-        grade = str(item.get("grade") or "-")
-        weight = str(item.get("weight") or "-")
+        grade = str(item.get("grade") or "").strip() or "-"
+        weight = str(item.get("weight") or "").strip() or "-"
         rows.append((_format_kr_metric_label(metric_key), grade, weight))
 
     if not rows:
@@ -884,7 +883,6 @@ def _build_interest_quality_badge(context: dict[str, Any]) -> str | None:
             quality = str(summary.get("interest_expense_quality") or "").strip().lower()
     badge_map = {
         "high": "HIGH",
-        "medium": "MEDIUM",
         "low": "LOW",
     }
     return badge_map.get(quality)

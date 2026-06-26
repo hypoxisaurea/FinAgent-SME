@@ -614,6 +614,11 @@ def _render_table_section(section: dict[str, Any]) -> None:
     )
 
 
+def _display_cell_value(value: Any) -> str:
+    text = str(value or "").strip()
+    return text or "-"
+
+
 def _render_financial_health_section(section: dict[str, Any]) -> None:
     with st.container(border=False, key="financial-health-card"):
         st.markdown(
@@ -689,7 +694,11 @@ def _render_financial_health_section(section: dict[str, Any]) -> None:
             )
             st.table(
                 [
-                    {"지표": metric, "등급": grade, "가중치": weight}
+                    {
+                        "지표": _display_cell_value(metric),
+                        "등급": _display_cell_value(grade),
+                        "가중치": _display_cell_value(weight),
+                    }
                     for metric, grade, weight in kr_reference.get("rows", [])
                 ]
             )
@@ -1215,7 +1224,11 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
         if not isinstance(kr_reference, dict) or not kr_reference.get("rows"):
             return ""
         rows_html = "".join(
-            f"<tr><td>{escape(str(metric))}</td><td>{escape(str(grade))}</td><td>{escape(str(weight))}</td></tr>"
+            "<tr>"
+            f"<td>{escape(_display_cell_value(metric))}</td>"
+            f"<td>{escape(_display_cell_value(grade))}</td>"
+            f"<td>{escape(_display_cell_value(weight))}</td>"
+            "</tr>"
             for metric, grade, weight in kr_reference.get("rows", [])
         )
         return (

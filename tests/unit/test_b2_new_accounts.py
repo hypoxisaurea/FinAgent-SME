@@ -255,24 +255,25 @@ class TestEbitdaRatios:
     def test_low_quality_interest_expense_marks_estimated_ratio(self):
         ratios = self._call(
             이자비용=30_000_000.0,
-            이자비용_원본계정="금융원가",
+            이자비용_원본계정="금융비용",
             이자비용_품질="low",
         )
         expected_ebitda = 120_000_000.0 + 20_000_000.0 + 5_000_000.0
         assert ratios["interest_coverage"] == pytest.approx(120_000_000.0 / 30_000_000.0)
         assert ratios["ebitda_to_interest"] == pytest.approx(expected_ebitda / 30_000_000.0)
-        assert ratios["interest_ratio_estimated"] is True
-        assert "금융원가" in str(ratios["interest_ratio_note"])
+        assert ratios["interest_ratio_estimated"] is False
+        assert "금융비용" in str(ratios["interest_ratio_note"])
 
-    def test_low_quality_interest_expense_drops_extreme_ratio(self):
+    def test_negative_low_quality_interest_expense_excludes_ratio(self):
         ratios = self._call(
             영업이익=5_000_000_000.0,
-            이자비용=10_000_000.0,
+            이자비용=-10_000_000.0,
             이자비용_원본계정="금융원가",
             이자비용_품질="low",
         )
         assert ratios["interest_coverage"] is None
-        assert "산출을 제외" in str(ratios["interest_ratio_note"])
+        assert ratios["ebitda_to_interest"] is None
+        assert "산출에서 제외" in str(ratios["interest_ratio_note"])
         assert ratios["net_debt_to_ebitda"] is not None
 
     # ── DB 경로 폴백: 새 키 없는 fs ───────────────────────────────────────────
