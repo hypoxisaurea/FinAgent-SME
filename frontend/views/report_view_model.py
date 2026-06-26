@@ -80,10 +80,20 @@ def build_report_view_model(
                     ("부채비율", _format_percent(financial_ratios.get("debt_ratio"))),
                     ("유동비율", _format_percent(financial_ratios.get("current_ratio"))),
                     ("영업이익률", _format_percent(financial_ratios.get("op_margin"))),
-                    ("이자보상배율", _format_ratio(financial_ratios.get("interest_coverage"))),
+                    (
+                        "이자보상배율",
+                        _format_ratio(financial_ratios.get("interest_coverage")),
+                        _build_interest_quality_badge(context),
+                    ),
+                ],
+                "metric_badge_guide": [
+                    ("HIGH", "이자비용 계정 기반으로 직접 산출된 높은 신뢰도"),
+                    ("MEDIUM", "금융비용 계정을 활용한 보통 수준의 신뢰도"),
+                    ("LOW", "금융원가 등 대체 계정 기반 추정치로 해석에 주의 필요"),
                 ],
                 "interpretation": _build_financial_interpretation(context),
                 "credit_impact": _build_financial_credit_impact(context),
+                "interest_ratio_note": _build_interest_ratio_note(context),
                 "ratio_groups": _build_financial_ratio_groups(financial_ratios),
                 "kr_reference": _build_kr_reference_section(kr_financial_grades),
             },
@@ -838,9 +848,46 @@ def _build_financial_interpretation(context: dict[str, Any]) -> str:
 def _build_financial_credit_impact(context: dict[str, Any]) -> str:
     grade_cap = context.get("grade_cap")
     overall_risk_level = _format_risk_level(context.get("overall_risk_level"))
+    interest_note = _build_interest_ratio_note(context)
     if grade_cap:
-        return f"재무 필터에 따라 등급 상한 {grade_cap}가 적용되어 최종 판단 여력을 제약합니다. 통합 리스크 이벤트 분석 결과는 {overall_risk_level}입니다."
-    return f"재무 지표만으로 강한 등급 제한은 없으나, 최종 신용판단에는 통합 리스크 이벤트 분석 결과 {overall_risk_level}가 함께 반영됩니다."
+        base = f"재무 필터에 따라 등급 상한 {grade_cap}가 적용되어 최종 판단 여력을 제약합니다. 통합 리스크 이벤트 분석 결과는 {overall_risk_level}입니다."
+    else:
+        base = f"재무 지표만으로 강한 등급 제한은 없으나, 최종 신용판단에는 통합 리스크 이벤트 분석 결과 {overall_risk_level}가 함께 반영됩니다."
+    if interest_note:
+        return f"{base} {interest_note}"
+    return base
+
+
+def _build_interest_ratio_note(context: dict[str, Any]) -> str:
+    ratios = context.get("financial_ratios", {})
+    if not isinstance(ratios, dict):
+        ratios = {}
+    note = str(ratios.get("interest_ratio_note") or "").strip()
+    if note:
+        return note
+
+    summary = context.get("financial_summary", {})
+    if not isinstance(summary, dict):
+        summary = {}
+    note = str(summary.get("interest_ratio_note") or "").strip()
+    return note
+
+
+def _build_interest_quality_badge(context: dict[str, Any]) -> str | None:
+    ratios = context.get("financial_ratios", {})
+    if not isinstance(ratios, dict):
+        ratios = {}
+    quality = str(ratios.get("interest_expense_quality") or "").strip().lower()
+    if not quality:
+        summary = context.get("financial_summary", {})
+        if isinstance(summary, dict):
+            quality = str(summary.get("interest_expense_quality") or "").strip().lower()
+    badge_map = {
+        "high": "HIGH",
+        "medium": "MEDIUM",
+        "low": "LOW",
+    }
+    return badge_map.get(quality)
 
 
 def _build_connected_reason(context: dict[str, Any], explanation: dict[str, Any]) -> str:

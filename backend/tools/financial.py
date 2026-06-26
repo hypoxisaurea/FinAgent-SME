@@ -9,6 +9,7 @@ load_backend_env()
 
 logger = logging.getLogger(__name__)
 OpenDartReader = dart_client.OpenDartReader
+_LOW_QUALITY_RATIO_LIMIT = 100.0
 
 
 def _get_dart():
@@ -321,6 +322,8 @@ def calc_financial_ratios(fs: dict) -> dict:
     net_income    = fs["당기순이익"]
     op_income     = fs["영업이익"]
     interest_exp  = fs["이자비용"]
+    interest_source_account = fs.get("이자비용_원본계정")
+    interest_quality = str(fs.get("이자비용_품질") or "").strip().lower() or None
     ocf           = fs["영업현금흐름"]
     capex         = fs["유형자산취득"]   # 0.0이면 데이터 없음
 
@@ -342,13 +345,47 @@ def calc_financial_ratios(fs: dict) -> dict:
     # 당좌자산 = 유동자산 - 재고자산
     quick_assets = fs["유동자산"] - fs["재고자산"]
 
+    ratio_note: str | None = None
+    interest_for_ratio = interest_exp
+    estimated_interest_ratio = False
+    if interest_quality == "low":
+        estimated_interest_ratio = True
+        interest_for_ratio = abs(interest_exp)
+        ratio_note = (
+            f"이자보상배율 관련 지표는 {interest_source_account or '금융원가'} 기준 "
+            "추정 이자비용으로 산출했습니다."
+        )
+
+    interest_coverage = (
+        op_income / interest_for_ratio if interest_for_ratio > 0 else None
+    )
+    ebitda_to_interest = (
+        ebitda / interest_for_ratio
+        if (ebitda > 0 and interest_for_ratio > 0)
+        else None
+    )
+
+    if estimated_interest_ratio:
+        if interest_coverage is not None and abs(interest_coverage) > _LOW_QUALITY_RATIO_LIMIT:
+            interest_coverage = None
+            ratio_note = (
+                f"{interest_source_account or '금융원가'} 기준 추정치의 왜곡 가능성이 커 "
+                "이자보상배율 산출을 제외했습니다."
+            )
+        if ebitda_to_interest is not None and abs(ebitda_to_interest) > _LOW_QUALITY_RATIO_LIMIT:
+            ebitda_to_interest = None
+            ratio_note = (
+                f"{interest_source_account or '금융원가'} 기준 추정치의 왜곡 가능성이 커 "
+                "EBITDA/이자비용 산출을 제외했습니다."
+            )
+
     return {
         # 안정성
         "debt_ratio":        fs["부채총계"] / equity,
         "current_ratio":     fs["유동자산"] / current_liab,
         "quick_ratio":       quick_assets / current_liab,
         "borrow_dep":        total_borrow / total_assets,   # 차입금의존도
-        "interest_coverage": op_income / interest_exp if interest_exp > 0 else None,   # 이자보상배율
+        "interest_coverage": interest_coverage,   # 이자보상배율
 
         # 활동성
         "receivable_turnover": revenue / max(fs["매출채권"], 1),
@@ -372,7 +409,11 @@ def calc_financial_ratios(fs: dict) -> dict:
         "ebitda":             ebitda,
         "ebitda_margin":      ebitda / revenue,
         "net_debt_to_ebitda": net_debt / ebitda if ebitda > 0 else None,
-        "ebitda_to_interest": ebitda / interest_exp if (ebitda > 0 and interest_exp > 0) else None,
+        "ebitda_to_interest": ebitda_to_interest,
+        "interest_expense_source_account": interest_source_account,
+        "interest_expense_quality": interest_quality,
+        "interest_ratio_estimated": estimated_interest_ratio,
+        "interest_ratio_note": ratio_note,
     }
 
 

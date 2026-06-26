@@ -176,6 +176,17 @@ class TestNoneValues:
         assert pg["debt_ratio"]["grade"]         is not None
         assert pg["borrow_dep"]["grade"]         is not None
 
+    def test_low_quality_interest_metric_is_excluded_from_reference(self):
+        ratios = _make_ratios(
+            ebitda_to_interest=6.0,
+            interest_expense_quality="low",
+        )
+        result = calc_kr_financial_grades(ratios, "corporate_제조")
+        ei = result["per_metric_grades"]["ebitda_to_interest"]
+        assert ei["grade"] is None
+        assert ei["note"] == "금융원가 기반 추정치로 참고 제외"
+        assert "금융원가 기반 추정치" in result["scope_note"]
+
 
 # ── 4. 지원하지 않는 sub_sector ──────────────────────────────────────────────
 

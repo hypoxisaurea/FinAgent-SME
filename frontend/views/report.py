@@ -290,6 +290,59 @@ def _inject_styles() -> None:
             color: #627287;
             font-weight: 700;
         }
+        .metric-label-row, .mini-label-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .mini-trust-badge, .metric-trust-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 52px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            line-height: 1.2;
+            border: 1px solid transparent;
+        }
+        .mini-trust-badge.quality-high, .metric-trust-badge.quality-high {
+            background: #e8f8ee;
+            color: #1f7a46;
+            border-color: #b7e4c8;
+        }
+        .mini-trust-badge.quality-medium, .metric-trust-badge.quality-medium {
+            background: #fff7db;
+            color: #9a6a00;
+            border-color: #f3d36b;
+        }
+        .mini-trust-badge.quality-low, .metric-trust-badge.quality-low {
+            background: #fff0f0;
+            color: #c0392b;
+            border-color: #f0b5af;
+        }
+        .metric-guide {
+            margin-top: 10px;
+            padding: 12px 14px;
+            border: 1px solid #dbe4ef;
+            border-radius: 14px;
+            background: #f9fbfd;
+        }
+        .metric-guide-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            color: #526277;
+            font-size: 0.84rem;
+            line-height: 1.5;
+        }
+        .metric-guide-row + .metric-guide-row {
+            margin-top: 6px;
+        }
         .ratio-value {
             color: #1f2937;
             font-weight: 700;
@@ -558,6 +611,26 @@ def _render_financial_health_section(section: dict[str, Any]) -> None:
             unsafe_allow_html=True,
         )
         _render_metric_boxes(section.get("metrics"), columns_per_row=4)
+        metric_badge_guide = section.get("metric_badge_guide") or []
+        if metric_badge_guide:
+            guide_rows = []
+            for badge, description in metric_badge_guide:
+                badge_key = str(badge).strip().lower()
+                guide_rows.append(
+                    '<div class="metric-guide-row">'
+                    f'<span class="mini-trust-badge quality-{escape(badge_key)}">{escape(str(badge).upper())}</span>'
+                    f'<span>{escape(str(description))}</span>'
+                    '</div>'
+                )
+            st.markdown(
+                (
+                    '<div class="metric-guide">'
+                    '<div class="mini-label" style="margin-bottom: 8px;">참고: 이자보상배율 신뢰도 기준</div>'
+                    f'{"".join(guide_rows)}'
+                    '</div>'
+                ),
+                unsafe_allow_html=True,
+            )
         st.markdown(
             '<div class="subsection-title" style="margin-top: 1rem;">주요 재무 비율</div>',
             unsafe_allow_html=True,
@@ -579,6 +652,16 @@ def _render_financial_health_section(section: dict[str, Any]) -> None:
             f'<div class="item-chip">{escape(str(section.get("credit_impact") or "-"))}</div>',
             unsafe_allow_html=True,
         )
+        interest_ratio_note = str(section.get("interest_ratio_note") or "").strip()
+        if interest_ratio_note:
+            st.markdown(
+                '<div class="subsection-title" style="margin-top: 1rem;">이자비용 산출 참고</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f'<div class="item-chip">{escape(interest_ratio_note)}</div>',
+                unsafe_allow_html=True,
+            )
         kr_reference = section.get("kr_reference")
         if isinstance(kr_reference, dict) and kr_reference.get("rows"):
             st.markdown(
@@ -732,7 +815,7 @@ def _render_ratio_groups(groups: list[dict[str, Any]] | None) -> None:
             )
 
 
-def _render_metric_boxes(metrics: list[tuple[Any, Any]] | None, columns_per_row: int = 4) -> None:
+def _render_metric_boxes(metrics: list[tuple[Any, Any] | tuple[Any, Any, Any]] | None, columns_per_row: int = 4) -> None:
     if not metrics:
         st.markdown(
             '<div class="item-chip">표시할 핵심 지표가 없습니다.</div>',
@@ -746,10 +829,25 @@ def _render_metric_boxes(metrics: list[tuple[Any, Any]] | None, columns_per_row:
         for index, column in enumerate(columns):
             if index >= len(row):
                 continue
-            label, value = row[index]
+            metric = row[index]
+            label = metric[0]
+            value = metric[1]
+            badge = metric[2] if len(metric) > 2 else None
+            badge_html = ""
+            if badge:
+                badge_key = str(badge).strip().lower()
+                badge_html = (
+                    f'<span class="mini-trust-badge quality-{escape(badge_key)}">'
+                    f"{escape(str(badge).upper())}</span>"
+                )
             with column:
                 st.markdown(
-                    f'<div class="mini-box"><div class="mini-label">{escape(str(label))}</div><div class="mini-value">{escape(str(value))}</div></div>',
+                    (
+                        '<div class="mini-box">'
+                        f'<div class="mini-label-row"><div class="mini-label">{escape(str(label))}</div>{badge_html}</div>'
+                        f'<div class="mini-value">{escape(str(value))}</div>'
+                        '</div>'
+                    ),
                     unsafe_allow_html=True,
                 )
 
@@ -1054,10 +1152,44 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
             for label, value in rows
         )
 
-    def render_metrics(metrics: list[tuple[str, Any]]) -> str:
-        return "".join(
-            f"<div class='metric'><div class='label'>{escape(str(label))}</div><div class='value'>{escape(str(value))}</div></div>"
-            for label, value in metrics
+    def render_metrics(metrics: list[tuple[str, Any] | tuple[str, Any, Any]]) -> str:
+        rendered: list[str] = []
+        for metric in metrics:
+            label = metric[0]
+            value = metric[1]
+            badge = metric[2] if len(metric) > 2 else None
+            badge_html = ""
+            if badge:
+                badge_key = str(badge).strip().lower()
+                badge_html = (
+                    f"<span class='metric-trust-badge quality-{escape(badge_key)}'>"
+                    f"{escape(str(badge).upper())}</span>"
+                )
+            rendered.append(
+                "<div class='metric'>"
+                f"<div class='metric-label-row'><div class='label'>{escape(str(label))}</div>{badge_html}</div>"
+                f"<div class='value'>{escape(str(value))}</div>"
+                "</div>"
+            )
+        return "".join(rendered)
+
+    def render_metric_badge_guide(rows: list[tuple[str, str]]) -> str:
+        if not rows:
+            return ""
+        rendered = []
+        for badge, description in rows:
+            badge_key = str(badge).strip().lower()
+            rendered.append(
+                "<div class='metric-guide-row'>"
+                f"<span class='metric-trust-badge quality-{escape(badge_key)}'>{escape(str(badge).upper())}</span>"
+                f"<span>{escape(str(description))}</span>"
+                "</div>"
+            )
+        return (
+            "<div class='metric-guide'>"
+            "<div class='label' style='margin-bottom: 8px;'>참고: 이자보상배율 신뢰도 기준</div>"
+            f"{''.join(rendered)}"
+            "</div>"
         )
 
     def render_history_rows(rows: list[tuple[str, Any, Any, Any, Any, Any, Any]]) -> str:
@@ -1246,8 +1378,10 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
       <div class="card">
         <div class="section-title">{escape(str(sections["financial_health"]["title"]))}</div>
         <div class="metric-grid">{render_metrics(sections["financial_health"].get("metrics", []))}</div>
+        {render_metric_badge_guide(sections["financial_health"].get("metric_badge_guide", []))}
         <div class="box" style="margin-top: 12px;">{escape(str(sections["financial_health"].get("interpretation") or "-"))}</div>
         <div class="box">{escape(str(sections["financial_health"].get("credit_impact") or "-"))}</div>
+        {f'<div class="box">{escape(str(sections["financial_health"].get("interest_ratio_note") or ""))}</div>' if sections["financial_health"].get("interest_ratio_note") else ""}
         {render_kr_reference(sections["financial_health"].get("kr_reference"))}
       </div>
 

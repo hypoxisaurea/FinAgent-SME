@@ -413,6 +413,8 @@ def _build_financial_statement(row: dict[str, Any]) -> dict[str, Any]:
     operating_income = _coalesce_amount(row.get("operating_income"))
     net_income = _coalesce_amount(row.get("net_income"))
     interest_expense = _coalesce_amount(row.get("interest_expense"))
+    interest_expense_source_account = row.get("interest_expense_source_account")
+    interest_expense_quality = row.get("interest_expense_quality")
     operating_cashflow = _coalesce_amount(row.get("operating_cashflow"))
     capital_expenditure = _coalesce_amount(row.get("capital_expenditure"))
 
@@ -438,6 +440,8 @@ def _build_financial_statement(row: dict[str, Any]) -> dict[str, Any]:
         "영업이익": operating_income or 0.0,
         "당기순이익": net_income or 0.0,
         "이자비용": interest_expense or 0.0,
+        "이자비용_원본계정": str(interest_expense_source_account or "").strip() or None,
+        "이자비용_품질": str(interest_expense_quality or "").strip().lower() or None,
         "영업현금흐름": operating_cashflow or 0.0,
         "유형자산취득": capital_expenditure or 0.0,
         "avg_revenue_last_3y": _to_float(row.get("avg_revenue_last_3y")),

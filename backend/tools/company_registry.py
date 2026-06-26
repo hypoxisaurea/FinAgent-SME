@@ -85,7 +85,15 @@ STATEMENT_DETAIL_ACCOUNT_MAP = {
     "cost_of_goods_sold": ["매출원가", "영업비용"],
     "operating_income": ["영업이익", "영업이익(손실)"],
     "net_income": ["당기순이익(손실)", "당기순이익"],
-    "interest_expense": ["금융비용", "이자비용"],
+    "interest_expense": [
+        "금융비용",
+        "이자비용",
+        "이자비용(금융비용)",
+        "이자비용(금융원가)",
+        "총금융비용",
+        "금융원가",
+        "지급이자",
+    ],
     "operating_cashflow": ["영업활동현금흐름", "영업활동 현금흐름"],
     "capital_expenditure": ["유형자산의 취득", "유형자산취득"],
 }
@@ -115,6 +123,8 @@ STATEMENT_DETAIL_COLUMNS = [
     "operating_income",
     "net_income",
     "interest_expense",
+    "interest_expense_source_account",
+    "interest_expense_quality",
     "operating_cashflow",
     "capital_expenditure",
     "audit_opinion",
@@ -391,7 +401,12 @@ def build_account_subset_dataframe(
         "frmtrm_amount",
         "bfefrmtrm_amount",
     ]
-    subset_df = raw_df[raw_df["account_nm"].isin(target_accounts)].copy()
+    normalized_targets = {
+        normalize_account_name(account_name) for account_name in target_accounts
+    }
+    subset_df = raw_df[
+        raw_df["account_nm"].map(normalize_account_name).isin(normalized_targets)
+    ].copy()
     for column in columns:
         if column not in subset_df.columns:
             subset_df[column] = None
@@ -439,6 +454,46 @@ def extract_account_amount(
     return float(value)
 
 
+def extract_account_amount_with_source(
+    statement_df: pd.DataFrame,
+    amount_column: str,
+    candidate_names: list[str],
+) -> tuple[float | None, str | None]:
+    if statement_df.empty:
+        return None, None
+
+    normalized_candidates = {
+        normalize_account_name(candidate_name)
+        for candidate_name in candidate_names
+    }
+    matched_rows = statement_df[
+        statement_df["account_nm"].map(normalize_account_name).isin(
+            normalized_candidates
+        )
+    ]
+    if matched_rows.empty:
+        return None, None
+
+    matched_row = matched_rows.iloc[0]
+    value = matched_row[amount_column]
+    if pd.isna(value):
+        return None, str(matched_row.get("account_nm") or "").strip() or None
+    return float(value), str(matched_row.get("account_nm") or "").strip() or None
+
+
+def classify_interest_expense_quality(source_account: str | None) -> str | None:
+    normalized_source = normalize_account_name(source_account)
+    if not normalized_source:
+        return None
+    if normalized_source.startswith("이자비용"):
+        return "high"
+    if normalized_source in {"금융비용"}:
+        return "medium"
+    if normalized_source in {"금융원가", "총금융비용", "지급이자"}:
+        return "low"
+    return "medium"
+
+
 def build_statement_detail_records(
     statement_df: pd.DataFrame,
     *,
@@ -470,7 +525,19 @@ def build_statement_detail_records(
         }
 
         for column_name, candidate_names in STATEMENT_DETAIL_ACCOUNT_MAP.items():
-            value = extract_account_amount(statement_df, amount_column, candidate_names)
+            if column_name == "interest_expense":
+                value, source_account = extract_account_amount_with_source(
+                    statement_df,
+                    amount_column,
+                    candidate_names,
+                )
+                quality = classify_interest_expense_quality(source_account)
+                if value is not None and quality == "low":
+                    value = abs(value)
+                record["interest_expense_source_account"] = source_account
+                record["interest_expense_quality"] = quality
+            else:
+                value = extract_account_amount(statement_df, amount_column, candidate_names)
             if column_name == "capital_expenditure" and value is not None:
                 value = abs(value)
             record[column_name] = value
