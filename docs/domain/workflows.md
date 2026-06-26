@@ -29,11 +29,15 @@
 
 ## 공개 Job API 계약
 
-현재 프론트엔드 기본 흐름은 아래 3개 엔드포인트를 사용한다.
+현재 프론트엔드 기본 흐름은 아래 엔드포인트를 사용한다.
 
 - `POST /api/v1/workflows/jobs`
+- `GET /api/v1/workflows/jobs/{job_id}/stream`
 - `GET /api/v1/workflows/jobs/{job_id}`
 - `GET /api/v1/workflows/jobs/{job_id}/result`
+
+Streamlit 프론트엔드는 `stream` SSE endpoint를 우선 소비하고, 연결이 실패하면
+상태 조회 endpoint polling으로 fallback한다.
 
 호환용 동기 엔드포인트도 유지된다.
 
@@ -130,8 +134,10 @@
    - 오케스트레이터가 최종 `context`와 `steps`를 조립해 반환한다.
    - runner가 workflow 결과와 `step_summary`를 저장하고 job을 `succeeded` 또는 `failed`로 마감한다.
 
-8. **상태 조회 및 결과 fetch**
-   - 프론트는 `GET /api/v1/workflows/jobs/{job_id}`로 상태를 polling 한다.
+8. **상태 stream 및 결과 fetch**
+   - 프론트는 `GET /api/v1/workflows/jobs/{job_id}/stream`으로 SSE 상태 이벤트를 수신한다.
+   - SSE 이벤트는 `queued`, `running`, `progress`, `complete`, `error` 중 하나다.
+   - SSE 연결이 실패하면 `GET /api/v1/workflows/jobs/{job_id}` polling으로 대체한다.
    - `status=succeeded`가 되면 `/result`에서 최종 workflow 결과를 가져온다.
 
 ## 상태값 규칙

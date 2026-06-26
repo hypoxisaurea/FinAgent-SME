@@ -4,7 +4,7 @@
 
 - 시스템명: `FinAgent-SME`
 - 목적: 현재 구현된 심사 요청, 데이터 구축, 결과 검증 흐름을 정의한다
-- 기준 범위: `Streamlit -> FastAPI -> WorkflowOrchestrator -> Agent Graph -> Report/Validation`
+- 기준 범위: `Streamlit -> FastAPI Job API -> WorkflowJobRunner -> WorkflowOrchestrator -> Agent Graph -> Report/Validation`
 
 ## 2. 액터 정의
 
@@ -37,7 +37,7 @@
 
 | 항목 | 내용 |
 | --- | --- |
-| 트리거 | 사용자가 검색 화면에서 회사명을 입력하고 `검색` 버튼을 누른다 |
+| 트리거 | 사용자가 검색 화면에서 회사명을 입력하고 `심사 시작` 버튼을 누른다 |
 | 선행조건 | 백엔드와 DB가 동작 중이며 기업 마스터가 적재돼 있다 |
 | 후행조건 | workflow job이 접수되고, 완료 후 최종 결과를 조회할 수 있다 |
 
@@ -48,7 +48,7 @@
 3. API가 요청을 검증하고 `request_id`와 `job_id`를 발급한다.
 4. API가 job을 `queued` 상태로 저장하고 `202 Accepted`를 반환한다.
 5. background worker가 job을 `running`으로 바꾸고 워크플로우를 실행한다.
-6. UI가 `GET /api/v1/workflows/jobs/{job_id}`를 polling 한다.
+6. UI가 `GET /api/v1/workflows/jobs/{job_id}/stream` SSE 이벤트를 우선 수신한다.
 7. 대상 기업이면 분석, 판단, 리포트, 검증을 수행한다.
 8. worker가 최종 결과를 저장하고 job을 종료한다.
 9. UI가 `GET /api/v1/workflows/jobs/{job_id}/result`로 최종 결과를 가져온다.
@@ -60,6 +60,7 @@
 - 내부 예외: job은 `failed`, 상태 조회에서 `error_code`, `message` 확인 가능
 - validation 재시도 소진: job은 `failed / VALIDATION_FAILED`, 결과 조회는 `409 JOB_FAILED`
 - 미완료 job 결과 조회: `409 JOB_NOT_COMPLETED`
+- SSE 연결 실패: UI가 `GET /api/v1/workflows/jobs/{job_id}` polling으로 진행 상태를 조회
 
 ### UC-02 대상 기업 판별
 

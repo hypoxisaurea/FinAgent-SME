@@ -22,7 +22,7 @@
 7. `risk_event`는 뉴스 결과 이후, `industry_analyst`는 재무 결과 이후 실행됩니다.
 8. `decision` -> `report` -> `validation`이 순차 실행됩니다. 검증 실패 시 기본 1회 `report` 생성과 검증을 재실행합니다.
 9. 재검증 실패는 판단/보고서를 차단하고, runner가 job을 `failed / VALIDATION_FAILED`로 마감합니다. 그 외 결과는 `succeeded`로 저장합니다.
-10. 프론트는 `GET /api/v1/workflows/jobs/{job_id}`와 `/result`를 polling/fetch 합니다.
+10. 프론트는 `GET /api/v1/workflows/jobs/{job_id}/stream` SSE를 우선 소비하고, 실패 시 `GET /api/v1/workflows/jobs/{job_id}` polling으로 fallback한 뒤 `/result`를 fetch 합니다.
 
 참고:
 
@@ -62,6 +62,7 @@ backend/
 ### `api/routes/workflows.py`
 
 - `POST /api/v1/workflows/jobs`
+- `GET /api/v1/workflows/jobs/{job_id}/stream`
 - `GET /api/v1/workflows/jobs/{job_id}`
 - `GET /api/v1/workflows/jobs/{job_id}/result`
 - `POST /api/v1/workflows/orchestrator`
@@ -192,7 +193,7 @@ backend/
 - `queued`: DB에 등록됐지만 아직 worker가 claim 하지 않음
 - `running`: worker가 claim 했고 workflow 실행 중
 - `succeeded`: 최종 workflow 결과 저장 완료
-- `failed`: 입력 오류 또는 workflow 실행 오류로 종료
+- `failed`: 입력 오류, workflow 실행 오류, timeout, validation gate 차단으로 종료
 
 ## 환경 변수
 

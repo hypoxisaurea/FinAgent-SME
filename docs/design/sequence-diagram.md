@@ -28,10 +28,16 @@ sequenceDiagram
     API->>DB: workflow_jobs insert (queued)
     API-->>UI: 202 + job_id
 
-    loop 2초 간격
+    loop SSE status stream
+        UI->>API: GET /api/v1/workflows/jobs/{job_id}/stream
+        API->>DB: workflow_jobs 조회
+        API-->>UI: event=queued|running|progress|complete|error
+    end
+
+    opt SSE 연결 실패
         UI->>API: GET /api/v1/workflows/jobs/{job_id}
         API->>DB: workflow_jobs 조회
-        API-->>UI: status=queued|running|succeeded|failed
+        API-->>UI: polling status payload
     end
 
     WORKER->>DB: queued job claim
