@@ -7,7 +7,10 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from views.report_view_model import build_report_view_model
+try:
+    from views.report_view_model import build_report_view_model
+except ModuleNotFoundError:  # pragma: no cover - package import fallback for tests
+    from frontend.views.report_view_model import build_report_view_model
 
 
 def render() -> None:
@@ -16,6 +19,12 @@ def render() -> None:
         return
 
     result = st.session_state.last_result
+    if _is_validation_blocked(result):
+        message = result.get("message") or "최종 결과 검증에 실패하여 심사 결과가 차단되었습니다."
+        st.error(message)
+        st.caption(f"오류 코드: {result.get('code') or 'VALIDATION_FAILED'}")
+        return
+
     context = result.get("context", {}) if isinstance(result, dict) else {}
     report = context.get("report") if isinstance(context, dict) else None
     steps = result.get("steps", []) if isinstance(result, dict) else []
@@ -35,27 +44,25 @@ def render() -> None:
     _render_table_section(sections["company"])
     _render_financial_health_section(sections["financial_health"])
     _render_growth_trend_section(sections["growth_trend"])
+    _render_industry_analysis_section(sections["industry_analysis"])
     _render_non_financial_events_section(sections["non_financial_events"])
     _render_default_risk_section(sections["default_risk"])
     _render_decision_rationale_section(sections["decision_rationale"])
     _render_monitoring_section(sections["monitoring"])
-    _render_agent_verification(report_step, decision_step, report_payload)
 
     st.markdown("---")
-    _render_pdf_print_button(view_model)
+    _render_report_actions(view_model)
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.download_button(
-            "JSON 다운로드",
-            data=json.dumps(result, ensure_ascii=False, indent=2),
-            file_name="credit_assessment_result.json",
-            mime="application/json",
-        )
-    with col2:
-        if st.button("다시 검색 페이지로 이동"):
-            st.session_state.page = "Search"
-            st.rerun()
+
+def _is_validation_blocked(result: Any) -> bool:
+    if not isinstance(result, dict):
+        return False
+    context = result.get("context")
+    gate_blocked = (
+        isinstance(context, dict)
+        and context.get("validation_gate_status") == "blocked"
+    )
+    return gate_blocked or result.get("code") == "VALIDATION_FAILED"
 
 
 def _inject_styles() -> None:
@@ -94,6 +101,34 @@ def _inject_styles() -> None:
         .st-key-overview-card-box {
             background: linear-gradient(180deg, #f6fbff 0%, #eef5fb 100%);
             border: 1px solid #d7e6f4;
+        }
+        .st-key-report-actions {
+            margin-top: 1.2rem;
+        }
+        .st-key-report-actions [data-testid="stHorizontalBlock"] {
+            align-items: center;
+        }
+        .st-key-report-actions [data-testid="column"]:first-child {
+            display: flex;
+            justify-content: flex-start;
+        }
+        .st-key-report-actions [data-testid="column"]:last-child {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .st-key-report-actions .stButton > button {
+            min-width: 180px;
+            height: 2.9rem;
+            border-radius: 10px;
+            border: 1px solid #d7e6f4;
+            background: #ffffff;
+            color: #1f3552;
+            font-weight: 800;
+        }
+        .st-key-report-actions .stButton > button:hover {
+            border-color: #b8d3ed;
+            color: #1157a8;
+            background: #f6fbff;
         }
         .st-key-growth-trend-card {
             background: #ffffff;
@@ -269,6 +304,59 @@ def _inject_styles() -> None:
             color: #627287;
             font-weight: 700;
         }
+        .metric-label-row, .mini-label-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .mini-trust-badge, .metric-trust-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 52px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            line-height: 1.2;
+            border: 1px solid transparent;
+        }
+        .mini-trust-badge.quality-high, .metric-trust-badge.quality-high {
+            background: #e8f8ee;
+            color: #1f7a46;
+            border-color: #b7e4c8;
+        }
+        .mini-trust-badge.quality-medium, .metric-trust-badge.quality-medium {
+            background: #fff7db;
+            color: #9a6a00;
+            border-color: #f3d36b;
+        }
+        .mini-trust-badge.quality-low, .metric-trust-badge.quality-low {
+            background: #fff0f0;
+            color: #c0392b;
+            border-color: #f0b5af;
+        }
+        .metric-guide {
+            margin-top: 10px;
+            padding: 12px 14px;
+            border: 1px solid #dbe4ef;
+            border-radius: 14px;
+            background: #f9fbfd;
+        }
+        .metric-guide-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            color: #526277;
+            font-size: 0.84rem;
+            line-height: 1.5;
+        }
+        .metric-guide-row + .metric-guide-row {
+            margin-top: 6px;
+        }
         .ratio-value {
             color: #1f2937;
             font-weight: 700;
@@ -287,12 +375,14 @@ def _inject_styles() -> None:
             margin-bottom: 12px;
         }
         .timeline-item.severity-critical {
-            border-left-color: #c23b49;
-            background: #fff5f6;
+            border-left-color: #dc2626;
+            background: #fff1f2;
+            border-color: #fecdd3;
         }
         .timeline-item.severity-high {
-            border-left-color: #d06c2c;
-            background: #fff8f2;
+            border-left-color: #dc2626;
+            background: #fff1f2;
+            border-color: #fecdd3;
         }
         .timeline-item.severity-medium {
             border-left-color: #d0a52c;
@@ -303,8 +393,26 @@ def _inject_styles() -> None:
             background: #f5fbf7;
         }
         .timeline-item.severity-positive {
-            border-left-color: #2b8a5a;
-            background: #effaf4;
+            border-left-color: #2563eb;
+            background: #eff6ff;
+        }
+        .timeline-item.event-positive {
+            border-left-color: #2563eb;
+            background: #eff6ff;
+            border-color: #bfdbfe;
+        }
+        .timeline-item.event-positive .timeline-meta,
+        .timeline-item.event-positive .timeline-title {
+            color: #1d4ed8;
+        }
+        .timeline-item.event-negative {
+            border-left-color: #dc2626 !important;
+            background: #fff1f2 !important;
+            border-color: #fecdd3 !important;
+        }
+        .timeline-item.event-negative .timeline-meta,
+        .timeline-item.event-negative .timeline-title {
+            color: #be123c;
         }
         .timeline-meta {
             color: #627287;
@@ -517,6 +625,26 @@ def _render_financial_health_section(section: dict[str, Any]) -> None:
             unsafe_allow_html=True,
         )
         _render_metric_boxes(section.get("metrics"), columns_per_row=4)
+        metric_badge_guide = section.get("metric_badge_guide") or []
+        if metric_badge_guide:
+            guide_rows = []
+            for badge, description in metric_badge_guide:
+                badge_key = str(badge).strip().lower()
+                guide_rows.append(
+                    '<div class="metric-guide-row">'
+                    f'<span class="mini-trust-badge quality-{escape(badge_key)}">{escape(str(badge).upper())}</span>'
+                    f'<span>{escape(str(description))}</span>'
+                    '</div>'
+                )
+            st.markdown(
+                (
+                    '<div class="metric-guide">'
+                    '<div class="mini-label" style="margin-bottom: 8px;">참고: 이자보상배율 신뢰도 기준</div>'
+                    f'{"".join(guide_rows)}'
+                    '</div>'
+                ),
+                unsafe_allow_html=True,
+            )
         st.markdown(
             '<div class="subsection-title" style="margin-top: 1rem;">주요 재무 비율</div>',
             unsafe_allow_html=True,
@@ -538,6 +666,37 @@ def _render_financial_health_section(section: dict[str, Any]) -> None:
             f'<div class="item-chip">{escape(str(section.get("credit_impact") or "-"))}</div>',
             unsafe_allow_html=True,
         )
+        interest_ratio_note = str(section.get("interest_ratio_note") or "").strip()
+        if interest_ratio_note:
+            st.markdown(
+                '<div class="subsection-title" style="margin-top: 1rem;">이자비용 산출 참고</div>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f'<div class="item-chip">{escape(interest_ratio_note)}</div>',
+                unsafe_allow_html=True,
+            )
+        kr_reference = section.get("kr_reference")
+        if isinstance(kr_reference, dict) and kr_reference.get("rows"):
+            st.markdown(
+                '<div class="subsection-title" style="margin-top: 1rem;">KR 업종별 참고지표</div>',
+                unsafe_allow_html=True,
+            )
+            methodology = str(kr_reference.get("methodology") or "-")
+            st.markdown(
+                f'<div class="item-chip">방법론: {escape(methodology)}</div>',
+                unsafe_allow_html=True,
+            )
+            st.table(
+                [
+                    {"지표": metric, "등급": grade, "가중치": weight}
+                    for metric, grade, weight in kr_reference.get("rows", [])
+                ]
+            )
+            st.markdown(
+                f'<div class="item-chip">{escape(str(kr_reference.get("scope_note") or "-"))}</div>',
+                unsafe_allow_html=True,
+            )
 
 
 def _render_growth_trend_section(section: dict[str, Any]) -> None:
@@ -590,6 +749,33 @@ def _render_growth_trend_section(section: dict[str, Any]) -> None:
             )
 
 
+def _render_industry_analysis_section(section: dict[str, Any]) -> None:
+    st.markdown(
+        f"""
+        <div class="report-card">
+            <div class="card-title">{escape(str(section["title"]))}</div>
+            <div class="split-grid">
+                <div>
+                    <div class="subsection-title">업종 특성 및 업황</div>
+                    <div class="item-chip">{escape(str(section.get("sector_note") or "-"))}</div>
+                    <div class="item-chip">업황 점수: {escape(str(section.get("outlook_score") or "-"))}</div>
+                    <div class="item-chip">경기 국면: {escape(str(section.get("business_cycle_phase") or "-"))}</div>
+                    <div class="item-chip">{escape(str(section.get("outlook_note") or "-"))}</div>
+                    <div class="item-chip">{escape(str(section.get("macro_note") or "-"))}</div>
+                    <div class="subsection-title">동종업계 비교 하이라이트</div>
+                    {_render_chip_list(section.get("peer_highlights"), "item-chip")}
+                </div>
+                <div>
+                    <div class="subsection-title">주요 산업 리스크</div>
+                    {_render_chip_list(section.get("methodology_risks"), "item-chip item-risk")}
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def _render_non_financial_events_section(section: dict[str, Any]) -> None:
     with st.container(border=False, key="non-financial-events-card"):
         st.markdown(
@@ -610,8 +796,10 @@ def _render_non_financial_events_section(section: dict[str, Any]) -> None:
                 ],
                 "item-chip",
             )
+            st.markdown('<div class="subsection-title" style="margin-top: 1rem;">재무 이상 탐지</div>', unsafe_allow_html=True)
+            _render_timeline_items(section.get("financial_anomaly_items"))
         with event_col:
-            st.markdown('<div class="subsection-title">Critical / High 중심 핵심 이벤트</div>', unsafe_allow_html=True)
+            st.markdown('<div class="subsection-title">핵심 리스크 이벤트</div>', unsafe_allow_html=True)
             _render_timeline_items(section.get("key_event_items"))
             st.markdown('<div class="subsection-title" style="margin-top: 1rem;">긍정 이벤트</div>', unsafe_allow_html=True)
             _render_timeline_items(section.get("positive_event_items"))
@@ -641,7 +829,7 @@ def _render_ratio_groups(groups: list[dict[str, Any]] | None) -> None:
             )
 
 
-def _render_metric_boxes(metrics: list[tuple[Any, Any]] | None, columns_per_row: int = 4) -> None:
+def _render_metric_boxes(metrics: list[tuple[Any, Any] | tuple[Any, Any, Any]] | None, columns_per_row: int = 4) -> None:
     if not metrics:
         st.markdown(
             '<div class="item-chip">표시할 핵심 지표가 없습니다.</div>',
@@ -655,10 +843,25 @@ def _render_metric_boxes(metrics: list[tuple[Any, Any]] | None, columns_per_row:
         for index, column in enumerate(columns):
             if index >= len(row):
                 continue
-            label, value = row[index]
+            metric = row[index]
+            label = metric[0]
+            value = metric[1]
+            badge = metric[2] if len(metric) > 2 else None
+            badge_html = ""
+            if badge:
+                badge_key = str(badge).strip().lower()
+                badge_html = (
+                    f'<span class="mini-trust-badge quality-{escape(badge_key)}">'
+                    f"{escape(str(badge).upper())}</span>"
+                )
             with column:
                 st.markdown(
-                    f'<div class="mini-box"><div class="mini-label">{escape(str(label))}</div><div class="mini-value">{escape(str(value))}</div></div>',
+                    (
+                        '<div class="mini-box">'
+                        f'<div class="mini-label-row"><div class="mini-label">{escape(str(label))}</div>{badge_html}</div>'
+                        f'<div class="mini-value">{escape(str(value))}</div>'
+                        '</div>'
+                    ),
                     unsafe_allow_html=True,
                 )
 
@@ -766,20 +969,37 @@ def _render_timeline_items(items: list[dict[str, Any]] | None) -> None:
 
     for item in items:
         severity_raw = str(item.get("severity_raw") or "").lower()
+        event_tone_class = _timeline_event_tone_class(item)
         severity = escape(str(item.get("severity") or "-"))
         date_text = escape(str(item.get("date") or "-"))
+        event_type = escape(str(item.get("event_type") or "-"))
+        source = escape(str(item.get("source") or "-"))
         title = escape(str(item.get("title") or "-"))
         impact = escape(str(item.get("impact") or "-"))
         st.markdown(
             f"""
-            <div class="timeline-item severity-{severity_raw}">
-                <div class="timeline-meta">{date_text} | {severity}</div>
+            <div class="timeline-item severity-{severity_raw} {event_tone_class}">
+                <div class="timeline-meta">{date_text} | {severity} | {event_type} | {source}</div>
                 <div class="timeline-title">{title}</div>
                 <div class="timeline-impact">{impact}</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
+
+
+def _timeline_event_tone_class(item: dict[str, Any]) -> str:
+    severity_raw = str(item.get("severity_raw") or "").strip().lower()
+    event_type = str(item.get("event_type") or "").strip().lower()
+    title = str(item.get("title") or "").strip().lower()
+
+    if severity_raw == "positive" or "긍정" in event_type or "positive" in event_type:
+        return "event-positive"
+    if severity_raw in {"critical", "high", "medium", "low", "negative"}:
+        return "event-negative"
+    if any(keyword in event_type or keyword in title for keyword in ("부정", "리스크", "위험", "이상")):
+        return "event-negative"
+    return ""
 
 
 def _render_default_risk_section(section: dict[str, Any]) -> None:
@@ -860,37 +1080,15 @@ def _render_monitoring_section(section: dict[str, Any]) -> None:
     )
 
 
-def _render_agent_verification(
-    report_step: dict[str, Any] | None,
-    decision_step: dict[str, Any] | None,
-    report: dict[str, Any],
-) -> None:
-    report_output = report_step.get("report") if isinstance(report_step, dict) else None
-    if report_output and report:
-        box_class = "inspect-box"
-        report_message = "ReportAgent output과 최종 context.report가 모두 존재합니다."
-    elif report_output:
-        box_class = "inspect-box warn"
-        report_message = "ReportAgent output은 있으나 최종 context.report는 비어 있습니다."
-    else:
-        box_class = "inspect-box danger"
-        report_message = "ReportAgent output을 찾지 못했습니다."
-
-    if decision_step:
-        decision_message = "DecisionAgent output이 존재하므로 ReportAgent 입력 검증이 가능합니다."
-    else:
-        decision_message = "DecisionAgent output을 찾지 못했습니다."
-
-    st.markdown(
-        f"""
-        <div class="{box_class}">
-            <div class="card-title" style="margin-bottom: 0.45rem;">에이전트 전달 검증</div>
-            <div class="body-copy">{report_message}</div>
-            <div class="body-copy" style="margin-top: 0.35rem;">{decision_message}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+def _render_report_actions(view_model: dict[str, Any]) -> None:
+    with st.container(border=False, key="report-actions"):
+        search_col, pdf_col = st.columns(2)
+        with search_col:
+            if st.button("검색 페이지로 이동"):
+                st.session_state.page = "Search"
+                st.rerun()
+        with pdf_col:
+            _render_pdf_print_button(view_model)
 
 
 def _render_pdf_print_button(view_model: dict[str, Any]) -> None:
@@ -898,21 +1096,32 @@ def _render_pdf_print_button(view_model: dict[str, Any]) -> None:
     encoded_html = json.dumps(printable_html)
     components.html(
         f"""
-        <div style="margin: 0.25rem 0 1rem 0;">
+        <style>
+          html, body {{
+            margin:0;
+            padding:0;
+            background:transparent;
+            overflow:hidden;
+          }}
+        </style>
+        <div style="display:flex; justify-content:flex-end; margin:0; background:transparent;">
           <button
             onclick="openPrintView()"
             style="
-              background:#eef5fb;
-              color:#1f3552;
-              border:1px solid #d7e6f4;
+              background:linear-gradient(135deg, #55b8ff 0%, #736cff 100%);
+              color:#ffffff;
+              border:0;
               border-radius:10px;
-              padding:10px 16px;
+              min-width:180px;
+              height:46px;
+              padding:0 16px;
               font-size:14px;
-              font-weight:600;
+              font-weight:800;
               cursor:pointer;
+              box-shadow:none;
             "
           >
-            PDF로 저장/인쇄
+            PDF로 저장
           </button>
         </div>
         <script>
@@ -927,7 +1136,7 @@ def _render_pdf_print_button(view_model: dict[str, Any]) -> None:
           }}
         </script>
         """,
-        height=60,
+        height=46,
     )
 
 
@@ -946,10 +1155,44 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
             for label, value in rows
         )
 
-    def render_metrics(metrics: list[tuple[str, Any]]) -> str:
-        return "".join(
-            f"<div class='metric'><div class='label'>{escape(str(label))}</div><div class='value'>{escape(str(value))}</div></div>"
-            for label, value in metrics
+    def render_metrics(metrics: list[tuple[str, Any] | tuple[str, Any, Any]]) -> str:
+        rendered: list[str] = []
+        for metric in metrics:
+            label = metric[0]
+            value = metric[1]
+            badge = metric[2] if len(metric) > 2 else None
+            badge_html = ""
+            if badge:
+                badge_key = str(badge).strip().lower()
+                badge_html = (
+                    f"<span class='metric-trust-badge quality-{escape(badge_key)}'>"
+                    f"{escape(str(badge).upper())}</span>"
+                )
+            rendered.append(
+                "<div class='metric'>"
+                f"<div class='metric-label-row'><div class='label'>{escape(str(label))}</div>{badge_html}</div>"
+                f"<div class='value'>{escape(str(value))}</div>"
+                "</div>"
+            )
+        return "".join(rendered)
+
+    def render_metric_badge_guide(rows: list[tuple[str, str]]) -> str:
+        if not rows:
+            return ""
+        rendered = []
+        for badge, description in rows:
+            badge_key = str(badge).strip().lower()
+            rendered.append(
+                "<div class='metric-guide-row'>"
+                f"<span class='metric-trust-badge quality-{escape(badge_key)}'>{escape(str(badge).upper())}</span>"
+                f"<span>{escape(str(description))}</span>"
+                "</div>"
+            )
+        return (
+            "<div class='metric-guide'>"
+            "<div class='label' style='margin-bottom: 8px;'>참고: 이자보상배율 신뢰도 기준</div>"
+            f"{''.join(rendered)}"
+            "</div>"
         )
 
     def render_history_rows(rows: list[tuple[str, Any, Any, Any, Any, Any, Any]]) -> str:
@@ -966,6 +1209,21 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
                 f"<td>{escape(str(net_income))}</td></tr>"
             )
             for year, total_assets, total_equity, total_assets_statement, revenue, operating_income, net_income in rows
+        )
+
+    def render_kr_reference(kr_reference: dict[str, Any] | None) -> str:
+        if not isinstance(kr_reference, dict) or not kr_reference.get("rows"):
+            return ""
+        rows_html = "".join(
+            f"<tr><td>{escape(str(metric))}</td><td>{escape(str(grade))}</td><td>{escape(str(weight))}</td></tr>"
+            for metric, grade, weight in kr_reference.get("rows", [])
+        )
+        return (
+            f"<div class='box' style='margin-top: 12px;'>방법론: {escape(str(kr_reference.get('methodology') or '-'))}</div>"
+            "<table style='margin-top: 8px;'>"
+            "<thead><tr><th>지표</th><th>등급</th><th>가중치</th></tr></thead>"
+            f"<tbody>{rows_html}</tbody></table>"
+            f"<div class='box'>{escape(str(kr_reference.get('scope_note') or '-'))}</div>"
         )
 
     return f"""
@@ -1123,8 +1381,11 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
       <div class="card">
         <div class="section-title">{escape(str(sections["financial_health"]["title"]))}</div>
         <div class="metric-grid">{render_metrics(sections["financial_health"].get("metrics", []))}</div>
+        {render_metric_badge_guide(sections["financial_health"].get("metric_badge_guide", []))}
         <div class="box" style="margin-top: 12px;">{escape(str(sections["financial_health"].get("interpretation") or "-"))}</div>
         <div class="box">{escape(str(sections["financial_health"].get("credit_impact") or "-"))}</div>
+        {f'<div class="box">{escape(str(sections["financial_health"].get("interest_ratio_note") or ""))}</div>' if sections["financial_health"].get("interest_ratio_note") else ""}
+        {render_kr_reference(sections["financial_health"].get("kr_reference"))}
       </div>
 
       <div class="card">
@@ -1145,6 +1406,23 @@ def _build_printable_html(view_model: dict[str, Any]) -> str:
           </thead>
           <tbody>{render_history_rows(sections["growth_trend"].get("history_rows", []))}</tbody>
         </table>
+      </div>
+
+      <div class="card">
+        <div class="section-title">{escape(str(sections["industry_analysis"]["title"]))}</div>
+        <div class="two-col">
+          <div>
+            <div class="box">{escape(str(sections["industry_analysis"].get("sector_note") or "-"))}</div>
+            <div class="box">업황 점수: {escape(str(sections["industry_analysis"].get("outlook_score") or "-"))}</div>
+            <div class="box">경기 국면: {escape(str(sections["industry_analysis"].get("business_cycle_phase") or "-"))}</div>
+            <div class="box">{escape(str(sections["industry_analysis"].get("outlook_note") or "-"))}</div>
+            <div class="box">{escape(str(sections["industry_analysis"].get("macro_note") or "-"))}</div>
+            <div class="box"><ul>{render_list(sections["industry_analysis"].get("peer_highlights", []))}</ul></div>
+          </div>
+          <div>
+            <div class="box"><ul>{render_list(sections["industry_analysis"].get("methodology_risks", []))}</ul></div>
+          </div>
+        </div>
       </div>
 
       <div class="card">

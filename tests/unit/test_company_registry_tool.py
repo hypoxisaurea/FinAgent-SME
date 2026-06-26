@@ -215,3 +215,91 @@ def test_build_account_subset_dataframe_tolerates_missing_prior_prior_amount() -
     assert subset_df.iloc[0]["thstrm_amount"] == 1000
     assert subset_df.iloc[0]["frmtrm_amount"] == 900
     assert company_registry.pd.isna(subset_df.iloc[0]["bfefrmtrm_amount"])
+
+
+def test_build_account_subset_dataframe_matches_normalized_account_names() -> None:
+    raw_df = company_registry.pd.DataFrame(
+        [
+            {
+                "corp_code": "00123456",
+                "stock_code": "123456",
+                "fs_div": "OFS",
+                "account_nm": "이자비용 (금융원가)",
+                "thstrm_amount": "120",
+                "frmtrm_amount": "100",
+                "bfefrmtrm_amount": "90",
+            }
+        ]
+    )
+
+    subset_df = company_registry.build_account_subset_dataframe(
+        raw_df,
+        ["이자비용(금융원가)"],
+    )
+
+    assert len(subset_df) == 1
+    assert subset_df.iloc[0]["account_nm"] == "이자비용 (금융원가)"
+
+
+def test_build_statement_detail_records_extracts_interest_expense_from_variant_name() -> None:
+    statement_df = company_registry.pd.DataFrame(
+        [
+            {
+                "corp_code": "00123456",
+                "stock_code": "123456",
+                "fs_div": "OFS",
+                "account_nm": "이자비용 (금융원가)",
+                "thstrm_amount": 120,
+                "frmtrm_amount": 100,
+                "bfefrmtrm_amount": 90,
+            }
+        ]
+    )
+
+    records = company_registry.build_statement_detail_records(
+        statement_df,
+        corp_code="00123456",
+        corp_name="테스트기업",
+        stock_code="123456",
+        business_year=2024,
+        avg_revenue_last_3y=1000.0,
+        audit_opinion="적정",
+        is_external_audit=True,
+    )
+
+    assert records[0]["interest_expense"] == 120.0
+    assert records[0]["interest_expense_source_account"] == "이자비용 (금융원가)"
+    assert records[0]["interest_expense_quality"] == "high"
+    assert records[1]["interest_expense"] == 100.0
+    assert records[2]["interest_expense"] == 90.0
+
+
+def test_build_statement_detail_records_normalizes_low_quality_interest_expense() -> None:
+    statement_df = company_registry.pd.DataFrame(
+        [
+            {
+                "corp_code": "00123456",
+                "stock_code": "123456",
+                "fs_div": "OFS",
+                "account_nm": "금융원가",
+                "thstrm_amount": -120,
+                "frmtrm_amount": -100,
+                "bfefrmtrm_amount": -90,
+            }
+        ]
+    )
+
+    records = company_registry.build_statement_detail_records(
+        statement_df,
+        corp_code="00123456",
+        corp_name="테스트기업",
+        stock_code="123456",
+        business_year=2024,
+        avg_revenue_last_3y=1000.0,
+        audit_opinion="적정",
+        is_external_audit=True,
+    )
+
+    assert records[0]["interest_expense"] == 120.0
+    assert records[0]["interest_expense_source_account"] == "금융원가"
+    assert records[0]["interest_expense_quality"] == "low"

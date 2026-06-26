@@ -36,8 +36,24 @@ def test_workflow_job_runner_completes_job(monkeypatch) -> None:
         "backend.data.services.workflow_job_runner.workflow_job_service.fail_workflow_job",
         lambda *args, **kwargs: None,
     )
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.workflow_job_service.update_workflow_job_progress",
+        lambda job_id, steps: None,
+    )
 
-    def fake_run_credit_workflow(company_name: str, request_id: str) -> dict[str, object]:
+    def fake_run_credit_workflow(
+        company_name: str,
+        request_id: str,
+        progress_callback=None,
+    ) -> dict[str, object]:
+        if progress_callback is not None:
+            progress_callback(
+                {
+                    "agent_name": "news_collector",
+                    "status": "success",
+                    "fallback_used": False,
+                }
+            )
         return {
             "request_id": request_id,
             "company_name": company_name,
@@ -62,6 +78,87 @@ def test_workflow_job_runner_completes_job(monkeypatch) -> None:
 
     assert completed["job_id"] == "job-123"
     assert completed["result"]["status"] == "success"
+
+
+def test_workflow_job_runner_updates_progress(monkeypatch) -> None:
+    queued_jobs = [
+        {
+            "job_id": "job-progress",
+            "request_id": "req-progress",
+            "company_name": "FinAgent",
+        }
+    ]
+    progress_updates: list[tuple[str, list[dict[str, object]]]] = []
+
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.workflow_job_service.fail_incomplete_workflow_jobs",
+        lambda: 0,
+    )
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.workflow_job_service.get_next_queued_workflow_job",
+        lambda: queued_jobs.pop(0) if queued_jobs else None,
+    )
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.workflow_job_service.claim_workflow_job",
+        lambda job_id: True,
+    )
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.workflow_job_service.complete_workflow_job",
+        lambda job_id, result: None,
+    )
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.workflow_job_service.fail_workflow_job",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.workflow_job_service.update_workflow_job_progress",
+        lambda job_id, steps: progress_updates.append((job_id, steps)),
+    )
+
+    def fake_run_credit_workflow(
+        company_name: str,
+        request_id: str,
+        progress_callback=None,
+    ) -> dict[str, object]:
+        assert progress_callback is not None
+        progress_callback(
+            {
+                "agent_name": "news_collector",
+                "status": "success",
+                "fallback_used": False,
+            }
+        )
+        progress_callback(
+            {
+                "agent_name": "industry_analyst",
+                "status": "partial",
+                "fallback_used": True,
+            }
+        )
+        return {
+            "request_id": request_id,
+            "company_name": company_name,
+            "status": "success",
+            "context": {},
+            "steps": [],
+        }
+
+    monkeypatch.setattr(
+        "backend.data.services.workflow_job_runner.run_credit_workflow_in_background",
+        fake_run_credit_workflow,
+    )
+
+    async def _run() -> None:
+        runner = WorkflowJobRunner(poll_interval_seconds=0.01)
+        await runner.start()
+        runner.notify_job_submitted()
+        await asyncio.sleep(0.05)
+        await runner.stop()
+
+    asyncio.run(_run())
+
+    assert progress_updates[0][0] == "job-progress"
+    assert len(progress_updates[-1][1]) == 2
 
 
 def test_workflow_job_runner_marks_failure(monkeypatch) -> None:
@@ -95,7 +192,11 @@ def test_workflow_job_runner_marks_failure(monkeypatch) -> None:
         lambda job_id, **kwargs: failed.update({"job_id": job_id, **kwargs}),
     )
 
-    def fake_run_credit_workflow(company_name: str, request_id: str) -> dict[str, object]:
+    def fake_run_credit_workflow(
+        company_name: str,
+        request_id: str,
+        progress_callback=None,
+    ) -> dict[str, object]:
         raise RuntimeError("boom")
 
     monkeypatch.setattr(
@@ -148,7 +249,7 @@ def test_workflow_job_runner_marks_blocked_validation_as_failed(monkeypatch) -> 
     )
     monkeypatch.setattr(
         "backend.data.services.workflow_job_runner.run_credit_workflow_in_background",
-        lambda company_name, request_id: {
+        lambda company_name, request_id, progress_callback=None: {
             "request_id": request_id,
             "company_name": company_name,
             "status": "failed",
@@ -201,7 +302,7 @@ def test_workflow_job_runner_does_not_mislabel_internal_value_error(monkeypatch)
     )
     monkeypatch.setattr(
         "backend.data.services.workflow_job_runner.run_credit_workflow_in_background",
-        lambda company_name, request_id: (_ for _ in ()).throw(
+        lambda company_name, request_id, progress_callback=None: (_ for _ in ()).throw(
             ValueError("internal response contract failed")
         ),
     )
@@ -287,7 +388,11 @@ def test_workflow_job_runner_marks_timeout_failure(monkeypatch) -> None:
         lambda job_id, **kwargs: failed.update({"job_id": job_id, **kwargs}),
     )
 
-    def fake_run_credit_workflow(company_name: str, request_id: str) -> dict[str, object]:
+    def fake_run_credit_workflow(
+        company_name: str,
+        request_id: str,
+        progress_callback=None,
+    ) -> dict[str, object]:
         time.sleep(0.05)
         return {
             "request_id": request_id,

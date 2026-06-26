@@ -1,68 +1,36 @@
 import json
 import logging
 import time
-from html import escape
 
 import requests
 import streamlit as st
-import streamlit.components.v1 as components
+
+try:
+    from frontend.services.workflow_stream import (
+        parse_sse_events,
+        read_next_workflow_stream_event,
+    )
+except ModuleNotFoundError:  # pragma: no cover - direct Streamlit entrypoint fallback
+    from services.workflow_stream import (
+        parse_sse_events,
+        read_next_workflow_stream_event,
+    )
 
 logger = logging.getLogger(__name__)
 
-
-STATUS_META: dict[str, dict[str, str | int]] = {
-    "submitting": {
-        "label": "접수 중",
-        "headline": "심사 작업을 생성하고 있습니다.",
-        "description": "입력한 기업 정보를 확인한 뒤 분석용 job을 등록하는 중입니다.",
-        "progress": 8,
-    },
-    "queued": {
-        "label": "접수 완료",
-        "headline": "심사 대기열에 작업이 등록되었습니다.",
-        "description": "수집 파이프라인을 준비하고 첫 번째 에이전트를 깨우는 중입니다.",
-        "progress": 18,
-    },
-    "running": {
-        "label": "분석 진행 중",
-        "headline": "에이전트들이 재무·리스크 신호를 읽고 있습니다.",
-        "description": "기업 정보 수집, 리스크 판단, 보고서 조립을 순차적으로 진행합니다.",
-        "progress": 64,
-    },
-    "succeeded": {
-        "label": "완료 직전",
-        "headline": "최종 보고서를 정리했습니다.",
-        "description": "결과 화면으로 전환할 준비를 마쳤습니다.",
-        "progress": 100,
-    },
-    "failed": {
-        "label": "처리 실패",
-        "headline": "심사 작업이 중단되었습니다.",
-        "description": "상세 상태를 확인한 뒤 다시 시도해주세요.",
-        "progress": 100,
-    },
-}
-
-AGGREGATE_STEP_KEYS = {
-    "total",
-    "completed",
-    "succeeded",
-    "failed",
-    "running",
-    "queued",
-    "pending",
-}
 
 _BROWSER_CONSOLE_DEDUPE_KEY = "_browser_console_emitted_events"
 _BROWSER_CONSOLE_QUEUE_KEY = "_browser_console_events"
 _BROWSER_CONSOLE_FLUSHED_COUNT_KEY = "_browser_console_flushed_count"
 _JOB_POLL_COUNT_KEY = "_pending_job_poll_count"
 _JOB_QUEUED_SINCE_KEY = "_pending_job_queued_since"
-_QUEUE_STALL_WARNING_INTERVAL = 5
+_JOB_STREAM_EVENTS_KEY = "_pending_job_stream_events"
+_JOB_STREAM_FALLBACK_KEY = "_pending_job_stream_fallback"
+_SSE_TERMINAL_EVENTS = {"complete", "error"}
 
 
 def _normalize_company_name(value: str) -> str:
-    return "".join(str(value or "").split())
+    return str(value or "").strip()
 
 
 def _utc_timestamp() -> str:
@@ -103,7 +71,7 @@ def _render_browser_console_bridge() -> None:
         return
 
     encoded_events = json.dumps(events, ensure_ascii=False, sort_keys=True, default=str)
-    components.html(
+    st.html(
         f"""
         <script>
         const events = {encoded_events};
@@ -128,8 +96,7 @@ def _render_browser_console_bridge() -> None:
         }}
         </script>
         """,
-        height=1,
-        width=1,
+        unsafe_allow_javascript=True,
     )
     st.session_state[_BROWSER_CONSOLE_FLUSHED_COUNT_KEY] = len(all_events)
 
@@ -174,6 +141,84 @@ def _console_log_job_status(status_payload: dict[str, object]) -> None:
         },
         dedupe_key=f"workflow_job_status:{job_id}:{status}:{json.dumps(step_summary, ensure_ascii=False, sort_keys=True, default=str)}",
     )
+
+
+def _parse_sse_events(lines: list[str]) -> list[dict[str, object]]:
+    return parse_sse_events(lines)
+
+
+def _append_workflow_stream_event(
+    *,
+    job_id: str,
+    event_name: str,
+    payload: dict[str, object],
+) -> None:
+    stream_events = st.session_state.setdefault(_JOB_STREAM_EVENTS_KEY, [])
+    event_key = (
+        f"{job_id}:{event_name}:"
+        f"{json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)}"
+    )
+    if stream_events and stream_events[-1].get("event_key") == event_key:
+        return
+    stream_events.append(
+        {
+            "event_key": event_key,
+            "timestamp": _utc_timestamp(),
+            "event": event_name,
+            "status": payload.get("status"),
+            "step_summary": payload.get("step_summary"),
+            "message": payload.get("message"),
+        }
+    )
+    st.session_state[_JOB_STREAM_EVENTS_KEY] = stream_events[-8:]
+
+
+def stream_workflow_job_status(job_id: str) -> dict[str, object] | None:
+    try:
+        stream_event = read_next_workflow_stream_event(
+            base_url=str(st.session_state.base_url),
+            job_id=job_id,
+            request_get=requests.get,
+        )
+        if stream_event is None:
+            return None
+
+        payload = stream_event.get("data")
+        if isinstance(payload, dict):
+            event_name = str(stream_event.get("event") or "message")
+            _append_workflow_stream_event(
+                job_id=job_id,
+                event_name=event_name,
+                payload=payload,
+            )
+            _emit_browser_console(
+                level="info" if event_name != "error" else "error",
+                event="workflow_job_stream_event",
+                payload={
+                    "job_id": job_id,
+                    "sse_event": event_name,
+                    "response": payload,
+                    "transport": stream_event.get("transport"),
+                },
+                dedupe_key=f"workflow_job_stream_event:{job_id}:{event_name}:{payload.get('status')}:{json.dumps(payload.get('step_summary'), ensure_ascii=False, sort_keys=True, default=str)}",
+            )
+            return payload
+    except requests.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 404:
+            return None
+        logger.info(
+            "workflow_job_stream_http_failed job_id=%s error=%s",
+            job_id,
+            exc,
+        )
+    except requests.RequestException as exc:
+        logger.info(
+            "workflow_job_stream_transport_failed job_id=%s error=%s",
+            job_id,
+            exc,
+        )
+    st.session_state[_JOB_STREAM_FALLBACK_KEY] = True
+    return None
 
 
 def _render_http_error(response: requests.Response) -> None:
@@ -387,245 +432,559 @@ def _inject_styles() -> None:
         <style>
         .stApp {
             background:
-                radial-gradient(circle at top left, rgba(65, 137, 230, 0.16), transparent 32%),
-                radial-gradient(circle at top right, rgba(18, 163, 126, 0.14), transparent 26%),
-                linear-gradient(180deg, #f5f9fc 0%, #eef3f8 100%);
+                linear-gradient(135deg, rgba(87, 216, 239, 0.42), rgba(191, 238, 255, 0.16) 42%, rgba(79, 178, 242, 0.24)),
+                linear-gradient(180deg, #dff9ff 0%, #c8effb 100%);
         }
         .block-container {
-            max-width: 1040px;
-            padding-top: 2.4rem;
+            max-width: 1160px;
+            padding-top: 1rem;
             padding-bottom: 3rem;
         }
         h1 {
             color: #16263d;
             letter-spacing: -0.02em;
         }
-        .search-hero {
+        .app-shell-header {
+            display: none;
+        }
+        .st-key-landing-shell {
             position: relative;
             overflow: hidden;
-            background: linear-gradient(135deg, #0f2851 0%, #133b71 55%, #1b4f8f 100%);
-            border-radius: 26px;
-            padding: 30px 32px;
-            color: #f8fbff;
-            box-shadow: 0 22px 44px rgba(15, 40, 81, 0.18);
-            margin: 0.4rem 0 1.4rem;
+            background: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.76);
+            border-radius: 22px;
+            padding: 48px 64px 48px;
+            box-shadow: 0 26px 56px rgba(17, 83, 127, 0.22);
+            min-height: 620px;
         }
-        .search-hero::after {
+        .st-key-landing-shell::before {
             content: "";
             position: absolute;
-            inset: auto -8% -42% auto;
-            width: 220px;
-            height: 220px;
-            background: radial-gradient(circle, rgba(146, 214, 255, 0.28), transparent 70%);
+            top: -18%;
+            right: -22%;
+            width: 72%;
+            height: 134%;
+            border-radius: 50%;
+            background:
+                linear-gradient(135deg, rgba(138, 235, 246, 0.96) 0%, rgba(108, 210, 244, 0.92) 52%, rgba(83, 177, 235, 0.9) 100%);
+            pointer-events: none;
         }
-        .search-eyebrow {
-            display: inline-flex;
+        .st-key-landing-shell::after {
+            content: "";
+            position: absolute;
+            right: 7%;
+            top: 19%;
+            width: 26%;
+            height: 38%;
+            border-radius: 28px;
+            background:
+                linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
+            border: 1px solid rgba(255, 255, 255, 0.34);
+            transform: rotate(-7deg);
+            pointer-events: none;
+        }
+        .st-key-landing-shell > div {
+            position: relative;
+            z-index: 1;
+        }
+        .landing-nav {
+            position: relative;
+            z-index: 2;
+            display: flex;
             align-items: center;
-            padding: 7px 12px;
-            border-radius: 999px;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: #d8ebff;
-            font-size: 0.8rem;
-            font-weight: 700;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
+            justify-content: space-between;
+            gap: 24px;
+            margin-bottom: 18px;
         }
-        .search-title {
-            margin: 0.95rem 0 0.55rem;
+        .landing-brand {
+            color: #736cff;
             font-size: 2rem;
             font-weight: 800;
-            line-height: 1.15;
-            letter-spacing: -0.03em;
+            letter-spacing: 0;
+        }
+        .landing-menu {
+            display: flex;
+            align-items: center;
+            gap: 34px;
+            color: #0b1220;
+            font-size: 0.98rem;
+            font-weight: 800;
+        }
+        .landing-action {
+            color: #0b1220;
+            background: #736cff;
+            border-radius: 8px;
+            padding: 11px 28px;
+            box-shadow: 0 14px 26px rgba(115, 108, 255, 0.24);
+        }
+        .search-hero {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 0.95fr) minmax(320px, 0.8fr);
+            gap: 44px;
+            align-items: center;
+            color: #0c1729;
+            margin-top: -18px;
+        }
+        .search-eyebrow {
+            position: relative;
+            z-index: 1;
+            display: inline-flex;
+            align-items: center;
+            padding: 0;
+            border-radius: 999px;
+            background: transparent;
+            border: 0;
+            color: #6f68ff;
+            font-size: 1.08rem;
+            font-weight: 800;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+        .search-title {
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
+            margin: 0.8rem 0 0.45rem;
+            color: #736cff;
+            font-size: 3.65rem;
+            font-weight: 800;
+            line-height: 1.12;
+            letter-spacing: 0;
+        }
+        .search-title span {
+            display: block;
+            color: #736cff;
         }
         .search-copy {
-            max-width: 680px;
-            color: rgba(240, 247, 255, 0.82);
-            font-size: 1rem;
+            position: relative;
+            z-index: 1;
+            max-width: 560px;
+            color: #263445;
+            font-size: 1.02rem;
+            font-weight: 700;
             line-height: 1.7;
+            margin: 0;
+        }
+        .search-assurance {
+            display: none;
+        }
+        .search-assurance-item {
+            background: rgba(244, 249, 255, 0.88);
+            border: 1px solid #d9e9fb;
+            border-radius: 14px;
+            padding: 12px 13px;
+        }
+        .search-assurance-label {
+            color: #736cff;
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0;
+            margin-bottom: 0.35rem;
+        }
+        .search-assurance-value {
+            color: #1b2d45;
+            font-size: 0.86rem;
+            font-weight: 700;
+            line-height: 1.45;
+        }
+        .hero-visual {
+            position: relative;
+            min-height: 405px;
+        }
+        .visual-card {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.86);
+            border: 1px solid rgba(255, 255, 255, 0.68);
+            border-radius: 22px;
+            box-shadow: 0 22px 44px rgba(25, 86, 140, 0.18);
+            backdrop-filter: blur(12px);
+        }
+        .visual-card.main {
+            right: 4%;
+            top: 19%;
+            width: 330px;
+            padding: 22px;
+        }
+        .visual-card.floating {
+            left: 5%;
+            top: 10%;
+            width: 112px;
+            height: 96px;
+            display: grid;
+            place-items: center;
+            color: #ffffff;
+            background: linear-gradient(135deg, #736cff, #4fa8ff);
+            transform: rotate(9deg);
+        }
+        .visual-card.score {
+            left: 0;
+            bottom: 17%;
+            width: 152px;
+            padding: 16px;
+            transform: rotate(-9deg);
+        }
+        .visual-card.check {
+            right: 0;
+            top: 4%;
+            width: 86px;
+            height: 86px;
+            display: grid;
+            place-items: center;
+            color: #2c8edb;
+        }
+        .visual-title {
+            color: #0b2f5f;
+            font-size: 0.78rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+        .visual-line {
+            height: 10px;
+            border-radius: 999px;
+            background: #d8efff;
+            margin-bottom: 11px;
+        }
+        .visual-line:nth-child(2) {
+            width: 76%;
+            background: linear-gradient(90deg, #5db7ff, #736cff);
+        }
+        .visual-line:nth-child(3) {
+            width: 92%;
+        }
+        .visual-line:nth-child(4) {
+            width: 58%;
+        }
+        .visual-chart {
+            display: flex;
+            align-items: end;
+            gap: 10px;
+            height: 118px;
+            margin-top: 20px;
+        }
+        .visual-bar {
+            flex: 1;
+            border-radius: 12px 12px 4px 4px;
+            background: linear-gradient(180deg, #43b4ff, #6f68ff);
+        }
+        .visual-bar:nth-child(1) { height: 42%; }
+        .visual-bar:nth-child(2) { height: 68%; }
+        .visual-bar:nth-child(3) { height: 52%; }
+        .visual-bar:nth-child(4) { height: 88%; }
+        .visual-score-label {
+            color: #64748b;
+            font-size: 0.74rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .visual-score-value {
+            color: #0b2f5f;
+            font-size: 2rem;
+            font-weight: 800;
+            margin-top: 4px;
+        }
+        .review-panel,
+        .st-key-review-panel {
+            position: relative;
+            overflow: hidden;
+            max-width: 610px;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+            width: 100%;
+            margin-top: -31px;
             margin-bottom: 0;
         }
-        .search-note {
-            margin-top: 1rem;
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 12px;
+        .st-key-review-panel::before {
+            display: none;
         }
-        .search-note-card {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 18px;
-            padding: 14px 16px;
+        .st-key-review-panel > div {
+            position: relative;
+            width: 100%;
+            z-index: 1;
         }
-        .search-note-label {
-            color: #d8ebff;
-            font-size: 0.76rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.45rem;
+        .st-key-review-panel div[data-testid="stHorizontalBlock"] {
+            align-items: end;
+            gap: 10px;
+            background: transparent;
+            border-radius: 12px;
+            padding: 0;
+            max-width: 500px;
         }
-        .search-note-value {
-            color: #ffffff;
-            font-size: 0.95rem;
-            font-weight: 700;
-            line-height: 1.4;
+        .st-key-review-panel div[data-testid="column"]:first-child {
+            padding-right: 0;
+        }
+        .st-key-review-panel div[data-testid="column"]:last-child {
+            padding-left: 0;
+        }
+        .review-panel-title {
+            display: none;
+        }
+        .review-panel-copy {
+            display: none;
+        }
+        .review-panel-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 0.75rem;
+        }
+        .review-panel-chip {
+            color: #7068ff;
+            background: transparent;
+            border: 0;
+            border-radius: 999px;
+            padding: 0;
+            font-size: 0.9rem;
+            font-weight: 800;
+        }
+        .st-key-review-panel .stTextInput,
+        .st-key-review-panel .stButton {
+            height: 3.55rem;
+        }
+        .stTextInput > div {
+            margin-bottom: 0;
+        }
+        .st-key-review-panel .stTextInput > div,
+        .st-key-review-panel .stTextInput div[data-baseweb="input"],
+        .st-key-review-panel .stButton > button {
+            height: 3.55rem;
+        }
+        .st-key-review-panel .stTextInput div[data-baseweb="input"] {
+            border-color: rgba(215, 231, 243, 0.72) !important;
+            box-shadow: none !important;
+        }
+        .st-key-review-panel .stTextInput div[data-baseweb="input"]:focus-within {
+            border-color: rgba(215, 231, 243, 0.72) !important;
+            box-shadow: none !important;
         }
         .stTextInput label,
         .stButton button {
             font-weight: 700;
         }
         .stTextInput input {
-            border-radius: 16px;
-            border: 1px solid #cfd9e5;
-            background: rgba(255, 255, 255, 0.92);
-            padding-left: 0.9rem;
-            height: 3rem;
-            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+            border-radius: 10px;
+            border: 1px solid rgba(215, 231, 243, 0.72);
+            background: #fbfdff;
+            padding-left: 1.15rem;
+            height: 3.55rem;
+            color: #19314f;
+            box-shadow: none;
         }
         .stTextInput input:focus {
-            border-color: #2f6ed9;
-            box-shadow: 0 0 0 1px #2f6ed9;
+            border-color: rgba(215, 231, 243, 0.72) !important;
+            background: #fbfdff;
+            box-shadow: none !important;
+            outline: none;
         }
         .stButton > button {
-            border-radius: 16px;
-            min-height: 3rem;
+            border-radius: 12px;
+            height: 3.55rem;
+            min-height: 3.55rem;
             border: 0;
-            background: linear-gradient(135deg, #143766 0%, #2564c9 100%);
+            background: linear-gradient(135deg, #55b8ff 0%, #736cff 100%);
             color: #ffffff;
-            box-shadow: 0 16px 30px rgba(37, 100, 201, 0.18);
+            box-shadow: none;
+            padding: 0 1rem;
+        }
+        .st-key-review-panel div[data-testid="column"]:last-child .stButton > button {
+            border-radius: 12px;
         }
         .stButton > button:hover {
-            filter: brightness(1.03);
-        }
-        div[data-testid="column"]:last-child .stButton > button {
-            background: linear-gradient(135deg, #edf4ff 0%, #dce8fb 100%);
-            color: #143766;
+            background: linear-gradient(135deg, #44aefa 0%, #645cff 100%);
+            color: #ffffff;
             box-shadow: none;
-            border: 1px solid #c8d7f3;
         }
         .loading-shell {
             position: relative;
             overflow: hidden;
-            background: linear-gradient(145deg, #ffffff 0%, #f5f9ff 100%);
-            border-radius: 28px;
-            border: 1px solid #d8e4f2;
-            box-shadow: 0 24px 48px rgba(15, 23, 42, 0.08);
-            padding: 28px 28px 24px;
-            margin-top: 0.4rem;
+            background: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.76);
+            border-radius: 22px;
+            box-shadow: 0 26px 56px rgba(17, 83, 127, 0.22);
+            padding: 58px 64px 56px;
+            min-height: 600px;
         }
         .loading-shell::before {
             content: "";
             position: absolute;
-            inset: -35% -10% auto auto;
-            width: 280px;
-            height: 280px;
-            background: radial-gradient(circle, rgba(49, 107, 213, 0.12), transparent 70%);
+            top: -20%;
+            right: -24%;
+            width: 72%;
+            height: 132%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(138, 235, 246, 0.96) 0%, rgba(108, 210, 244, 0.92) 52%, rgba(83, 177, 235, 0.9) 100%);
+            pointer-events: none;
+        }
+        .loading-shell::after {
+            content: "";
+            position: absolute;
+            right: 9%;
+            top: 18%;
+            width: 24%;
+            height: 34%;
+            border-radius: 28px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
+            border: 1px solid rgba(255, 255, 255, 0.34);
+            transform: rotate(-7deg);
             pointer-events: none;
         }
         .loading-head {
+            position: relative;
+            z-index: 1;
             display: flex;
             justify-content: space-between;
-            gap: 16px;
+            gap: 44px;
             align-items: flex-start;
         }
         .loading-kicker {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            color: #2a5ea8;
-            font-size: 0.82rem;
+            color: #736cff;
+            font-size: 1rem;
             font-weight: 800;
-            letter-spacing: 0.04em;
-            text-transform: uppercase;
+            letter-spacing: 0;
+            text-transform: none;
         }
         .loading-kicker::before {
             content: "";
             width: 10px;
             height: 10px;
             border-radius: 999px;
-            background: linear-gradient(135deg, #30b878 0%, #8ae1b3 100%);
-            box-shadow: 0 0 0 6px rgba(48, 184, 120, 0.12);
+            background: #736cff;
+            box-shadow: 0 0 0 7px rgba(115, 108, 255, 0.12);
             animation: pulseDot 1.6s ease-in-out infinite;
         }
         .loading-title {
-            color: #132847;
-            font-size: 1.85rem;
+            max-width: 590px;
+            color: #736cff;
+            font-size: 3.15rem;
             font-weight: 800;
             line-height: 1.12;
-            letter-spacing: -0.03em;
-            margin: 0.7rem 0 0.55rem;
+            letter-spacing: 0;
+            margin: 1.4rem 0 1rem;
         }
         .loading-copy {
-            color: #5d6f85;
-            font-size: 0.98rem;
+            max-width: 560px;
+            color: #263445;
+            font-size: 1.02rem;
+            font-weight: 700;
             line-height: 1.7;
             margin: 0;
-            max-width: 690px;
         }
         .job-chip {
+            position: relative;
+            z-index: 1;
             flex-shrink: 0;
-            background: #eff5fd;
-            border: 1px solid #d7e4f4;
-            border-radius: 18px;
-            padding: 12px 14px;
-            min-width: 190px;
+            background: rgba(255, 255, 255, 0.86);
+            border: 1px solid rgba(255, 255, 255, 0.68);
+            border-radius: 22px;
+            box-shadow: 0 22px 44px rgba(25, 86, 140, 0.18);
+            backdrop-filter: blur(12px);
+            padding: 22px;
+            min-width: 230px;
+        }
+        .loading-visual {
+            position: relative;
+            min-width: 300px;
+            min-height: 230px;
+        }
+        .loading-orbit-card {
+            position: absolute;
+            right: 22px;
+            bottom: 4px;
+            width: 170px;
+            padding: 18px;
+            border-radius: 22px;
+            background: linear-gradient(135deg, #736cff, #55b8ff);
+            box-shadow: 0 22px 44px rgba(25, 86, 140, 0.18);
+            transform: rotate(8deg);
+        }
+        .loading-orbit-dot {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            margin-bottom: 16px;
+            animation: pulseDot 1.6s ease-in-out infinite;
+        }
+        .loading-orbit-line {
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.72);
+            margin-bottom: 10px;
+        }
+        .loading-orbit-line.short {
+            width: 62%;
         }
         .job-chip-label {
-            color: #69809a;
+            color: #736cff;
             font-size: 0.74rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0;
         }
         .job-chip-value {
-            color: #183253;
-            font-size: 0.95rem;
-            font-weight: 700;
+            color: #0b2f5f;
+            font-size: 1.4rem;
+            font-weight: 800;
             line-height: 1.5;
             margin-top: 0.4rem;
             word-break: break-word;
         }
         .progress-meta {
+            position: relative;
+            z-index: 1;
             display: flex;
             justify-content: space-between;
             gap: 16px;
             align-items: center;
-            margin-top: 1.45rem;
-            margin-bottom: 0.6rem;
+            max-width: 620px;
+            margin-top: 2.1rem;
+            margin-bottom: 0.7rem;
         }
         .progress-label {
-            color: #2e4767;
+            color: #263445;
             font-size: 0.92rem;
             font-weight: 800;
         }
         .progress-value {
-            color: #16335b;
+            color: #736cff;
             font-size: 1rem;
             font-weight: 800;
         }
         .progress-rail {
+            position: relative;
+            z-index: 1;
+            max-width: 620px;
             width: 100%;
             height: 14px;
             border-radius: 999px;
-            background: #e8eef6;
+            background: #e8f5ff;
             overflow: hidden;
         }
         .progress-fill {
             height: 100%;
             border-radius: 999px;
-            background: linear-gradient(90deg, #214f97 0%, #3e7ee8 55%, #77c6ff 100%);
-            background-size: 180% 180%;
-            animation: gradientShift 3.5s ease infinite;
+            background: linear-gradient(90deg, #55b8ff 0%, #736cff 100%);
         }
         .loading-panel {
-            background: rgba(248, 251, 255, 0.9);
-            border: 1px solid #dde8f4;
-            border-radius: 20px;
-            padding: 18px;
+            position: relative;
+            z-index: 1;
+            max-width: 620px;
+            background: rgba(244, 249, 255, 0.88);
+            border: 1px solid #d9e9fb;
+            border-radius: 14px;
+            padding: 16px;
+            margin-top: 1.4rem;
         }
         .loading-panel-title {
-            color: #24476d;
+            color: #736cff;
             font-size: 0.9rem;
             font-weight: 800;
             margin-bottom: 0.85rem;
@@ -636,8 +995,8 @@ def _inject_styles() -> None:
             gap: 12px;
         }
         .step-card {
-            border-radius: 16px;
-            border: 1px solid #dbe5f0;
+            border-radius: 12px;
+            border: 1px solid #e0eefb;
             background: #ffffff;
             padding: 14px 15px;
         }
@@ -646,7 +1005,7 @@ def _inject_styles() -> None:
             font-size: 0.78rem;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0;
             margin-bottom: 0.45rem;
         }
         .step-value {
@@ -672,27 +1031,140 @@ def _inject_styles() -> None:
             border-color: #f3e2bc;
         }
         .refresh-note {
+            position: relative;
+            z-index: 1;
+            max-width: 620px;
             margin-top: 1rem;
-            color: #64758b;
+            color: #607083;
             font-size: 0.9rem;
             line-height: 1.6;
+        }
+        .stream-log {
+            position: relative;
+            z-index: 1;
+            max-width: 620px;
+            margin-top: 14px;
+            border: 1px solid #d9e9fb;
+            border-radius: 14px;
+            background: rgba(251, 253, 255, 0.9);
+            padding: 16px 18px;
+        }
+        .stream-log-title {
+            color: #736cff;
+            font-size: 0.86rem;
+            font-weight: 800;
+            margin-bottom: 0.75rem;
+        }
+        .stream-log-row {
+            display: grid;
+            grid-template-columns: 120px 110px minmax(0, 1fr);
+            gap: 10px;
+            align-items: center;
+            padding: 9px 0;
+            border-top: 1px solid #ecf2f8;
+            color: #35506d;
+            font-size: 0.86rem;
+        }
+        .stream-log-row:first-of-type {
+            border-top: 0;
+        }
+        .stream-log-event {
+            color: #1d5e9d;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .stream-log-status {
+            color: #183253;
+            font-weight: 800;
+        }
+        .stream-log-detail {
+            color: #60758c;
+            overflow-wrap: anywhere;
         }
         @keyframes pulseDot {
             0%, 100% { transform: scale(1); opacity: 0.9; }
             50% { transform: scale(1.18); opacity: 1; }
         }
-        @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
         @media (max-width: 900px) {
-            .search-note,
+            .landing-nav {
+                align-items: flex-start;
+                flex-direction: column;
+                margin-bottom: 34px;
+            }
+            .landing-menu {
+                flex-wrap: wrap;
+                gap: 14px;
+                font-size: 0.9rem;
+            }
+            .search-assurance,
             .step-grid {
                 grid-template-columns: 1fr;
             }
+            .st-key-landing-shell {
+                padding: 34px 24px 48px;
+                min-height: auto;
+            }
+            .st-key-landing-shell::before {
+                top: auto;
+                right: -18%;
+                bottom: -18%;
+                width: 78%;
+                height: 52%;
+                border-radius: 999px 0 0 0;
+            }
+            .search-hero {
+                grid-template-columns: 1fr;
+            }
+            .hero-visual {
+                min-height: 260px;
+            }
+            .visual-card.main {
+                right: 8%;
+                top: 8%;
+                width: 260px;
+            }
+            .visual-card.floating,
+            .visual-card.check,
+            .visual-card.score {
+                display: none;
+            }
+            .review-panel,
+            .st-key-review-panel {
+                margin-top: 0;
+            }
+            .search-hero,
+            .review-panel,
+            .st-key-review-panel,
+            .loading-shell {
+                padding-left: 22px;
+                padding-right: 22px;
+            }
+            .search-title {
+                font-size: 2.25rem;
+            }
             .loading-head {
                 flex-direction: column;
+            }
+            .loading-shell {
+                padding: 34px 24px;
+                min-height: auto;
+            }
+            .loading-shell::before {
+                top: auto;
+                right: -18%;
+                bottom: -18%;
+                width: 78%;
+                height: 52%;
+            }
+            .loading-title {
+                font-size: 2.25rem;
+            }
+            .loading-visual {
+                min-width: 100%;
+                min-height: 180px;
+            }
+            .loading-orbit-card {
+                display: none;
             }
             .job-chip {
                 width: 100%;
@@ -704,307 +1176,61 @@ def _inject_styles() -> None:
     )
 
 
-def _resolve_status_meta(status: str) -> dict[str, str | int]:
-    return STATUS_META.get(status, STATUS_META["running"])
-
-
-def _normalize_status_value(raw_status: object) -> str:
-    if not isinstance(raw_status, str):
-        return "default"
-
-    status = raw_status.lower()
-    if status in {"succeeded", "success", "completed", "done", "finished"}:
-        return "status-done"
-    if status in {"running", "processing", "in_progress", "active"}:
-        return "status-active"
-    if status in {"failed", "error", "cancelled", "rejected"}:
-        return "status-error"
-    if status in {"queued", "pending", "waiting"}:
-        return "status-waiting"
-    return "default"
-
-
-def _format_label(raw_key: str) -> str:
-    return raw_key.replace("_", " ").strip().title()
-
-
-def _summarize_step_value(value: object) -> tuple[str, str]:
-    if isinstance(value, dict):
-        for key in ("status", "state", "result"):
-            nested_value = value.get(key)
-            if isinstance(nested_value, str):
-                return nested_value.replace("_", " ").title(), _normalize_status_value(
-                    nested_value
-                )
-        return f"{len(value)}개 필드", "default"
-
-    if isinstance(value, list):
-        return f"{len(value)}개 항목", "default"
-
-    if isinstance(value, bool):
-        return ("완료" if value else "대기"), ("status-done" if value else "status-waiting")
-
-    if isinstance(value, str):
-        return value.replace("_", " ").title(), _normalize_status_value(value)
-
-    return str(value), "default"
-
-
-def _extract_step_cards(step_summary: dict[str, object]) -> list[tuple[str, str, str]]:
-    cards: list[tuple[str, str, str]] = []
-    for key, value in step_summary.items():
-        label = _format_label(key)
-        if key in AGGREGATE_STEP_KEYS and isinstance(value, int):
-            cards.append((label, str(value), "default"))
-            continue
-
-        summary, tone = _summarize_step_value(value)
-        cards.append((label, summary, tone))
-    return cards[:6]
-
-
-def _estimate_progress(status: str, step_summary: dict[str, object]) -> int:
-    default_progress = int(_resolve_status_meta(status)["progress"])
-    if status in {"submitting", "succeeded", "failed"}:
-        return default_progress
-
-    total = step_summary.get("total")
-    completed = step_summary.get("completed", step_summary.get("succeeded"))
-    running = step_summary.get("running")
-    if isinstance(total, int) and total > 0 and isinstance(completed, int):
-        running_count = running if isinstance(running, int) else 0
-        progress = int(((completed + (running_count * 0.45)) / total) * 100)
-        return max(default_progress, min(progress, 94))
-
-    detailed_cards = _extract_step_cards(step_summary)
-    if not detailed_cards:
-        return default_progress
-
-    completed_count = sum(1 for _, _, tone in detailed_cards if tone == "status-done")
-    active_count = sum(1 for _, _, tone in detailed_cards if tone == "status-active")
-    total_count = len(detailed_cards)
-    progress = int(((completed_count + (active_count * 0.45)) / total_count) * 100)
-    return max(default_progress, min(progress, 94))
-
-
 def _render_search_intro() -> None:
     st.markdown(
         """
+        <nav class="landing-nav">
+            <div class="landing-brand">FinAgent</div>
+            <div class="landing-menu">
+                <span>Credit Review</span>
+                <span>Risk Analysis</span>
+                <span>Report</span>
+            </div>
+        </nav>
         <section class="search-hero">
-            <div class="search-eyebrow">FinAgent Workspace</div>
-            <h2 class="search-title">기업 심사 워크플로우를 한 번에 시작하세요.</h2>
-            <p class="search-copy">
-                회사명을 입력하면 다중 에이전트가 신용·리스크 신호를 수집하고,
-                최종 의사결정 리포트까지 자동으로 정리합니다.
-            </p>
-            <div class="search-note">
-                <div class="search-note-card">
-                    <div class="search-note-label">분석 범위</div>
-                    <div class="search-note-value">재무 상태, 리스크 요인, 권고 한도</div>
+            <div>
+                <h2 class="search-title">
+                    <span>빠르고 정확한</span>
+                    <span>차세대 신용평가, FinAgent</span>
+                </h2>
+                <p class="search-copy">
+                    재무, 산업, 비금융 리스크를 한 번에 분석해 <br />
+                    심사 담당자가 바로 활용할 수 있는 근거 중심 리포트를 제공합니다.
+                </p>
+            </div>
+            <div class="hero-visual" aria-hidden="true">
+                <div class="visual-card floating">
+                    <svg width="42" height="42" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 6L25.2 16.8L36 21L25.2 25.2L21 36L16.8 25.2L6 21L16.8 16.8L21 6Z" stroke="white" stroke-width="3" stroke-linejoin="round"/>
+                    </svg>
                 </div>
-                <div class="search-note-card">
-                    <div class="search-note-label">진행 방식</div>
-                    <div class="search-note-value">job 기반 비동기 처리 + 2초 주기 polling</div>
+                <div class="visual-card check">
+                    <svg width="38" height="38" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="7" y="7" width="24" height="24" rx="8" stroke="currentColor" stroke-width="2.5"/>
+                        <path d="M14 19.5L18 23.5L25 15.5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                 </div>
-                <div class="search-note-card">
-                    <div class="search-note-label">결과 산출물</div>
-                    <div class="search-note-value">심사 리포트, 결정 사유, 원본 JSON</div>
+                <div class="visual-card main">
+                    <div class="visual-title">Risk Intelligence</div>
+                    <div class="visual-line"></div>
+                    <div class="visual-line"></div>
+                    <div class="visual-line"></div>
+                    <div class="visual-chart">
+                        <div class="visual-bar"></div>
+                        <div class="visual-bar"></div>
+                        <div class="visual-bar"></div>
+                        <div class="visual-bar"></div>
+                    </div>
+                </div>
+                <div class="visual-card score">
+                    <div class="visual-score-label">Credit Score</div>
+                    <div class="visual-score-value">A-</div>
                 </div>
             </div>
         </section>
         """,
         unsafe_allow_html=True,
     )
-
-
-def _render_step_summary(step_summary: dict[str, object]) -> None:
-    step_cards = _extract_step_cards(step_summary)
-    if not step_cards:
-        return
-
-    cards_markup = "".join(
-        f"""
-        <div class="step-card {tone}">
-            <div class="step-name">{escape(label)}</div>
-            <div class="step-value">{escape(value)}</div>
-        </div>
-        """
-        for label, value, tone in step_cards
-    )
-
-    st.markdown(
-        f"""
-        <div class="loading-panel">
-            <div class="loading-panel-title">현재 수집된 진행 정보</div>
-            <div class="step-grid">{cards_markup}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-
-def _render_loading_state(
-    *,
-    status: str,
-    company_name: str,
-    job_label: str,
-    step_summary: dict[str, object] | None = None,
-) -> None:
-    meta = _resolve_status_meta(status)
-    progress = _estimate_progress(status, step_summary or {})
-
-    st.markdown(
-        f"""
-        <section class="loading-shell">
-            <div class="loading-head">
-                <div>
-                    <div class="loading-kicker">{escape(str(meta["label"]))}</div>
-                    <div class="loading-title">{escape(str(meta["headline"]))}</div>
-                    <p class="loading-copy">{escape(str(meta["description"]))}</p>
-                </div>
-                <div class="job-chip">
-                    <div class="job-chip-label">{escape(job_label)}</div>
-                    <div class="job-chip-value">{escape(company_name)}</div>
-                </div>
-            </div>
-            <div class="progress-meta">
-                <div class="progress-label">심사 상태: {escape(status.replace("_", " ").title())}</div>
-                <div class="progress-value">{progress}%</div>
-            </div>
-            <div class="progress-rail">
-                <div class="progress-fill" style="width: {progress}%;"></div>
-            </div>
-            <div class="refresh-note">
-                2초 간격으로 상태를 새로 확인하고 있습니다. 결과가 준비되면 자동으로 리포트 화면으로 이동합니다.
-            </div>
-        </section>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    if step_summary:
-        _render_step_summary(step_summary)
-
-
-def _submit_pending_job() -> None:
-    company_name = st.session_state.submitting_company_name
-    if not company_name:
-        return
-
-    st.session_state[_JOB_POLL_COUNT_KEY] = 0
-    st.session_state[_JOB_QUEUED_SINCE_KEY] = None
-    _render_loading_state(
-        status="submitting",
-        company_name=company_name,
-        job_label="Submitting",
-    )
-
-    job = submit_workflow_job(company_name)
-    st.session_state.submitting_company_name = None
-    if job is None:
-        return
-
-    st.session_state.pending_job_id = job["job_id"]
-    st.session_state.pending_job_status = job
-    st.rerun()
-
-
-def _render_job_progress() -> None:
-    job_id = st.session_state.pending_job_id
-    if not job_id:
-        return
-
-    status_payload = get_workflow_job_status(job_id)
-    if status_payload is None:
-        return
-
-    st.session_state.pending_job_status = status_payload
-    status = status_payload.get("status", "queued")
-    company_name = status_payload.get("company_name", "-")
-    step_summary = status_payload.get("step_summary") or {}
-    _console_log_job_status(status_payload)
-
-    if status == "queued":
-        queued_since = st.session_state.get(_JOB_QUEUED_SINCE_KEY)
-        if queued_since is None:
-            queued_since = _utc_timestamp()
-            st.session_state[_JOB_QUEUED_SINCE_KEY] = queued_since
-
-        poll_count = int(st.session_state.get(_JOB_POLL_COUNT_KEY, 0))
-        if poll_count >= _QUEUE_STALL_WARNING_INTERVAL and poll_count % _QUEUE_STALL_WARNING_INTERVAL == 0:
-            health_payload = get_backend_health()
-            _emit_browser_console(
-                level="warning",
-                event="workflow_job_queue_stalled",
-                payload={
-                    "job_id": job_id,
-                    "poll_count": poll_count,
-                    "queued_since": queued_since,
-                    "message": "job status가 queued에서 진행되지 않고 있습니다.",
-                    "status_payload": status_payload,
-                    "backend_health": health_payload,
-                },
-                dedupe_key=f"workflow_job_queue_stalled:{job_id}:{poll_count}",
-            )
-            st.warning(
-                f"작업이 아직 대기열에 머물고 있습니다. poll={poll_count}, queued_since={queued_since}"
-            )
-    else:
-        st.session_state[_JOB_QUEUED_SINCE_KEY] = None
-
-    _render_loading_state(
-        status=status,
-        company_name=company_name,
-        job_label="Active Job",
-        step_summary=step_summary,
-    )
-    _render_browser_console_bridge()
-
-    if status == "succeeded":
-        result = get_workflow_job_result(job_id)
-        if result is not None:
-            context = result.get("context", {}) if isinstance(result, dict) else {}
-            company_found = context.get("company_found", True) if isinstance(context, dict) else True
-            if company_found is False:
-                message = "입력한 회사명을 찾을 수 없습니다. 회사명을 다시 확인해주세요."
-                if isinstance(context, dict):
-                    message = str(context.get("workflow_message") or message)
-                st.error(message)
-                st.session_state.last_result = None
-                st.session_state.pending_job_id = None
-                st.session_state.pending_job_status = None
-                st.session_state.submitting_company_name = None
-                st.session_state[_JOB_POLL_COUNT_KEY] = 0
-                st.session_state[_JOB_QUEUED_SINCE_KEY] = None
-                st.session_state.page = "Search"
-                return
-            st.session_state.last_result = result
-            st.session_state.pending_job_id = None
-            st.session_state.pending_job_status = None
-            st.session_state.submitting_company_name = None
-            st.session_state[_JOB_POLL_COUNT_KEY] = 0
-            st.session_state[_JOB_QUEUED_SINCE_KEY] = None
-            st.session_state.page = "Report"
-            st.rerun()
-        return
-
-    if status == "failed":
-        st.error(
-            str(
-                status_payload.get("message")
-                or "심사 작업이 실패했습니다. 잠시 후 다시 시도해주세요."
-            )
-        )
-        if status_payload.get("error_code"):
-            st.caption(f"오류 코드: {status_payload['error_code']}")
-        st.session_state.pending_job_id = None
-        st.session_state.pending_job_status = None
-        st.session_state[_JOB_POLL_COUNT_KEY] = 0
-        st.session_state[_JOB_QUEUED_SINCE_KEY] = None
-        return
-
-    time.sleep(2)
-    st.rerun()
 
 
 def render() -> None:
@@ -1012,30 +1238,51 @@ def render() -> None:
     _render_browser_console_bridge()
 
     if st.session_state.submitting_company_name:
-        _submit_pending_job()
+        st.session_state.page = "Loading"
+        st.rerun()
         return
 
     if st.session_state.pending_job_id:
-        _render_job_progress()
+        st.session_state.page = "Loading"
+        st.rerun()
         return
 
-    _render_search_intro()
+    with st.container(border=False, key="landing-shell"):
+        _render_search_intro()
 
-    company_name = st.text_input(
-        "회사명",
-        key="company_name_input",
-        placeholder="예: Acme Trading Co.",
-    )
+        with st.container(border=False, key="review-panel"):
+            st.markdown(
+                """
+                <div class="review-panel-title">기업 심사 시작</div>
+                <div class="review-panel-copy">
+                    검토할 기업명을 입력하면 FinAgent가 심사에 필요한 데이터를 수집하고 분석을 시작합니다.
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            input_col, button_col = st.columns([2.7, 1])
+            with input_col:
+                company_name = st.text_input(
+                    "기업명",
+                    key="company_name_input",
+                    placeholder="기업명을 입력하세요",
+                    label_visibility="collapsed",
+                )
+            with button_col:
+                start_clicked = st.button("심사 시작", width="stretch")
 
-    if st.button("심사 시작", use_container_width=True):
-        normalized_company_name = _normalize_company_name(company_name)
-        if not normalized_company_name:
-            st.warning("회사명을 입력하세요.")
-        else:
-            st.session_state.submitting_company_name = normalized_company_name
-            st.session_state[_BROWSER_CONSOLE_DEDUPE_KEY] = {}
-            st.session_state[_BROWSER_CONSOLE_QUEUE_KEY] = []
-            st.session_state[_BROWSER_CONSOLE_FLUSHED_COUNT_KEY] = 0
-            st.session_state[_JOB_POLL_COUNT_KEY] = 0
-            st.session_state[_JOB_QUEUED_SINCE_KEY] = None
-            st.rerun()
+            if start_clicked:
+                normalized_company_name = _normalize_company_name(company_name)
+                if not normalized_company_name:
+                    st.warning("회사명을 입력하세요.")
+                else:
+                    st.session_state.submitting_company_name = normalized_company_name
+                    st.session_state[_BROWSER_CONSOLE_DEDUPE_KEY] = {}
+                    st.session_state[_BROWSER_CONSOLE_QUEUE_KEY] = []
+                    st.session_state[_BROWSER_CONSOLE_FLUSHED_COUNT_KEY] = 0
+                    st.session_state[_JOB_POLL_COUNT_KEY] = 0
+                    st.session_state[_JOB_QUEUED_SINCE_KEY] = None
+                    st.session_state[_JOB_STREAM_EVENTS_KEY] = []
+                    st.session_state[_JOB_STREAM_FALLBACK_KEY] = False
+                    st.session_state.page = "Loading"
+                    st.rerun()

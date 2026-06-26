@@ -1,8 +1,13 @@
 import streamlit as st
 
-from config import get_backend_url
-from streamlit_ui import configure_page
-from views import report, search
+try:
+    from config import get_backend_url
+    from streamlit_ui import configure_page
+    from views import loading, report, search
+except ModuleNotFoundError:  # pragma: no cover - package import fallback
+    from frontend.config import get_backend_url
+    from frontend.streamlit_ui import configure_page
+    from frontend.views import loading, report, search
 
 configure_page()
 
@@ -19,9 +24,9 @@ if "pending_job_status" not in st.session_state:
 if "submitting_company_name" not in st.session_state:
     st.session_state.submitting_company_name = None
 
-st.title("FinAgent-SME")
-
 if st.session_state.page == "Search":
     search.render()
+elif st.session_state.page == "Loading":
+    loading.render()
 else:
     report.render()

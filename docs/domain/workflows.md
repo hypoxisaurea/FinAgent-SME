@@ -114,6 +114,18 @@
    - 검증 실패 시 기본 1회 `ReportAgent -> ValidationAgent` 재실행
    - 재검증도 실패하면 결과를 차단하고 종료
 
+   Validation 후속 처리 규칙:
+
+   | 조건 | gate 상태 | 후속 처리 |
+   | --- | --- | --- |
+   | step 성공 + `validation_passed=true` | `passed` | 결과 공개 후 종료 |
+   | 검증 실패 + 재시도 잔여 | `retrying` | `ReportAgent -> ValidationAgent` 재실행 |
+   | 검증 실패 + 재시도 소진 | `blocked` | `failed / VALIDATION_FAILED`, 결과 비공개 |
+   | 실행/계약 오류 또는 step/result 불일치 | `retrying` 또는 `blocked` | 검증 실패로 정규화 후 동일 정책 적용 |
+
+   `report` 재실행 노드가 없으면 즉시 `blocked` 처리한다. validation gate는
+   `continue_on_error` 설정과 무관하게 fail-closed로 동작한다.
+
 7. **결과 저장**
    - 오케스트레이터가 최종 `context`와 `steps`를 조립해 반환한다.
    - runner가 workflow 결과와 `step_summary`를 저장하고 job을 `succeeded` 또는 `failed`로 마감한다.

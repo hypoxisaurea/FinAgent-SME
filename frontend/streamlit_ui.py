@@ -1,22 +1,33 @@
 import streamlit as st
 
 
-HIDE_STREAMLIT_SIDEBAR_STYLE = """
+HIDE_STREAMLIT_NAVIGATION_STYLE = """
 <style>
+    header[data-testid="stHeader"],
+    [data-testid="stToolbar"],
+    #MainMenu {
+        display: none;
+    }
+
     [data-testid="stSidebar"],
     [data-testid="stSidebarNav"],
     [data-testid="collapsedControl"] {
         display: none;
     }
+
+    .block-container {
+        padding-top: 1.25rem;
+    }
+
 </style>
 """
 
 
 def configure_page() -> None:
-    """Configure the Streamlit page and hide the auto-generated sidebar."""
+    """Configure the Streamlit page and hide generated navigation chrome."""
     st.set_page_config(
         page_title="FinAgent-SME",
         layout="centered",
         initial_sidebar_state="collapsed",
     )
-    st.markdown(HIDE_STREAMLIT_SIDEBAR_STYLE, unsafe_allow_html=True)
+    st.markdown(HIDE_STREAMLIT_NAVIGATION_STYLE, unsafe_allow_html=True)

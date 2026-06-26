@@ -1,0 +1,65 @@
+from __future__ import annotations
+
+import importlib
+import sys
+from types import ModuleType
+from types import SimpleNamespace
+from unittest.mock import MagicMock
+
+
+def _import_report_module() -> ModuleType:
+    try:
+        return importlib.import_module("frontend.views.report")
+    except ModuleNotFoundError as exc:
+        if exc.name != "streamlit":
+            raise
+
+    streamlit = ModuleType("streamlit")
+    components = ModuleType("streamlit.components")
+    components_v1 = ModuleType("streamlit.components.v1")
+    components_v1.html = MagicMock()
+    components.v1 = components_v1
+    streamlit.components = components
+    sys.modules["streamlit"] = streamlit
+    sys.modules["streamlit.components"] = components
+    sys.modules["streamlit.components.v1"] = components_v1
+    return importlib.import_module("frontend.views.report")
+
+
+report = _import_report_module()
+
+
+def test_report_render_stops_when_validation_is_blocked(monkeypatch) -> None:
+    error = MagicMock()
+    caption = MagicMock()
+    fake_st = SimpleNamespace(
+        session_state=SimpleNamespace(
+            last_result={
+                "status": "failed",
+                "code": "VALIDATION_FAILED",
+                "message": "검증 실패로 결과가 차단되었습니다.",
+                "context": {"validation_gate_status": "blocked"},
+            }
+        ),
+        error=error,
+        caption=caption,
+    )
+    build_view_model = MagicMock()
+
+    monkeypatch.setattr(report, "st", fake_st)
+    monkeypatch.setattr(report, "build_report_view_model", build_view_model)
+
+    report.render()
+
+    error.assert_called_once_with("검증 실패로 결과가 차단되었습니다.")
+    caption.assert_called_once_with("오류 코드: VALIDATION_FAILED")
+    build_view_model.assert_not_called()
+
+
+def test_validation_blocked_detection_accepts_gate_metadata() -> None:
+    assert report._is_validation_blocked(
+        {"context": {"validation_gate_status": "blocked"}}
+    )
+    assert not report._is_validation_blocked(
+        {"status": "partial", "context": {"validation_gate_status": "passed"}}
+    )

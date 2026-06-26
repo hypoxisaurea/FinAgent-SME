@@ -8,7 +8,7 @@
   - 회사명 입력
   - 백엔드 헬스 체크
   - 심사 job 접수
-  - job 상태 polling
+  - job 상태 SSE stream 및 polling fallback
 - 결과 화면
   - 심사 요약 카드
   - 리스크/권고/검증 정보
@@ -33,15 +33,22 @@ frontend/
 2. 기본 `base_url`은 `http://localhost:8000`입니다.
 3. 검색 화면에서 `검색` 버튼을 누르면 `views/search.py`가 `POST /api/v1/workflows/jobs`를 호출합니다.
 4. 반환된 `job_id`는 `st.session_state.pending_job_id`에 저장됩니다.
-5. 검색 화면은 `GET /api/v1/workflows/jobs/{job_id}`를 2초 간격으로 polling 합니다.
-6. job이 `succeeded`가 되면 `GET /api/v1/workflows/jobs/{job_id}/result`를 호출합니다.
+5. 검색 화면은 `GET /api/v1/workflows/jobs/{job_id}/stream` SSE 이벤트를 우선 수신합니다.
+6. SSE 연결이 어려우면 `GET /api/v1/workflows/jobs/{job_id}`를 2초 간격으로 polling 합니다.
+7. job이 `succeeded`가 되면 `GET /api/v1/workflows/jobs/{job_id}/result`를 호출합니다.
 7. 최종 응답은 `st.session_state.last_result`에 저장됩니다.
 8. `views/report.py`가 `context.report`, `context.decision`, `steps`를 조합해 결과를 렌더링합니다.
+
+Streamlit 구조상 브라우저 네이티브 `EventSource`가 아니라 서버 프로세스의
+`requests(stream=True)` 기반 SSE client를 사용합니다. SSE parsing과 HTTP 소비 계약은
+`frontend/services/workflow_stream.py`에 분리되어 있으며, 수신 이벤트는 검색 화면의
+`SSE 실시간 진행 로그`와 진행률 UI에 반영됩니다.
 
 ## 백엔드 의존성
 
 - Health check: `GET /api/health`
 - Job submit: `POST /api/v1/workflows/jobs`
+- Job stream: `GET /api/v1/workflows/jobs/{job_id}/stream`
 - Job status: `GET /api/v1/workflows/jobs/{job_id}`
 - Job result: `GET /api/v1/workflows/jobs/{job_id}/result`
 - 최종 응답 구조: `status`, `context`, `steps`, `request_id`
@@ -82,7 +89,8 @@ Compose에서는 `FINAGENT_BACKEND_URL=http://backend:8000`이 자동 설정됩�
 - 별도 JavaScript 번들링은 없습니다.
 - 라우팅은 `st.session_state.page`로 처리합니다.
 - 백엔드 호출은 브라우저가 아니라 Streamlit 서버 프로세스에서 `requests`로 수행합니다.
-- polling은 `time.sleep(2)` 후 `st.rerun()` 방식으로 구현돼 있습니다.
+- 진행 상태는 SSE를 먼저 소비하고, 실패 시 `time.sleep(2)` 후 `st.rerun()` polling으로 fallback합니다.
+- SSE client 검증 artifact는 `.venv/bin/python -m frontend.scripts.verify_workflow_stream`으로 생성합니다.
 - 별도 API base URL 입력 UI는 아직 없습니다.
 
 ## 품질 확인

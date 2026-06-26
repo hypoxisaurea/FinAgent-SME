@@ -127,6 +127,85 @@ def test_get_workflow_job_status_returns_404_when_missing(
     assert response.json()["code"] == "JOB_NOT_FOUND"
 
 
+def test_stream_workflow_job_status_emits_progress_events(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    statuses = [
+        WorkflowJobStatusResponse(
+            job_id="job-123",
+            request_id="req-123",
+            company_name="FinAgent",
+            status="running",
+            submitted_at="2026-06-13T00:00:00+00:00",
+            started_at="2026-06-13T00:00:01+00:00",
+        ),
+        WorkflowJobStatusResponse(
+            job_id="job-123",
+            request_id="req-123",
+            company_name="FinAgent",
+            status="running",
+            submitted_at="2026-06-13T00:00:00+00:00",
+            started_at="2026-06-13T00:00:01+00:00",
+            step_summary={
+                "success": 1,
+                "partial": 0,
+                "failed": 0,
+                "fallback": 0,
+                "completed": 1,
+            },
+        ),
+        WorkflowJobStatusResponse(
+            job_id="job-123",
+            request_id="req-123",
+            company_name="FinAgent",
+            status="succeeded",
+            submitted_at="2026-06-13T00:00:00+00:00",
+            started_at="2026-06-13T00:00:01+00:00",
+            finished_at="2026-06-13T00:00:03+00:00",
+            step_summary={
+                "success": 2,
+                "partial": 0,
+                "failed": 0,
+                "fallback": 0,
+                "completed": 2,
+            },
+        ),
+    ]
+
+    def fake_get_workflow_job_status(job_id: str) -> WorkflowJobStatusResponse | None:
+        return statuses.pop(0)
+
+    monkeypatch.setattr(workflows, "SSE_POLL_INTERVAL_SECONDS", 0.0)
+    monkeypatch.setattr(
+        workflows,
+        "get_workflow_job_status",
+        fake_get_workflow_job_status,
+    )
+
+    with client.stream("GET", "/api/v1/workflows/jobs/job-123/stream") as response:
+        body = response.read().decode()
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    assert "event: running" in body
+    assert "event: progress" in body
+    assert "event: complete" in body
+    assert '"step_summary": {"success": 2' in body
+
+
+def test_stream_workflow_job_status_returns_404_when_missing(
+    client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(workflows, "get_workflow_job_status", lambda job_id: None)
+
+    response = client.get("/api/v1/workflows/jobs/job-missing/stream")
+
+    assert response.status_code == 404
+    assert response.json()["code"] == "JOB_NOT_FOUND"
+
+
 def test_get_workflow_job_result_returns_409_until_completed(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,

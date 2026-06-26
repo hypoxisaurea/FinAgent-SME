@@ -70,4 +70,4 @@ class CompanyResolverAgent(Agent):
 
 
 def _normalize_company_name(value: Any) -> str:
-    return "".join(str(value or "").split())
+    return str(value or "").strip()

@@ -68,33 +68,108 @@ flowchart LR
 | Agent | `ReportAgent` | 보고서 생성 |
 | Agent | `ValidationAgent` | 결과 검증과 score 기록 |
 | Agent | `MultiModalDocumentAgent` | PDF 텍스트와 차트 이미지 추출 |
+| Agent | `CompanyRegistryAgent` | DART 기업/재무 registry 구축 실행 |
 | Data | Repository / Service | DB 조회/저장, use-case 처리 |
 | Retrieval | Chroma / Industry RAG | 산업 방법론 PDF 검색과 출처 제공 |
+| MCP | Industry RAG MCP Server | 산업 방법론 검색 tool을 MCP stdio 서버로 노출 |
 | Evaluation | RAGAS Evaluation | retriever/agent 품질 평가와 artifact 생성 |
 | Observability | Logging / Langfuse | 요청 추적과 품질 score |
+| Operations | Shell Scripts | 로컬 환경 설치, 서버/DB 실행, Docker smoke 검증 |
 
 ### 실제 모듈 구성
 
-| 모듈 경로 | 구현 책임 |
-| --- | --- |
-| `backend/api/routes/workflows.py` | 동기/비동기 workflow HTTP endpoint |
-| `backend/data/services/workflow_job_runner.py` | background job claim, 실행, timeout, 저장 |
-| `backend/data/services/workflow_job_service.py` | job 생성/조회/결과 use-case |
-| `backend/agents/orchestrator/graph.py` | LangGraph 노드, 의존 edge, validation gate 분기 |
-| `backend/agents/orchestrator/step_runner.py` | agent 입력/출력 계약, timeout, retry |
-| `backend/agents/orchestrator/results.py` | workflow 상태 계산과 차단 응답 조립 |
-| `backend/agents/multimodal_document/agent.py` | 문서 처리 task 계획과 결과 계약 |
-| `backend/agents/multimodal_document/processor.py` | PDF 텍스트/차트 이미지 추출 |
-| `backend/agents/validation/agent.py` | 최종 결과 정합성 검사와 score 기록 |
-| `backend/common/langfuse.py` | trace/observation/score client adapter |
-| `backend/rag/evaluation.py` | retriever/agent RAGAS row, metric, report 생성 |
-| `backend/scripts/regenerate_industry_rag_artifacts.py` | 고정 평가셋 artifact 일괄 재생성 |
-| `backend/scripts/verify_langfuse_trace.py` | trace 전송, flush, API 재조회 증거 생성 |
-| `backend/Dockerfile` | FastAPI runtime, PDF system library, CPU-only PyTorch 이미지 |
-| `frontend/Dockerfile` | Streamlit 최소 runtime 이미지 |
-| `frontend/config.py` | 로컬/컨테이너 backend URL 해석 |
-| `backend/docker-compose.yml` | PostgreSQL, backend, frontend health dependency 구성 |
-| `frontend/views/report.py` | workflow 결과 보고서 렌더링 |
+| 영역 | 모듈 경로 | 구현 책임 |
+| --- | --- | --- |
+| Backend Entry | `backend/main.py` | FastAPI 앱 생성, lifespan에서 `WorkflowJobRunner` 시작/종료 |
+| Backend Entry | `backend/api/router.py` | API route 묶음 등록 |
+| Backend Entry | `backend/api/routes/health.py` | health/readiness endpoint |
+| Backend Entry | `backend/api/routes/workflows.py` | 동기/비동기 workflow HTTP endpoint, request/response 매핑 |
+| Backend Config | `backend/config.py`, `backend/backend_env.py` | legacy 설정 import 호환과 backend 환경 설정 |
+| Backend Config | `backend/common/settings.py`, `backend/common/env.py` | 실행 환경 변수와 공통 설정 로드 |
+| Backend Config | `backend/logging_config.py`, `backend/common/logging.py` | 구조화 로깅 설정 |
+| Schemas | `backend/schemas/workflow.py` | workflow API 입출력 스키마 |
+| Schemas | `backend/schemas/agent_contracts.py` | agent 공통 실행 계약 스키마 |
+| Schemas | `backend/schemas/credit.py`, `backend/schemas/state.py` | 신용평가/상태 도메인 스키마 |
+| Common | `backend/common/agent.py` | agent base protocol과 공통 실행 유틸 |
+| Common | `backend/common/contracts.py` | agent 결과 envelope 추출/검증 |
+| Common | `backend/common/langgraph.py` | LangGraph optional dependency adapter |
+| Common | `backend/common/langfuse.py` | trace/observation/score client adapter |
+| Common | `backend/common/api_client.py` | LLM/OpenAI 호환 client 설정 |
+| Common | `backend/common/providers.py` | agent tool/provider 추상화와 기본 provider |
+| Common | `backend/common/tool_runtime.py` | tool 호출 결과 표준화 |
+| Common | `backend/common/opendartreader.py`, `backend/opendartreader.py` | OpenDartReader import 호환 shim |
+| Data | `backend/data/db.py` | DB URL 해석, 테이블명 상수 |
+| Data | `backend/data/repositories/db_access.py` | 테이블 존재 확인과 공통 read query 실행 헬퍼 |
+| Data | `backend/data/repositories/*.py` | company, registry, financial, workflow job 저장소 |
+| Data | `backend/data/services/company_lookup.py` | 회사명 기반 기업 조회 use-case |
+| Data | `backend/data/services/company_registry_pipeline.py` | DART 기업 목록 적재 파이프라인 |
+| Data | `backend/data/services/sme_repository.py` | SME/재무 데이터 조회 서비스 |
+| Data | `backend/data/services/workflow_job_service.py` | job 생성/조회/결과 use-case |
+| Data | `backend/data/services/workflow_job_runner.py` | background job claim, 실행, timeout, 저장 |
+| Integrations | `backend/integrations/dart_client.py` | DART API client |
+| Integrations | `backend/integrations/economic_data_client.py` | 경제지표 API client |
+| MCP | `backend/mcp/industry_server.py` | `lookup_industry_methodology` MCP tool과 stdio server entrypoint |
+| Orchestrator | `backend/agents/orchestrator/orchestrator.py` | workflow orchestrator facade |
+| Orchestrator | `backend/agents/orchestrator/graph.py` | LangGraph 노드, 의존 edge, validation gate 분기 |
+| Orchestrator | `backend/agents/orchestrator/state.py` | workflow graph state 타입과 초기화 |
+| Orchestrator | `backend/agents/orchestrator/step_runner.py` | agent 입력/출력 계약, timeout, retry |
+| Orchestrator | `backend/agents/orchestrator/results.py` | workflow 상태 계산과 차단 응답 조립 |
+| Agents | `backend/agents/company_resolver/agent.py` | 회사명 정규화와 `corp_code` 식별 |
+| Agents | `backend/agents/company_registry/agent.py` | DART 기업 registry 적재/동기화 agent |
+| Agents | `backend/agents/news_collector/agent.py` | 뉴스 수집/요약 agent |
+| Agents | `backend/agents/financial_analyst/agent.py` | 재무제표/재무비율 분석 agent |
+| Agents | `backend/agents/industry_analyst/agent.py` | 산업/방법론/거시 환경 분석 agent |
+| Agents | `backend/agents/industry_analyst/data/*.csv` | 산업 분석용 오프라인 지표 데이터 |
+| Agents | `backend/agents/risk_event/agent.py` | 리스크 이벤트 분석 agent facade |
+| Agents | `backend/agents/risk_event/graph.py` | risk event 내부 graph 구성 |
+| Agents | `backend/agents/risk_event/handlers/*.py` | 키워드, 공시, 감성, 법률, 재무이상, timeline, severity handler |
+| Agents | `backend/agents/risk_event/models.py` | risk event 내부 모델 |
+| Agents | `backend/agents/risk_event/data/sme_loader.py` | risk event용 SME 데이터 loader |
+| Agents | `backend/agents/risk_event/test.py` | risk event keyword detector 수동 점검용 스크립트 |
+| Agents | `backend/agents/decision/agent.py` | 의사결정 agent facade |
+| Agents | `backend/agents/decision/graph.py` | decision 내부 graph 구성 |
+| Agents | `backend/agents/decision/handlers/*.py` | 등급 계산, 판단, 한도 추천, 설명 생성 handler |
+| Agents | `backend/agents/decision/models.py` | decision 내부 모델 |
+| Agents | `backend/agents/report/agent.py` | 최종 보고서 생성 |
+| Agents | `backend/agents/validation/agent.py` | 최종 결과 정합성 검사와 score 기록 |
+| Agents | `backend/agents/multimodal_document/agent.py` | 문서 처리 task 계획과 결과 계약 |
+| Agents | `backend/agents/multimodal_document/processor.py` | PDF 텍스트/차트 이미지 추출 |
+| Agents | `backend/agents/multimodal_document/dart.py` | DART 문서 다운로드/파싱 보조 |
+| Tools | `backend/tools/news.py` | 뉴스 검색/수집 tool |
+| Tools | `backend/tools/financial.py` | 재무 데이터 조회/분석 tool |
+| Tools | `backend/tools/industry.py` | 산업 방법론 조회 tool |
+| Tools | `backend/tools/company_registry.py` | 기업 registry 조회/동기화 tool |
+| Tools | `backend/tools/kr_grade_mapper.py` | 국내 신용등급 mapping |
+| Tools | `backend/tools/prompts/*.py` | tool/agent prompt template |
+| RAG | `backend/rag/chroma_client.py` | Chroma client와 collection 관리 |
+| RAG | `backend/rag/ingest_industry_docs.py` | 산업 방법론 PDF 적재 |
+| RAG | `backend/rag/retriever.py` | 산업 방법론 검색, 요약, 출처 조립 |
+| RAG | `backend/rag/evaluation.py` | retriever/agent RAGAS row, metric, report 생성 |
+| RAG | `backend/rag/retrieval_metrics.py` | LLM 없는 검색 품질 metric 산출 |
+| RAG | `backend/rag/analysis_hybrid_debug.py` | hybrid 검색 RRF/BM25 원인 분석용 디버그 스크립트 |
+| RAG | `backend/rag/eval_datasets/*.jsonl` | 고정 RAGAS 평가셋 |
+| RAG | `backend/rag/credit_thresholds/*.json` | 산업별 threshold fixture |
+| RAG | `backend/rag/artifacts/**` | RAGAS/retrieval metric 산출물 |
+| RAG | `backend/vectorstore/industry_knowledge/**` | Chroma 영속 벡터 저장소 |
+| Scripts | `backend/scripts/build_db.py` | DART 기반 기업/재무 DB 구축 CLI |
+| Scripts | `backend/scripts/evaluate_industry_rag.py` | 단일 retriever/agent RAGAS 평가 CLI |
+| Scripts | `backend/scripts/regenerate_industry_rag_artifacts.py` | 고정 평가셋 artifact 일괄 재생성 |
+| Scripts | `backend/scripts/verify_langfuse_trace.py` | trace 전송, flush, API 재조회 증거 생성 |
+| Scripts | `scripts/setup-env.sh` | `.venv` 생성과 runtime/dev dependency 설치 |
+| Scripts | `scripts/setup-db.sh` | PostgreSQL compose 제어와 DB build 위임 |
+| Scripts | `scripts/run-server.sh` | 로컬 backend/frontend 프로세스 시작·중지·상태 확인 |
+| Scripts | `scripts/run-all.sh` | 로컬 DB/backend/frontend 통합 실행 제어 |
+| Scripts | `scripts/docker-smoke.sh` | compose stack build, healthcheck, evidence JSON 생성 |
+| Scripts | `scripts/lib/common.sh`, `scripts/lib/stack.sh` | shell script 공통 경로, 로그, 프로세스/compose orchestration 함수 |
+| Frontend | `frontend/main.py` | Streamlit 앱 entrypoint |
+| Frontend | `frontend/streamlit_ui.py` | 공통 Streamlit UI 구성 |
+| Frontend | `frontend/config.py` | 로컬/컨테이너 backend URL 해석 |
+| Frontend | `frontend/views/search.py` | 기업 검색, workflow 실행 요청, job polling |
+| Frontend | `frontend/views/report.py` | workflow 결과 보고서 렌더링 |
+| Frontend | `frontend/views/report_view_model.py` | report 화면용 view model 조립 |
+| Deployment | `backend/Dockerfile` | FastAPI runtime, PDF system library, CPU-only PyTorch 이미지 |
+| Deployment | `frontend/Dockerfile` | Streamlit 최소 runtime 이미지 |
+| Deployment | `backend/docker-compose.yml` | PostgreSQL, backend, frontend health dependency 구성 |
 
 ## 4. 오케스트레이터 설계
 
@@ -179,17 +254,41 @@ Validation gate는 `report -> validation` 뒤에 조건부 edge를 둔다. 실�
 - 특이사항: 실패는 `status=failed`이며 orchestrator validation gate를 작동시킴
 - Langfuse score는 활성화된 경우만 기록
 
+### `MultiModalDocumentAgent`
+
+- 입력: 선택적 `pdf_path`
+- 의존성: `backend/agents/multimodal_document/processor.py`, `dart.py`
+- 출력: `document_result`, `texts`, `chart_images`, `page_count`
+- 특이사항: 현재 공개 HTTP body에는 `pdf_path`가 노출되지 않은 비공개 확장 경로
+
+### `CompanyRegistryAgent`
+
+- 입력: `year`, 선택적 `sample_size`, `skip_db_save`
+- 의존성: `company_registry_pipeline` service, `backend/tools/company_registry.py`
+- 출력: `company_registry_result`
+- 특이사항: 심사 workflow 본류가 아니라 DART 기반 DB 구축/동기화용 agent
+
 ## 6. 데이터 계층
 
 | 계층 | 역할 |
 | --- | --- |
 | `backend/data/db.py` | DB URL 해석, 테이블명 상수 |
-| `repositories/` | SQL 조회, DataFrame append/save |
+| `backend/data/repositories/db_access.py` | 테이블 존재 확인과 공통 read query 실행 |
+| `repositories/` | SQL 조회, DataFrame upsert/save, workflow job 상태 저장 |
 | `services/` | 기업 조회, DART 파이프라인 orchestration |
 
 업무 데이터와 job 상태는 PostgreSQL에, 산업 방법론 임베딩은 Chroma에 저장합니다. 두 저장소의 데이터 수명주기와 백업 정책은 분리해서 다룹니다.
 
-## 7. 관측성
+## 7. 보조 실행면
+
+| 영역 | 역할 |
+| --- | --- |
+| `backend/mcp/industry_server.py` | Industry RAG 검색을 MCP `lookup_industry_methodology` tool로 노출 |
+| `backend/rag/analysis_hybrid_debug.py` | hybrid 검색 품질 저하 원인 분석용 로컬 디버그 스크립트 |
+| `scripts/*.sh` | 로컬 환경 설치, DB/backend/frontend 실행, Docker smoke 검증 |
+| `scripts/lib/*.sh` | shell script 공통 경로/프로세스/compose orchestration 함수 |
+
+## 8. 관측성
 
 | 수단 | 위치 | 목적 |
 | --- | --- | --- |
@@ -206,7 +305,7 @@ Validation gate는 `report -> validation` 뒤에 조건부 edge를 둔다. 실�
 .venv/bin/python -m backend.scripts.verify_langfuse_trace
 ```
 
-## 8. 실행 구성
+## 9. 실행 구성
 
 | 구성요소 | 현재 방식 |
 | --- | --- |
@@ -217,8 +316,9 @@ Validation gate는 `report -> validation` 뒤에 조건부 edge를 둔다. 실�
 | DB Build | `scripts/setup-db.sh build` |
 | RAG Ingest | `.venv/bin/python -m backend.rag.ingest_industry_docs` |
 | RAGAS Artifact 재생성 | `.venv/bin/python -m backend.scripts.regenerate_industry_rag_artifacts` |
+| Industry MCP Server | `.venv/bin/python -m backend.mcp.industry_server` |
 
-## 9. 현재 확장 포인트
+## 10. 현재 확장 포인트
 
 - 공개 API body 확장 (`pdf_path`, `continue_on_error` 등)
 - 추가 agent 노드 연결

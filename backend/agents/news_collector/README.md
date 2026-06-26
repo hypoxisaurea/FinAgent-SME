@@ -13,7 +13,7 @@
 - `max_articles` (default `5`)
 - `company_limit`
 - `summarize` (default `True`)
-- `model_name` (default `gpt-4o-mini`)
+- `model_name` (payload 미지정 시 `OPEN_ROUTER_NEWS_SUMMARY_MODEL`, 기본 `qwen/qwen-2.5-7b-instruct`)
 - `show_progress`
 - `database_url`
 
@@ -78,6 +78,13 @@
 - Daum News
 - PostgreSQL
 - OpenRouter 요약 사용 시 `OPEN_ROUTER_API_KEY`
+
+## 환경 변수
+
+- `OPEN_ROUTER_NEWS_SUMMARY_MODEL`
+  - 뉴스 기사 요약에 사용할 OpenRouter 모델 ID
+  - 예: `OPEN_ROUTER_NEWS_SUMMARY_MODEL=openai/gpt-4o-mini`
+  - payload의 `model_name`이 없으면 이 값을 사용합니다.
 
 ## 테스트
 

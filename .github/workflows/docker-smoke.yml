@@ -1,0 +1,39 @@
+name: Docker Smoke
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/docker-smoke.yml"
+      - "backend/Dockerfile"
+      - "frontend/Dockerfile"
+      - "backend/docker-compose.yml"
+      - "scripts/docker-smoke.sh"
+      - "requirements.txt"
+      - "frontend/requirements.txt"
+
+permissions:
+  contents: read
+
+jobs:
+  docker-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      BACKEND_PORT: "18000"
+      FRONTEND_PORT: "18501"
+      POSTGRES_PORT: "15433"
+      HEALTH_TIMEOUT_SECONDS: "180"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run Docker Compose smoke test
+        run: ./scripts/docker-smoke.sh
+
+      - name: Upload Docker smoke evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-smoke-verification
+          path: artifacts/docker_smoke_verification.json
+          if-no-files-found: error

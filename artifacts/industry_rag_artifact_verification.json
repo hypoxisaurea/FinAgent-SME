@@ -1,0 +1,40 @@
+{
+  "verified": true,
+  "verified_at": "2026-06-23T16:28:57.936164+00:00",
+  "manifest_path": "backend/rag/artifacts/industry_rag_eval/regeneration_manifest.json",
+  "artifact_count": 2,
+  "targets": [
+    "agent",
+    "retriever"
+  ],
+  "artifacts": [
+    {
+      "target": "retriever",
+      "dataset_path": "backend/rag/eval_datasets/industry_methodology.jsonl",
+      "output_path": "backend/rag/artifacts/industry_rag_eval/report.json",
+      "evaluation_target": "retriever",
+      "case_count": 9,
+      "scored_metric_count": 27,
+      "metrics": [
+        "context_precision",
+        "context_recall",
+        "factual_correctness"
+      ]
+    },
+    {
+      "target": "agent",
+      "dataset_path": "backend/rag/eval_datasets/industry_agent.jsonl",
+      "output_path": "backend/rag/artifacts/industry_rag_eval/agent_report.json",
+      "evaluation_target": "agent",
+      "case_count": 8,
+      "scored_metric_count": 40,
+      "metrics": [
+        "context_precision",
+        "context_recall",
+        "factual_correctness",
+        "faithfulness",
+        "response_groundedness"
+      ]
+    }
+  ]
+}

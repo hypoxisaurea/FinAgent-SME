@@ -304,6 +304,10 @@ def test_orchestrator_retries_report_then_blocks_failed_validation(caplog: Any) 
             "corp_name": "테스트기업",
         },
     )
+    decision = _FakeAgent(
+        "decision",
+        {"decision": "reject", "recommended_limit": 0},
+    )
     report = _FakeAgent("report", {"report": {"summary": "검증 전 보고서"}})
     validation = _FakeAgent(
         "validation",
@@ -322,7 +326,7 @@ def test_orchestrator_retries_report_then_blocks_failed_validation(caplog: Any) 
     )
     orchestrator = WorkflowOrchestrator(
         resolver_agent=resolver,
-        sequential_agents=[report, validation],
+        sequential_agents=[decision, report, validation],
     )
 
     with caplog.at_level(logging.WARNING):
@@ -336,6 +340,13 @@ def test_orchestrator_retries_report_then_blocks_failed_validation(caplog: Any) 
     assert result["context"]["validation_gate_status"] == "blocked"
     assert result["context"]["validation_attempt"] == 2
     assert len(report.seen_contexts) == 2
+    decision_step = next(
+        step for step in result["steps"] if step["agent_name"] == "decision"
+    )
+    assert "decision" not in decision_step["output"]
+    assert "recommended_limit" not in decision_step["output"]
+    report_steps = [step for step in result["steps"] if step["agent_name"] == "report"]
+    assert all("report" not in step["output"] for step in report_steps)
     validation_steps = [
         step for step in result["steps"] if step["agent_name"] == "validation"
     ]
@@ -449,6 +460,70 @@ def test_orchestrator_blocks_when_validation_has_no_report_retry_node() -> None:
     assert result["status"] == "failed"
     assert result["context"]["validation_gate_status"] == "blocked"
     assert result["context"]["validation_retry_attempts"] == 0
+
+
+def test_orchestrator_blocks_and_redacts_when_validation_execution_fails() -> None:
+    report = _FakeAgent("report", {"report": {"summary": "차단 보고서"}})
+    validation = _FakeAgent(
+        "validation",
+        {
+            "status": "failed",
+            "error_code": "AGENT_EXECUTION_FAILED",
+        },
+    )
+    orchestrator = WorkflowOrchestrator(
+        sequential_agents=[report, validation],
+    )
+
+    result = asyncio.run(
+        orchestrator.run({"company_name": "테스트기업", "validation_retry_attempts": 0})
+    )
+
+    assert result["status"] == "failed"
+    assert result["code"] == "VALIDATION_FAILED"
+    assert result["context"]["validation_gate_status"] == "blocked"
+    assert result["context"]["validation_result"]["failed_checks"] == [
+        "validation_execution"
+    ]
+    assert "report" not in result["context"]
+    report_step = next(
+        step for step in result["steps"] if step["agent_name"] == "report"
+    )
+    assert "report" not in report_step["output"]
+
+
+def test_orchestrator_fails_closed_for_inconsistent_validation_status() -> None:
+    report = _FakeAgent("report", {"report": {"summary": "차단 보고서"}})
+    validation = _FakeAgent(
+        "validation",
+        {
+            "status": "failed",
+            "error_code": "AGENT_EXECUTION_FAILED",
+            "validation_result": {
+                "validation_passed": True,
+                "pass_rate": 1.0,
+                "passed_checks": 1,
+                "total_checks": 1,
+                "failed_checks": [],
+                "checks": [],
+            },
+        },
+    )
+    orchestrator = WorkflowOrchestrator(
+        sequential_agents=[report, validation],
+    )
+
+    result = asyncio.run(
+        orchestrator.run({"company_name": "테스트기업", "validation_retry_attempts": 0})
+    )
+
+    assert result["status"] == "failed"
+    assert result["code"] == "VALIDATION_FAILED"
+    assert result["context"]["validation_gate_status"] == "blocked"
+    assert result["context"]["validation_result"]["validation_passed"] is False
+    assert result["context"]["validation_result"]["failed_checks"] == [
+        "validation_execution"
+    ]
 
 
 def test_orchestrator_marks_failed_contract_output_as_step_failure() -> None:

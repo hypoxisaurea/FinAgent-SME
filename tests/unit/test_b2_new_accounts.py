@@ -158,9 +158,9 @@ class TestNetMarginInRatios:
         assert ratios["net_margin"] == pytest.approx(expected)
 
     def test_net_margin_total_count(self):
-        """비율 총 개수가 20개인지 확인 (16개 + EBITDA 4개)."""
+        """비율/메타데이터 총 개수가 24개인지 확인한다."""
         ratios = calc_financial_ratios.invoke({"fs": self._make_fs_dict()})
-        assert len(ratios) == 20, f"비율 개수 {len(ratios)}개 (기대: 20개)"
+        assert len(ratios) == 24, f"비율 개수 {len(ratios)}개 (기대: 24개)"
 
 
 class TestEbitdaRatios:
@@ -251,6 +251,28 @@ class TestEbitdaRatios:
         """이자비용 0 → ebitda_to_interest None (net_debt_to_ebitda는 정상)."""
         ratios = self._call(이자비용=0.0)
         assert ratios["ebitda_to_interest"] is None
+
+    def test_low_quality_interest_expense_marks_estimated_ratio(self):
+        ratios = self._call(
+            이자비용=30_000_000.0,
+            이자비용_원본계정="금융원가",
+            이자비용_품질="low",
+        )
+        expected_ebitda = 120_000_000.0 + 20_000_000.0 + 5_000_000.0
+        assert ratios["interest_coverage"] == pytest.approx(120_000_000.0 / 30_000_000.0)
+        assert ratios["ebitda_to_interest"] == pytest.approx(expected_ebitda / 30_000_000.0)
+        assert ratios["interest_ratio_estimated"] is True
+        assert "금융원가" in str(ratios["interest_ratio_note"])
+
+    def test_low_quality_interest_expense_drops_extreme_ratio(self):
+        ratios = self._call(
+            영업이익=5_000_000_000.0,
+            이자비용=10_000_000.0,
+            이자비용_원본계정="금융원가",
+            이자비용_품질="low",
+        )
+        assert ratios["interest_coverage"] is None
+        assert "산출을 제외" in str(ratios["interest_ratio_note"])
         assert ratios["net_debt_to_ebitda"] is not None
 
     # ── DB 경로 폴백: 새 키 없는 fs ───────────────────────────────────────────

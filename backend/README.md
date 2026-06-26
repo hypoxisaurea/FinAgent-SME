@@ -199,7 +199,9 @@ backend/
 ```env
 OPEN_ROUTER_API_KEY=...
 OPEN_ROUTER_BASE_URL=https://openrouter.ai/api/v1
-OPEN_ROUTER_MODEL=openai/gpt-4o-mini
+OPEN_ROUTER_NEWS_SUMMARY_MODEL=qwen/qwen-2.5-7b-instruct
+OPEN_ROUTER_RISK_EVENT_MODEL=qwen/qwen3-8b
+OPEN_ROUTER_DECISION_MODEL=openai/gpt-4o-mini
 OPEN_DART_API_KEY=...
 ECOS_API_KEY=...
 KOSIS_API_KEY=...
@@ -215,6 +217,11 @@ LANGFUSE_SECRET_KEY=...
 
 - 신규 LLM 설정은 `OPEN_ROUTER_API_KEY` 기준입니다.
 - `OPEN_AI_API_KEY`, `OPENAI_API_KEY`, `OPEN_API_KEY`는 레거시 호환용 fallback입니다.
+- 단계별 모델 분리:
+  - `OPEN_ROUTER_NEWS_SUMMARY_MODEL`: 뉴스 기사 요약
+  - `OPEN_ROUTER_RISK_EVENT_MODEL`: `risk_event` 감성 분석
+  - `OPEN_ROUTER_DECISION_MODEL`: `decision` 설명 생성
+  - 공통 `OPEN_ROUTER_MODEL`은 사용하지 않습니다.
 
 ## 실행
 

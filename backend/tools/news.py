@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -55,9 +56,10 @@ DEFAULT_PAGE_SIZE = 20
 DEFAULT_REQUEST_TIMEOUT = 10
 DEFAULT_LIST_DELAY_SEC = 0.4
 DEFAULT_CONTENT_DELAY_SEC = 1.0
-DEFAULT_SUMMARY_MODEL = os.getenv("NEWS_SUMMARY_MODEL", "qwen/qwen3-8b").strip()
+DEFAULT_SUMMARY_MODEL = "qwen/qwen-2.5-7b-instruct"
 DEFAULT_SUMMARIZE = True
 NEWS_SUMMARY_PROVIDER = "openrouter"
+REQUIRE_COMPANY_IN_TITLE = True
 
 DEFAULT_HEADERS = {
     "User-Agent": (
@@ -65,6 +67,128 @@ DEFAULT_HEADERS = {
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     ),
 }
+
+COMPANY_REFERENCE_MARKERS = (
+    "이 회사",
+    "해당 회사",
+    "해당 기업",
+    "업체",
+    "기업",
+    "법인",
+    "본사",
+    "공장",
+    "대표",
+    "대표이사",
+    "경영진",
+    "직원",
+    "근로자",
+    "협력사",
+    "제품",
+    "브랜드",
+    "납품",
+    "수주",
+    "생산",
+    "투자",
+    "자회사",
+    "계열사",
+    "검찰",
+    "경찰",
+    "법원",
+    "제재",
+    "행정처분",
+    "압수수색",
+    "화재",
+    "사고",
+    "리콜",
+    "소송",
+)
+STRONG_REFERENCE_MARKERS = (
+    "이 회사",
+    "해당 회사",
+    "회사 측",
+    "해당 기업",
+    "본사",
+    "공장",
+    "대표",
+    "대표이사",
+    "경영진",
+    "직원",
+    "근로자",
+    "협력사",
+    "제품",
+    "브랜드",
+    "자회사",
+    "계열사",
+)
+CONTINUATION_MARKERS = (
+    "또",
+    "이어",
+    "이후",
+    "그러나",
+    "다만",
+    "한편",
+    "이에",
+)
+QUANT_MARKERS = (
+    "원",
+    "달러",
+    "%",
+    "억원",
+    "만원",
+    "천만원",
+    "조원",
+    "건",
+    "명",
+    "배",
+    "개월",
+    "년",
+    "일",
+)
+FINANCE_EVENT_MARKERS = (
+    "전환사채",
+    "사채",
+    "회사채",
+    "자금조달",
+    "발행",
+    "투자 유치",
+    "증설",
+    "신규 투자",
+    "설비 투자",
+    "시설 투자",
+    "인증 획득",
+    "수주",
+    "계약",
+    "공급망",
+    "납품",
+    "매출 증가",
+    "성장",
+    "확장",
+)
+CORPORATE_SUFFIXES = (
+    "투자증권",
+    "증권",
+    "은행",
+    "카드",
+    "캐피탈",
+    "생명",
+    "화학",
+    "금속",
+    "전자",
+    "건설",
+    "중공업",
+    "에너지",
+    "모터스",
+    "식품",
+    "제약",
+    "바이오",
+    "상사",
+    "해운",
+    "조선",
+    "통신",
+    "반도체",
+    "홀딩스",
+    "산업",
+)
 
 
 class Base(DeclarativeBase):
@@ -103,6 +227,204 @@ class SMECompany:
 
 def _normalize_text(value: str | None) -> str:
     return str(value or "").strip()
+
+
+def _compact_text(value: str | None) -> str:
+    return re.sub(r"[^0-9A-Za-z가-힣]+", "", str(value or "")).lower()
+
+
+def _build_company_aliases(corp_name: str) -> set[str]:
+    normalized_name = _normalize_text(corp_name)
+    compact_name = _compact_text(normalized_name)
+    aliases = {
+        normalized_name,
+        compact_name,
+        normalized_name.replace("(주)", "").replace("㈜", "").strip(),
+        normalized_name.replace("주식회사", "").strip(),
+        normalized_name.replace(" ", "").strip(),
+    }
+    return {
+        alias
+        for alias in aliases
+        if alias and len(_compact_text(alias)) >= 2
+    }
+
+
+def _text_has_company_alias(text: str, aliases: set[str]) -> bool:
+    compact_text = _compact_text(text)
+    return any(_compact_text(alias) in compact_text for alias in aliases)
+
+
+def _split_sentences(text: str) -> list[str]:
+    normalized_text = re.sub(r"\s+", " ", str(text or "")).strip()
+    if not normalized_text:
+        return []
+    normalized_text = re.sub(r"([.!?。])\s+", r"\1\n", normalized_text)
+    parts = normalized_text.splitlines()
+    return [part.strip() for part in parts if part.strip()]
+
+
+def _looks_quantitative(sentence: str) -> bool:
+    return any(marker in sentence for marker in QUANT_MARKERS) or bool(
+        re.search(r"\d", sentence)
+    )
+
+
+def _extract_company_candidates(text: str) -> set[str]:
+    candidates: set[str] = set()
+    normalized_text = str(text or "")
+    for suffix in CORPORATE_SUFFIXES:
+        pattern = rf"[A-Za-z가-힣0-9]{{2,20}}{re.escape(suffix)}"
+        candidates.update(re.findall(pattern, normalized_text))
+    return {candidate.strip() for candidate in candidates if candidate.strip()}
+
+
+def _count_other_company_candidates(text: str, aliases: set[str]) -> int:
+    target_compacts = {_compact_text(alias) for alias in aliases}
+    other_candidates = [
+        candidate
+        for candidate in _extract_company_candidates(text)
+        if _compact_text(candidate) not in target_compacts
+    ]
+    return len(set(other_candidates))
+
+
+def _has_sufficient_target_evidence(extracted_text: str, aliases: set[str]) -> bool:
+    sentences = _split_sentences(extracted_text)
+    direct_hits = sum(1 for sentence in sentences if _text_has_company_alias(sentence, aliases))
+    if direct_hits >= 1:
+        return True
+    if len(sentences) >= 2 and any(
+        any(marker in sentence for marker in STRONG_REFERENCE_MARKERS)
+        for sentence in sentences[:2]
+    ):
+        return True
+    return False
+
+
+def _contains_finance_event_marker(text: str) -> bool:
+    normalized_text = str(text or "")
+    return any(marker in normalized_text for marker in FINANCE_EVENT_MARKERS)
+
+
+def _classify_article_relevance(
+    *,
+    title: str,
+    content: str,
+    corp_name: str,
+) -> tuple[str, dict[str, int | bool]]:
+    aliases = _build_company_aliases(corp_name)
+    title_hit = _text_has_company_alias(title, aliases)
+    content_hit = _text_has_company_alias(content, aliases)
+    if REQUIRE_COMPANY_IN_TITLE and not title_hit:
+        return "irrelevant", {
+            "score": -999,
+            "title_hit": title_hit,
+            "content_hit": content_hit,
+            "direct_hits": 0,
+            "context_hits": 0,
+            "finance_event_hit": False,
+            "title_other_company_count": _count_other_company_candidates(title, aliases),
+            "content_other_company_count": _count_other_company_candidates(content, aliases),
+            "title_gate_rejected": True,
+        }
+    sentences = _split_sentences(content)
+    direct_hits = sum(1 for sentence in sentences if _text_has_company_alias(sentence, aliases))
+    context_hits = sum(
+        1
+        for sentence in sentences[:5]
+        if any(marker in sentence for marker in COMPANY_REFERENCE_MARKERS)
+    )
+    finance_event_hit = _contains_finance_event_marker(title) or _contains_finance_event_marker(
+        content
+    )
+    title_other_company_count = _count_other_company_candidates(title, aliases)
+    content_other_company_count = _count_other_company_candidates(content, aliases)
+    score = 0
+    score += 3 if title_hit else 0
+    score += 4 if content_hit else 0
+    score += min(direct_hits, 3) * 2
+    score += 1 if title_hit and context_hits > 0 else 0
+    score += 1 if content_hit and context_hits > 0 else 0
+    score += 2 if finance_event_hit and content_hit else 0
+    score += 1 if finance_event_hit and direct_hits >= 1 else 0
+    if direct_hits <= 1 and content_other_company_count >= 2:
+        score -= 2
+    if direct_hits == 0 and context_hits == 0:
+        score -= 3
+    if finance_event_hit and content_hit:
+        score += 1
+
+    if score >= 5:
+        label = "relevant"
+    elif score >= 2:
+        label = "ambiguous"
+    else:
+        label = "irrelevant"
+
+    return label, {
+        "score": score,
+        "title_hit": title_hit,
+        "content_hit": content_hit,
+        "direct_hits": direct_hits,
+        "context_hits": context_hits,
+        "finance_event_hit": finance_event_hit,
+        "title_other_company_count": title_other_company_count,
+        "content_other_company_count": content_other_company_count,
+    }
+
+
+def _extract_company_sentences(
+    *,
+    title: str,
+    content: str,
+    corp_name: str,
+) -> str:
+    aliases = _build_company_aliases(corp_name)
+    sentences = _split_sentences(content)
+    if not sentences:
+        return ""
+
+    title_hit = _text_has_company_alias(title, aliases)
+    selected_indexes: set[int] = set()
+    for index, sentence in enumerate(sentences):
+        direct_hit = _text_has_company_alias(sentence, aliases)
+        context_hit = any(marker in sentence for marker in COMPANY_REFERENCE_MARKERS)
+        continuation_hit = any(sentence.startswith(marker) for marker in CONTINUATION_MARKERS)
+
+        if direct_hit:
+            selected_indexes.update(
+                idx for idx in range(max(0, index - 1), min(len(sentences), index + 2))
+            )
+            continue
+
+        if title_hit and context_hit and index <= 4:
+            selected_indexes.add(index)
+            continue
+
+        if continuation_hit and index - 1 in selected_indexes:
+            selected_indexes.add(index)
+
+    if not selected_indexes and title_hit:
+        selected_indexes.update(range(min(len(sentences), 2)))
+
+    for index, sentence in enumerate(sentences):
+        if (
+            index not in selected_indexes
+            and _looks_quantitative(sentence)
+            and any(neighbor in selected_indexes for neighbor in (index - 1, index + 1))
+        ):
+            selected_indexes.add(index)
+
+    selected_sentences = [sentences[index] for index in sorted(selected_indexes)]
+    extracted = " ".join(selected_sentences).strip()
+    if extracted:
+        return extracted
+    return content.strip() if _text_has_company_alias(content, aliases) else ""
+
+
+def get_news_summary_model() -> str:
+    return os.getenv("OPEN_ROUTER_NEWS_SUMMARY_MODEL", DEFAULT_SUMMARY_MODEL).strip()
 
 
 def resolve_database_url() -> str:
@@ -507,21 +829,26 @@ def get_openai_client() -> Any:
 def get_llm_summary(
     text: str,
     client: Any | None = None,
-    model_name: str = DEFAULT_SUMMARY_MODEL,
+    model_name: str | None = None,
     *,
     corp_name: str | None = None,
+    title: str | None = None,
     request_id: str | None = None,
 ) -> tuple[str, float, str | None]:
     if not text or len(text.strip()) < 50:
         return "본문이 너무 짧습니다.", 0.0, None
 
     summary_client = client or get_openai_client()
-    prompt = NEWS_SUMMARY_PROMPT_TEMPLATE.format(text=text)
-
+    prompt = NEWS_SUMMARY_PROMPT_TEMPLATE.format(
+        corp_name=_normalize_text(corp_name),
+        title=_normalize_text(title),
+        text=text,
+    )
+    resolved_model_name = (model_name or get_news_summary_model()).strip()
     start_time = time.time()
     try:
         response = summary_client.chat.completions.create(
-            model=model_name,
+            model=resolved_model_name,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt},
@@ -536,7 +863,7 @@ def get_llm_summary(
                     "company_name": corp_name,
                     "input_length": len(text),
                     "provider": NEWS_SUMMARY_PROVIDER,
-                    "model_name": model_name,
+                    "model_name": resolved_model_name,
                 },
             ),
         )
@@ -544,7 +871,7 @@ def get_llm_summary(
         latency = time.time() - start_time
         logger.info(
             "daum_news_summary_completed model=%s input_length=%s latency_sec=%.2f",
-            model_name,
+            resolved_model_name,
             len(text),
             latency,
         )
@@ -553,7 +880,7 @@ def get_llm_summary(
         reason = describe_llm_error(exc)
         logger.exception(
             "daum_news_summary_failed model=%s input_length=%s reason=%s",
-            model_name,
+            resolved_model_name,
             len(text),
             reason,
         )
@@ -567,20 +894,61 @@ def build_article_payload(
     news: dict[str, Any],
     summarize: bool = DEFAULT_SUMMARIZE,
     summary_client: Any | None = None,
-    model_name: str = DEFAULT_SUMMARY_MODEL,
+    model_name: str | None = None,
     request_id: str | None = None,
-) -> tuple[dict[str, Any], str | None]:
+) -> tuple[dict[str, Any] | None, str | None]:
+    article_title = (news.get("title") or "").strip()
     article_content = (news.get("content") or "").strip()
-    stored_content = article_content
+    relevance_label, relevance_meta = _classify_article_relevance(
+        title=article_title,
+        content=article_content,
+        corp_name=corp_name,
+    )
+    if relevance_label == "irrelevant":
+        logger.info(
+            (
+                "daum_news_article_skipped_relevance stock_code=%s corp_name=%s "
+                "title=%s score=%s"
+            ),
+            stock_code,
+            corp_name,
+            article_title,
+            relevance_meta["score"],
+        )
+        return None, None
+
+    focused_content = _extract_company_sentences(
+        title=article_title,
+        content=article_content,
+        corp_name=corp_name,
+    )
+    if not focused_content or not _has_sufficient_target_evidence(
+        focused_content,
+        _build_company_aliases(corp_name),
+    ):
+        logger.info(
+            (
+                "daum_news_article_skipped_no_focus stock_code=%s corp_name=%s "
+                "title=%s relevance=%s"
+            ),
+            stock_code,
+            corp_name,
+            article_title,
+            relevance_label,
+        )
+        return None, None
+
+    stored_content = focused_content
     content_type = "full_text"
     summary_error: str | None = None
 
     if summarize:
         summary_text, _, summary_error = get_llm_summary(
-            article_content,
+            focused_content,
             client=summary_client,
             model_name=model_name,
             corp_name=corp_name,
+            title=article_title,
             request_id=request_id,
         )
         stored_content = summary_text
@@ -590,7 +958,7 @@ def build_article_payload(
         {
             "stock_code": stock_code.strip(),
             "corp_name": corp_name.strip(),
-            "news_title": (news.get("title") or "").strip(),
+            "news_title": article_title,
             "press_name": (news.get("press") or "").strip(),
             "published_at": news.get("published_at")
             or _parse_created_at(news.get("date", "")),
@@ -660,7 +1028,7 @@ def execute_news_pipeline(
     lookback_days: int = DEFAULT_LOOKBACK_DAYS,
     max_articles: int = DEFAULT_MAX_ARTICLES,
     summarize: bool = DEFAULT_SUMMARIZE,
-    model_name: str = DEFAULT_SUMMARY_MODEL,
+    model_name: str | None = None,
     company_limit: int | None = None,
     show_progress: bool = True,
     company_name: str | None = None,
@@ -670,6 +1038,7 @@ def execute_news_pipeline(
 ) -> dict[str, Any]:
     engine = create_db_engine(database_url)
     create_tables(engine)
+    resolved_model_name = (model_name or get_news_summary_model()).strip()
 
     stats = {
         "company_count": 0,
@@ -677,6 +1046,7 @@ def execute_news_pipeline(
         "article_limit": max_articles,
         "inserted_count": 0,
         "updated_count": 0,
+        "skipped_irrelevant_count": 0,
         "summary_error_count": 0,
         "summary_error_reasons": [],
         "target_company_count": 0,
@@ -758,9 +1128,12 @@ def execute_news_pipeline(
                     news=news,
                     summarize=summarize,
                     summary_client=summary_client,
-                    model_name=model_name,
+                    model_name=resolved_model_name,
                     request_id=request_id,
                 )
+                if article is None:
+                    stats["skipped_irrelevant_count"] += 1
+                    continue
                 articles.append(article)
                 if summary_error:
                     stats["summary_error_count"] += 1

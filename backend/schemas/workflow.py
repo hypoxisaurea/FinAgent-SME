@@ -111,6 +111,7 @@ class WorkflowIndustrySection(BaseModel):
     industry_summary: dict[str, Any] | str | None = None
     industry_tool_runs: list[dict[str, Any]] = Field(default_factory=list)
     industry_tool_errors: list[dict[str, Any]] = Field(default_factory=list)
+    kr_financial_grades: dict[str, Any] | None = None
 
 
 class WorkflowRiskSection(BaseModel):
@@ -323,6 +324,7 @@ class WorkflowContext(BaseModel):
             industry_summary=self.industry_summary,
             industry_tool_runs=list(self.industry_tool_runs),
             industry_tool_errors=list(self.industry_tool_errors),
+            kr_financial_grades=getattr(self, 'kr_financial_grades', None),
         )
         self.risk = WorkflowRiskSection(
             risk_event_result=self.risk_event_result,

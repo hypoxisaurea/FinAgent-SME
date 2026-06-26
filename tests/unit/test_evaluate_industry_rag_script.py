@@ -73,6 +73,7 @@ def test_run_evaluation_builds_rows_and_writes_report(
 
 def test_run_evaluation_supports_agent_target(monkeypatch, tmp_path: Path) -> None:
     dataset_path = tmp_path / "agent-dataset.jsonl"
+    output_path = tmp_path / "agent-report.json"
     dataset_path.write_text(
         json.dumps(
             {
@@ -102,12 +103,14 @@ def test_run_evaluation_supports_agent_target(monkeypatch, tmp_path: Path) -> No
     )
 
     args = evaluate_industry_rag.build_parser().parse_args(
-        [str(dataset_path), "--target", "agent"]
+        [str(dataset_path), "--target", "agent", "--output-path", str(output_path)]
     )
     report = evaluate_industry_rag.run_evaluation(args)
 
     assert report["evaluation_target"] == "agent"
     assert report["case_count"] == 1
+    stored = json.loads(output_path.read_text(encoding="utf-8"))
+    assert stored["evaluation_target"] == "agent"
 
 
 async def _fake_async_report(rows, model_name, evaluation_target):

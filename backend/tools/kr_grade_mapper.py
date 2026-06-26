@@ -65,8 +65,22 @@ def calc_kr_financial_grades(
         spec = json.load(f)
 
     per_metric: dict[str, Any] = {}
+    interest_quality = str(ratios.get("interest_expense_quality") or "").strip().lower()
+    scope_note = _SCOPE_NOTE
+    if interest_quality == "low":
+        scope_note += " / EBITDA·이자비용 지표는 금융원가 기반 추정치로 신뢰도가 낮아 참고에서 제외"
     for metric_key, meta in spec["metrics"].items():
         raw_value: float | None = ratios.get(metric_key)
+
+        if metric_key == "ebitda_to_interest" and interest_quality == "low":
+            per_metric[metric_key] = {
+                "grade": None,
+                "label": meta["label"],
+                "weight": f"{meta['weight_pct']:g}%",
+                "value": None,
+                "note": "금융원가 기반 추정치로 참고 제외",
+            }
+            continue
 
         # None이면 등급 산출불가
         if raw_value is None:
@@ -93,7 +107,7 @@ def calc_kr_financial_grades(
     return {
         "methodology":       spec["methodology"],
         "per_metric_grades": per_metric,
-        "scope_note":        _SCOPE_NOTE,
+        "scope_note":        scope_note,
     }
 
 

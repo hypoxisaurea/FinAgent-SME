@@ -1,5 +1,9 @@
 # FinAgent-SME
 
+[![CI](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/ci.yml/badge.svg)](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/ci.yml)
+[![Docker Smoke](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/docker-smoke.yml/badge.svg)](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/docker-smoke.yml)
+[![RAGAS Artifacts](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/ragas-artifacts.yml/badge.svg)](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/ragas-artifacts.yml)
+
 FinAgent-SME는 중소기업 대상 B2B 거래 리스크 심사를 지원하는 멀티 에이전트 시스템입니다. 현재 저장소는 FastAPI 백엔드, Streamlit 프론트엔드, PostgreSQL 기반 기업/재무 데이터 저장소, LangGraph 오케스트레이터를 포함합니다.
 
 > 회사명 하나로 기업 식별, 재무·산업·뉴스·리스크 분석, 신용 판단, 리포트 생성과 결과 검증까지 연결합니다.
@@ -24,7 +28,7 @@ flowchart LR
 
 | 영역 | 현재 구현 |
 | --- | --- |
-| 사용자 경험 | 회사명 검색, 진행 상태 polling, 심사 리포트와 그래프, JSON 다운로드 |
+| 사용자 경험 | 회사명 검색, SSE 진행 로그, polling fallback, 심사 리포트와 그래프, JSON 다운로드 |
 | 실행 방식 | DB-backed 비동기 job + FastAPI 프로세스 내 단일 background runner |
 | 분석 | 기업, 뉴스, 재무, 산업 방법론 RAG, 거시환경, 리스크 이벤트 |
 | 결과 | 승인 판단, 신용등급, 추천한도, 근거, 최종 보고서, 계약 검증 |
@@ -67,7 +71,7 @@ flowchart LR
 ## 현재 구현 상태
 
 - 기본 심사 진입점: `POST /api/v1/workflows/jobs`
-- 결과 조회 방식: `job submit -> status poll -> result fetch`
+- 결과 조회 방식: `job submit -> SSE status stream -> polling fallback -> result fetch`
 - 호환용 동기 엔드포인트: `POST /api/v1/workflows/orchestrator`, `POST /api/v1/workflows/credit-assessment`
 - 기본 UI: Streamlit 검색/리포트 화면
 - 오케스트레이터 흐름:
@@ -198,7 +202,16 @@ Python 실행/검증 명령은 모두 `.venv/bin/...` 기준으로 통일합니�
 .venv/bin/python -m backend.rag.ingest_industry_docs
 ```
 
-### 4. 백엔드와 프론트 실행
+### 4. Industry RAG MCP 서버 실행
+
+산업 방법론 RAG 검색기는 MCP tool로도 노출됩니다. MCP client는
+`lookup_industry_methodology` tool을 `list_tools`로 발견하고 `call_tool`로 호출할 수 있습니다.
+
+```bash
+.venv/bin/python -m backend.mcp.industry_server
+```
+
+### 5. 백엔드와 프론트 실행
 
 ```bash
 ./scripts/run-server.sh up
@@ -212,7 +225,7 @@ Python 실행/검증 명령은 모두 `.venv/bin/...` 기준으로 통일합니�
 ./scripts/run-server.sh down
 ```
 
-### 5. 전체 스택 한 번에 실행
+### 6. 전체 스택 한 번에 실행
 
 ```bash
 ./scripts/run-all.sh up
@@ -235,7 +248,33 @@ Compose 내부에서는 frontend가 `FINAGENT_BACKEND_URL=http://backend:8000`�
 backend를 호출합니다. 호스트 공개 포트는 `BACKEND_PORT`, `FRONTEND_PORT`,
 `POSTGRES_PORT` 환경 변수로 변경할 수 있습니다.
 
-### 6. 개별 개발 실행
+Docker 빌드와 health endpoint까지 한 번에 검증하려면 smoke 스크립트를 실행합니다.
+이 스크립트는 compose stack을 `up --build`로 띄운 뒤 backend `/api/health`와
+frontend `/_stcore/health`가 응답하는지 확인하고, 종료 시 stack을 정리합니다.
+성공 증거는 `artifacts/docker_smoke_verification.json`에 저장됩니다.
+
+```bash
+./scripts/docker-smoke.sh
+```
+
+성공 시 아래 형식의 로그가 남습니다.
+
+```text
+docker_smoke_started project=finagent-smoke compose_file=.../backend/docker-compose.yml
+NAME                         IMAGE                      SERVICE    STATUS
+finagent-smoke-backend-1     finagent-smoke-backend     backend    Up ... (healthy)
+finagent-smoke-frontend-1    finagent-smoke-frontend    frontend   Up ... (healthy)
+finagent-smoke-postgres-1    postgres:16-alpine         postgres   Up ... (healthy)
+docker_smoke_passed backend=http://127.0.0.1:18000/api/health frontend=http://127.0.0.1:18501/_stcore/health
+docker_smoke_evidence output_path=.../artifacts/docker_smoke_verification.json
+```
+
+동일한 검증은 `.github/workflows/docker-smoke.yml`에서도 수동 실행하거나 Docker 관련
+파일 변경 PR에서 실행할 수 있습니다.
+최근 CI 실행 결과는 [Docker Smoke workflow run 목록](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/docker-smoke.yml)에서 확인할 수 있으며,
+성공한 run에는 `docker-smoke-verification` artifact로 동일한 검증 JSON이 첨부됩니다.
+
+### 7. 개별 개발 실행
 
 ```bash
 ./scripts/setup-env.sh
@@ -323,6 +362,21 @@ backend를 호출합니다. 호스트 공개 포트는 `BACKEND_PORT`, `FRONTEND
 
 `status`는 `queued`, `running`, `succeeded`, `failed` 중 하나입니다.
 
+### `GET /api/v1/workflows/jobs/{job_id}/stream`
+
+비동기 job 진행 상황을 SSE(`text/event-stream`)로 구독합니다. 이벤트 이름은
+`queued`, `running`, `progress`, `complete`, `error` 중 하나이며, `data`에는
+`GET /api/v1/workflows/jobs/{job_id}`와 동일한 job 상태 payload가 들어갑니다.
+Streamlit 프론트엔드는 브라우저 네이티브 `EventSource` 대신 서버 프로세스의
+`requests(stream=True)` client로 이 endpoint를 우선 소비하고, 수신 이벤트를
+진행률과 `SSE 실시간 진행 로그` UI에 반영합니다. 연결 실패 시 동일 job 상태
+endpoint polling으로 fallback합니다.
+
+```text
+event: progress
+data: {"job_id":"job-123456789abc","status":"running","step_summary":{"success":2,"partial":0,"failed":0,"fallback":0,"completed":2}}
+```
+
 ### `GET /api/v1/workflows/jobs/{job_id}/result`
 
 완료된 job의 최종 결과는 아래처럼 반환됩니다.
@@ -402,6 +456,36 @@ docker compose -f backend/docker-compose.yml config --quiet
   backend/rag/eval_datasets/industry_methodology.jsonl \
   --target retriever
 ```
+
+고정 retriever/agent RAGAS 결과 artifact를 모두 재생성하려면 다음 명령을 사용합니다.
+
+```bash
+.venv/bin/python -m backend.scripts.regenerate_industry_rag_artifacts
+```
+
+재생성 결과는 `backend/rag/artifacts/industry_rag_eval/` 아래의 `report.json`,
+`agent_report.json`, `regeneration_manifest.json`에서 확인합니다.
+커밋된 RAGAS artifact가 manifest와 일치하고 실제 점수 summary를 포함하는지는 아래
+smoke 명령으로 확인합니다.
+
+```bash
+.venv/bin/python -m backend.scripts.verify_industry_rag_artifacts
+```
+
+검증 결과는 `artifacts/industry_rag_artifact_verification.json`에 저장됩니다.
+동일한 검증은 [RAGAS Artifacts workflow](https://github.com/hypoxisaurea/FinAgent-SME/actions/workflows/ragas-artifacts.yml)에서도
+수동 실행하거나 관련 파일 변경 PR에서 실행할 수 있으며, 성공한 run에는
+`industry-ragas-artifact-verification` artifact가 첨부됩니다.
+
+프론트 SSE 소비 계약 검증 artifact는 다음 명령으로 생성합니다.
+
+```bash
+.venv/bin/python -m frontend.scripts.verify_workflow_stream
+```
+
+결과는 `artifacts/frontend_sse_stream_verification.json`에 저장되며,
+Streamlit server-side SSE client, `Accept: text/event-stream`, UI 진행 로그,
+polling fallback 전략을 함께 기록합니다.
 
 `frontend/`는 현재 Python Streamlit 앱이므로 `npm run lint` 대상이 아닙니다.
 

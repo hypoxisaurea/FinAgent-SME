@@ -6,6 +6,17 @@ from unittest.mock import MagicMock
 from frontend.views import search
 
 
+class _SessionState(dict):
+    def __getattr__(self, name: str):
+        try:
+            return self[name]
+        except KeyError as exc:
+            raise AttributeError(name) from exc
+
+    def __setattr__(self, name: str, value: object) -> None:
+        self[name] = value
+
+
 class _FakeResponse:
     def __init__(self, *, status_code: int, payload: dict[str, object]) -> None:
         self.status_code = status_code
@@ -13,6 +24,73 @@ class _FakeResponse:
 
     def json(self) -> dict[str, object]:
         return self._payload
+
+
+class _FakeStreamResponse:
+    status_code = 200
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args) -> None:
+        return None
+
+    def raise_for_status(self) -> None:
+        return None
+
+    def iter_lines(self, *, decode_unicode: bool):
+        yield "event: progress"
+        yield (
+            'data: {"job_id": "job-123", "status": "running", '
+            '"step_summary": {"completed": 2, "success": 2, "failed": 0}}'
+        )
+        yield ""
+
+
+def test_parse_sse_events_returns_event_payload() -> None:
+    events = search._parse_sse_events(
+        [
+            "event: progress",
+            'data: {"status": "running", "step_summary": {"completed": 1}}',
+            "",
+        ]
+    )
+
+    assert events == [
+        {
+            "event": "progress",
+            "data": {
+                "status": "running",
+                "step_summary": {"completed": 1},
+            },
+        }
+    ]
+
+
+def test_stream_workflow_job_status_consumes_sse(monkeypatch) -> None:
+    fake_st = SimpleNamespace(
+        session_state=_SessionState({
+            "base_url": "http://backend.test",
+        })
+    )
+
+    def fake_get(url: str, **kwargs):
+        assert url == "http://backend.test/api/v1/workflows/jobs/job-123/stream"
+        assert kwargs["stream"] is True
+        assert kwargs["headers"]["Accept"] == "text/event-stream"
+        return _FakeStreamResponse()
+
+    monkeypatch.setattr(search, "st", fake_st)
+    monkeypatch.setattr(search.requests, "get", fake_get)
+    monkeypatch.setattr(search, "_utc_timestamp", lambda: "2026-06-23T22:00:00")
+
+    payload = search.stream_workflow_job_status("job-123")
+
+    assert payload is not None
+    assert payload["status"] == "running"
+    assert payload["step_summary"] == {"completed": 2, "success": 2, "failed": 0}
+    stream_events = fake_st.session_state[search._JOB_STREAM_EVENTS_KEY]
+    assert stream_events[0]["event"] == "progress"
 
 
 def test_emit_browser_console_dedupes_same_event(monkeypatch) -> None:
@@ -43,6 +121,7 @@ def test_emit_browser_console_dedupes_same_event(monkeypatch) -> None:
 def test_render_browser_console_bridge_flushes_new_events_only(monkeypatch) -> None:
     html = MagicMock()
     fake_st = SimpleNamespace(
+        html=html,
         session_state={
             search._BROWSER_CONSOLE_QUEUE_KEY: [
                 {
@@ -56,7 +135,6 @@ def test_render_browser_console_bridge_flushes_new_events_only(monkeypatch) -> N
         }
     )
 
-    monkeypatch.setattr(search, "components", SimpleNamespace(html=html))
     monkeypatch.setattr(search, "st", fake_st)
 
     search._render_browser_console_bridge()
@@ -66,6 +144,7 @@ def test_render_browser_console_bridge_flushes_new_events_only(monkeypatch) -> N
     rendered_html = html.call_args.args[0]
     assert "workflow_job_submit_requested" in rendered_html
     assert "job-123" in rendered_html
+    assert html.call_args.kwargs["unsafe_allow_javascript"] is True
     assert (
         fake_st.session_state[search._BROWSER_CONSOLE_FLUSHED_COUNT_KEY] == 1
     )

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import asdict
+from inspect import isawaitable
 from typing import Any
 
 from backend.agents.orchestrator.results import summarize_steps
@@ -16,6 +18,10 @@ logger = logging.getLogger("backend.agents.orchestrator.orchestrator")
 LANGGRAPH_RUNTIME_CONFIGURED = LANGGRAPH_IMPORT_GUARD
 DEFAULT_VALIDATION_RETRY_ATTEMPTS = 1
 MAX_VALIDATION_RETRY_ATTEMPTS = 3
+VALIDATION_GATE_PASSED = "passed"
+VALIDATION_GATE_RETRYING = "retrying"
+VALIDATION_GATE_BLOCKED = "blocked"
+ProgressCallback = Callable[[dict[str, Any]], Awaitable[None] | None]
 
 
 class WorkflowGraphBuilder:
@@ -28,11 +34,13 @@ class WorkflowGraphBuilder:
         parallel_agents: list[Agent],
         sequential_agents: list[Agent],
         continue_on_error: bool,
+        progress_callback: ProgressCallback | None = None,
     ) -> None:
         self._resolver_agent = resolver_agent
         self._parallel_agents = parallel_agents
         self._sequential_agents = sequential_agents
         self._continue_on_error = continue_on_error
+        self._progress_callback = progress_callback
         self._news_agent = self._find_parallel_agent("news_collector")
         self._financial_agent = self._find_parallel_agent("financial_analyst")
 
@@ -103,10 +111,17 @@ class WorkflowGraphBuilder:
                 )
                 node_state: WorkflowState = {"steps": [asdict(step)]}
 
-                if agent.name == "validation" and "validation_result" in step.output:
+                if agent.name == "validation":
+                    validation_output = step.output
+                    validation_result = validation_output.get("validation_result")
+                    if not isinstance(validation_result, dict) or (
+                        not step.ok
+                        and validation_result.get("validation_passed") is True
+                    ):
+                        validation_output = self._build_validation_failure_output(step)
                     node_state["context"] = self._build_validation_gate_context(
                         context,
-                        step.output,
+                        validation_output,
                     )
                     self._log_agent_result(context, agent, step)
                 elif step.ok:
@@ -172,10 +187,30 @@ class WorkflowGraphBuilder:
                     agent.name,
                     step.status,
                 )
+                await self._emit_progress(asdict(step), context)
 
             return node_state
 
         return _node
+
+    async def _emit_progress(
+        self,
+        step: dict[str, Any],
+        context: dict[str, Any],
+    ) -> None:
+        if self._progress_callback is None:
+            return
+        try:
+            result = self._progress_callback(step)
+            if isawaitable(result):
+                await result
+        except Exception:  # noqa: BLE001
+            logger.warning(
+                "workflow_progress_callback_failed company_name=%s agent_name=%s",
+                context.get("company_name"),
+                step.get("agent_name"),
+                exc_info=True,
+            )
 
     def _build_validation_gate_context(
         self,
@@ -191,11 +226,11 @@ class WorkflowGraphBuilder:
         )
         passed = validation_result.get("validation_passed") is True
         if passed:
-            gate_status = "passed"
+            gate_status = VALIDATION_GATE_PASSED
         elif attempt <= retry_attempts:
-            gate_status = "retrying"
+            gate_status = VALIDATION_GATE_RETRYING
         else:
-            gate_status = "blocked"
+            gate_status = VALIDATION_GATE_BLOCKED
         logger.warning(
             (
                 "workflow_validation_gate company_name=%s gate_status=%s "
@@ -212,6 +247,26 @@ class WorkflowGraphBuilder:
             "validation_attempt": attempt,
             "validation_retry_attempts": retry_attempts,
             "validation_gate_status": gate_status,
+        }
+
+    @staticmethod
+    def _build_validation_failure_output(step: Any) -> dict[str, Any]:
+        detail = step.error or step.error_code
+        return {
+            "validation_result": {
+                "validation_passed": False,
+                "pass_rate": 0.0,
+                "passed_checks": 0,
+                "total_checks": 1,
+                "failed_checks": ["validation_execution"],
+                "checks": [
+                    {
+                        "name": "validation_execution",
+                        "passed": False,
+                        "detail": detail,
+                    }
+                ],
+            }
         }
 
     def _validation_retry_attempts(self, context: dict[str, Any]) -> int:
@@ -317,7 +372,7 @@ class WorkflowGraphBuilder:
 
     def _route_after_validation(self, state: WorkflowState) -> str:
         context = state.get("context", {})
-        if context.get("validation_gate_status") != "retrying":
+        if context.get("validation_gate_status") != VALIDATION_GATE_RETRYING:
             return END
         retry_node = self._validation_retry_node_name()
         return retry_node or END

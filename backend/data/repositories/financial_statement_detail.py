@@ -44,6 +44,8 @@ def get_statement_detail_rows_by_corp_code(corp_code: str) -> list[dict[str, Any
                 operating_income,
                 net_income,
                 interest_expense,
+                interest_expense_source_account,
+                interest_expense_quality,
                 operating_cashflow,
                 capital_expenditure,
                 audit_opinion,

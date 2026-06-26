@@ -23,7 +23,7 @@ readonly STACK_FRONTEND_LOG_FILE="$STACK_LOG_DIR/frontend.log"
 readonly STACK_BACKEND_ENV_FILE="$STACK_BACKEND_DIR/.env"
 readonly STACK_BACKEND_ENV_EXAMPLE_FILE="$STACK_BACKEND_DIR/.env.example"
 readonly STACK_BACKEND_COMPOSE_FILE="$STACK_BACKEND_DIR/docker-compose.yml"
-readonly STACK_POSTGRES_CONTAINER_NAME="finagent-postgres"
+readonly STACK_POSTGRES_SERVICE_NAME="postgres"
 
 readonly STACK_DATABASE_READY_TIMEOUT_SECONDS="${DATABASE_READY_TIMEOUT_SECONDS:-60}"
 readonly STACK_POSTGRES_HOST="${POSTGRES_HOST:-localhost}"
@@ -518,15 +518,34 @@ stack_show_server_logs() {
 }
 
 
+stack_get_database_container_id() {
+    stack_run_backend_compose ps -q "$STACK_POSTGRES_SERVICE_NAME" 2>/dev/null || true
+}
+
+
 stack_get_database_health_status() {
+    local container_id=""
+
+    container_id="$(stack_get_database_container_id)"
+    if [[ -z "$container_id" ]]; then
+        return
+    fi
+
     docker inspect \
         -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' \
-        "$STACK_POSTGRES_CONTAINER_NAME" 2>/dev/null || true
+        "$container_id" 2>/dev/null || true
 }
 
 
 stack_get_database_runtime_status() {
-    docker inspect -f '{{.State.Status}}' "$STACK_POSTGRES_CONTAINER_NAME" 2>/dev/null || true
+    local container_id=""
+
+    container_id="$(stack_get_database_container_id)"
+    if [[ -z "$container_id" ]]; then
+        return
+    fi
+
+    docker inspect -f '{{.State.Status}}' "$container_id" 2>/dev/null || true
 }
 
 
@@ -557,6 +576,11 @@ stack_start_database() {
 
 
 stack_stop_database() {
+    if ! stack_can_manage_database; then
+        stack_log "Skipping backend PostgreSQL stop because Docker is unavailable"
+        return
+    fi
+
     stack_log "Stopping backend PostgreSQL"
     stack_run_backend_compose stop postgres
 }
@@ -599,11 +623,11 @@ stack_show_database_status() {
     fi
 
     if [[ -n "$health_status" ]]; then
-        stack_log "Database: $health_status (container=$STACK_POSTGRES_CONTAINER_NAME, host=$STACK_POSTGRES_HOST, port=$STACK_POSTGRES_PORT)"
+        stack_log "Database: $health_status (service=$STACK_POSTGRES_SERVICE_NAME, host=$STACK_POSTGRES_HOST, port=$STACK_POSTGRES_PORT)"
         return
     fi
 
-    stack_log "Database: $runtime_status (container=$STACK_POSTGRES_CONTAINER_NAME, host=$STACK_POSTGRES_HOST, port=$STACK_POSTGRES_PORT)"
+    stack_log "Database: $runtime_status (service=$STACK_POSTGRES_SERVICE_NAME, host=$STACK_POSTGRES_HOST, port=$STACK_POSTGRES_PORT)"
 }
 
 

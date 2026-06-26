@@ -22,9 +22,9 @@ from backend.schemas.agent_contracts import (
 from backend.tools.news import (
     DEFAULT_LOOKBACK_DAYS,
     DEFAULT_MAX_ARTICLES,
-    DEFAULT_SUMMARY_MODEL,
     NEWS_SUMMARY_PROVIDER,
     execute_news_pipeline,
+    get_news_summary_model,
 )
 from backend.tools.prompts.news import NEWS_COLLECTOR_PROMPT
 
@@ -51,7 +51,7 @@ class NewsCollectorAgent:
             max_articles = int(payload.get("max_articles", DEFAULT_MAX_ARTICLES))
             company_limit = payload.get("company_limit")
             summarize = bool(payload.get("summarize", True))
-            model_name = str(payload.get("model_name", DEFAULT_SUMMARY_MODEL))
+            model_name = str(payload.get("model_name") or get_news_summary_model())
             database_url = payload.get("database_url")
             show_progress = bool(payload.get("show_progress", True))
 
@@ -146,7 +146,7 @@ def news_collection_node(state: dict[str, Any]) -> dict[str, Any]:
         lookback_days=int(state.get("lookback_days", DEFAULT_LOOKBACK_DAYS)),
         max_articles=int(state.get("max_articles", DEFAULT_MAX_ARTICLES)),
         summarize=bool(state.get("summarize", True)),
-        model_name=str(state.get("model_name", DEFAULT_SUMMARY_MODEL)),
+        model_name=str(state.get("model_name") or get_news_summary_model()),
         company_limit=state.get("company_limit"),
         show_progress=bool(state.get("show_progress", True)),
         company_name=state.get("company_name"),

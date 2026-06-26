@@ -102,6 +102,12 @@ def _override_reject(
     )
     return DecisionResult.REJECT, 0.95, reasons
 
+def _extract_core_reason(reason: str) -> str:
+    """'[제목] 설명 (근거: ...)' 형식에서 핵심 설명만 추출한다."""
+    core = reason.split(" (근거:")[0].strip()
+    if "] " in core:
+        core = core.split("] ", 1)[1].strip()
+    return core or reason
 
 def _build_reasons(grade: CreditGrade, score: int, context: dict) -> list[str]:
     reasons: list[str] = []
@@ -113,10 +119,16 @@ def _build_reasons(grade: CreditGrade, score: int, context: dict) -> list[str]:
 
     if critical > 0:
         reasons.append(f"CRITICAL 리스크 이벤트 {critical}건 탐지.")
+        for r in (context.get("critical_reasons") or []):
+            reasons.append(f"  - {_extract_core_reason(r)}")
     if high > 0:
         reasons.append(f"HIGH 리스크 이벤트 {high}건 탐지.")
+        for r in (context.get("high_reasons") or []):
+            reasons.append(f"  - {_extract_core_reason(r)}")
     if medium > 0:
         reasons.append(f"MEDIUM 리스크 이벤트 {medium}건 탐지.")
+        for r in (context.get("medium_reasons") or []):
+            reasons.append(f"  - {_extract_core_reason(r)}")
 
     if context.get("is_net_income_negative"):
         reasons.append("최근 연도 당기순손실 기록.")

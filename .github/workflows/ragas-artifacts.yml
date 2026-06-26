@@ -1,0 +1,40 @@
+name: RAGAS Artifacts
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/ragas-artifacts.yml"
+      - "backend/rag/artifacts/industry_rag_eval/**"
+      - "backend/rag/eval_datasets/**"
+      - "backend/scripts/verify_industry_rag_artifacts.py"
+      - "tests/unit/test_regenerate_industry_rag_artifacts_script.py"
+
+permissions:
+  contents: read
+
+jobs:
+  ragas-artifacts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Create virtual environment
+        run: python -m venv .venv
+
+      - name: Verify committed RAGAS artifacts
+        run: .venv/bin/python -m backend.scripts.verify_industry_rag_artifacts
+
+      - name: Upload RAGAS artifact evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: industry-ragas-artifact-verification
+          path: artifacts/industry_rag_artifact_verification.json
+          if-no-files-found: error

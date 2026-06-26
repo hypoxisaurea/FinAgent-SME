@@ -209,6 +209,41 @@ def complete_workflow_job(
         engine.dispose()
 
 
+def update_workflow_job_progress(
+    *,
+    job_id: str,
+    step_summary_json: str,
+    updated_at: str,
+) -> None:
+    """running 상태 job의 진행 요약을 갱신한다."""
+    engine = create_db_engine()
+    try:
+        with engine.begin() as connection:
+            _ensure_workflow_job_table(connection)
+            connection.execute(
+                text(
+                    f"""
+                    UPDATE {WORKFLOW_JOB_TABLE_NAME}
+                    SET
+                        step_summary_json = :step_summary_json,
+                        updated_at = :updated_at
+                    WHERE job_id = :job_id
+                      AND status = 'running'
+                    """
+                ),
+                {
+                    "job_id": job_id,
+                    "step_summary_json": step_summary_json,
+                    "updated_at": updated_at,
+                },
+            )
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("workflow_job_progress_update_failed job_id=%s", job_id)
+        raise RuntimeError("워크플로우 job 진행 상태 갱신에 실패했습니다.") from exc
+    finally:
+        engine.dispose()
+
+
 def fail_workflow_job(
     *,
     job_id: str,

@@ -1,4 +1,8 @@
+import asyncio
+import json
 import logging
+from collections.abc import AsyncIterator
+from typing import Any
 
 from backend.agents.orchestrator.orchestrator import run_credit_workflow
 from backend.common.logging import get_request_id
@@ -20,10 +24,11 @@ from backend.schemas.workflow import (
     build_workflow_response,
 )
 from fastapi import APIRouter, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 router = APIRouter(prefix="/v1/workflows", tags=["workflows"])
 logger = logging.getLogger(__name__)
+SSE_POLL_INTERVAL_SECONDS = 1.0
 
 
 WORKFLOW_ERROR_RESPONSES = {
@@ -149,6 +154,48 @@ async def get_credit_assessment_job_status(
 
 
 @router.get(
+    "/jobs/{job_id}/stream",
+    response_model=None,
+    responses=WORKFLOW_ERROR_RESPONSES,
+)
+async def stream_credit_assessment_job_status(
+    job_id: str,
+) -> StreamingResponse | JSONResponse:
+    request_id = get_request_id()
+    try:
+        job_status = get_workflow_job_status(job_id)
+        if job_status is None:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content=build_workflow_error_response(
+                    code="JOB_NOT_FOUND",
+                    message="해당 워크플로우 job을 찾을 수 없습니다.",
+                    detail={"job_id": job_id},
+                    request_id=request_id,
+                ).model_dump(mode="json"),
+            )
+        return StreamingResponse(
+            _stream_workflow_job_events(job_status),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+            },
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception("credit_workflow_job_stream_failed job_id=%s", job_id)
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content=build_workflow_error_response(
+                code="JOB_STREAM_FAILED",
+                message="워크플로우 job 스트림 생성 중 오류가 발생했습니다.",
+                detail={"job_id": job_id},
+                request_id=request_id,
+            ).model_dump(mode="json"),
+        )
+
+
+@router.get(
     "/jobs/{job_id}/result",
     response_model=WorkflowResponse,
     responses=WORKFLOW_ERROR_RESPONSES,
@@ -210,6 +257,64 @@ async def get_credit_assessment_job_result(
                 request_id=request_id,
             ).model_dump(mode="json"),
         )
+
+
+async def _stream_workflow_job_events(
+    initial_status: WorkflowJobStatusResponse,
+) -> AsyncIterator[str]:
+    last_signature: str | None = None
+    job_status = initial_status
+    while True:
+        event_name = _workflow_job_sse_event_name(job_status)
+        payload = _workflow_job_sse_payload(job_status)
+        signature = json.dumps(
+            {"event": event_name, "payload": payload},
+            ensure_ascii=False,
+            sort_keys=True,
+        )
+        if signature != last_signature:
+            yield _format_sse_event(event_name, payload)
+            last_signature = signature
+        if job_status.status in {JOB_STATUS_SUCCEEDED, JOB_STATUS_FAILED}:
+            return
+        await asyncio.sleep(SSE_POLL_INTERVAL_SECONDS)
+        refreshed_status = await asyncio.to_thread(
+            get_workflow_job_status,
+            job_status.job_id,
+        )
+        if refreshed_status is None:
+            yield _format_sse_event(
+                "error",
+                {
+                    "job_id": job_status.job_id,
+                    "status": "failed",
+                    "error_code": "JOB_NOT_FOUND",
+                    "message": "해당 워크플로우 job을 찾을 수 없습니다.",
+                },
+            )
+            return
+        job_status = refreshed_status
+
+
+def _workflow_job_sse_event_name(job_status: WorkflowJobStatusResponse) -> str:
+    if job_status.status == JOB_STATUS_SUCCEEDED:
+        return "complete"
+    if job_status.status == JOB_STATUS_FAILED:
+        return "error"
+    if job_status.status == "running" and job_status.step_summary is not None:
+        return "progress"
+    return job_status.status
+
+
+def _workflow_job_sse_payload(
+    job_status: WorkflowJobStatusResponse,
+) -> dict[str, Any]:
+    return job_status.model_dump(mode="json", exclude_none=True)
+
+
+def _format_sse_event(event_name: str, payload: dict[str, Any]) -> str:
+    data = json.dumps(payload, ensure_ascii=False)
+    return f"event: {event_name}\ndata: {data}\n\n"
 
 
 async def _execute_credit_workflow(
