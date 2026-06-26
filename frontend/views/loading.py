@@ -38,7 +38,6 @@ STATUS_META: dict[str, dict[str, str]] = {
 
 QUEUE_STALL_WARNING_INTERVAL = 5
 COMPANY_NOT_FOUND_ERROR_KEY = "_loading_company_not_found_error"
-RETRY_QUERY_PARAM = "retry_search"
 LOADING_PHASES = (
     "기업 정보를 확인하고 있습니다.",
     "재무 및 산업 데이터를 분석하고 있습니다.",
@@ -333,18 +332,19 @@ def _inject_styles() -> None:
         .st-key-loading-retry [data-testid="stVerticalBlock"],
         .st-key-loading-retry [data-testid="stElementContainer"],
         .st-key-loading-retry .stMarkdown,
-        .st-key-loading-retry .failure-retry-link-wrap {
+        .st-key-loading-retry .stButton,
+        .st-key-loading-retry div[data-testid="stButton"] {
             height: 3.2rem !important;
             min-height: 3.2rem !important;
         }
         .st-key-loading-retry .stMarkdown,
-        .st-key-loading-retry .failure-retry-link-wrap {
+        .st-key-loading-retry .stButton {
             margin: 0 !important;
             display: flex;
             align-items: stretch;
         }
         .st-key-loading-retry .stMarkdown > div,
-        .st-key-loading-retry .failure-retry-link-wrap > div {
+        .st-key-loading-retry .stButton > button {
             margin-top: 0 !important;
             margin-bottom: 0 !important;
         }
@@ -354,10 +354,8 @@ def _inject_styles() -> None:
             height: 3.2rem !important;
             min-height: 3.2rem !important;
         }
-        .st-key-loading-retry .failure-retry-link-wrap {
-            width: 100%;
-        }
-        .st-key-loading-retry .failure-retry-link {
+        .st-key-loading-retry .stButton > button {
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -369,17 +367,28 @@ def _inject_styles() -> None:
             border: 0;
             border-radius: 12px;
             background: linear-gradient(135deg, #ff6b7a 0%, #d92d4c 100%);
-            color: #ffffff;
-            text-decoration: none;
+            color: transparent;
+            font-size: 0;
             font-weight: 800;
             line-height: 1;
-            white-space: nowrap;
             box-shadow: 0 18px 32px rgba(217, 45, 76, 0.18);
         }
-        .st-key-loading-retry .failure-retry-link:hover {
-            background: linear-gradient(135deg, #f45f70 0%, #be2441 100%);
+        .st-key-loading-retry .stButton > button::after {
+            content: "다시 검색하기";
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #ffffff;
-            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 800;
+            line-height: 1;
+            pointer-events: none;
+        }
+        .st-key-loading-retry .stButton > button:hover {
+            background: linear-gradient(135deg, #f45f70 0%, #be2441 100%);
+            color: transparent;
         }
         @keyframes pulseDot {
             0%, 100% { transform: scale(1); opacity: 0.9; }
@@ -547,19 +556,6 @@ def _return_to_search() -> None:
     st.rerun()
 
 
-def _consume_retry_query_param() -> None:
-    retry_flag = str(st.query_params.get(RETRY_QUERY_PARAM, "")).strip()
-    if retry_flag != "1":
-        return
-
-    try:
-        del st.query_params[RETRY_QUERY_PARAM]
-    except KeyError:
-        pass
-
-    _return_to_search()
-
-
 def _render_company_not_found_state() -> None:
     error_payload = st.session_state.get(COMPANY_NOT_FOUND_ERROR_KEY) or {}
     message = "입력한 회사명을 찾을 수 없습니다. 회사명을 다시 확인해주세요."
@@ -590,14 +586,8 @@ def _render_company_not_found_state() -> None:
                 unsafe_allow_html=True,
             )
         with button_col:
-            st.markdown(
-                f"""
-                <div class="failure-retry-link-wrap">
-                    <a class="failure-retry-link" href="?{RETRY_QUERY_PARAM}=1" target="_self">다시 검색하기</a>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            if st.button(" ", key="company-not-found-retry", width="stretch"):
+                _return_to_search()
 
 
 def _submit_pending_job() -> None:
@@ -737,7 +727,6 @@ def render() -> None:
     """Render workflow submission and progress loading states."""
     _inject_styles()
     search._render_browser_console_bridge()
-    _consume_retry_query_param()
 
     if st.session_state.get(COMPANY_NOT_FOUND_ERROR_KEY):
         _render_company_not_found_state()
