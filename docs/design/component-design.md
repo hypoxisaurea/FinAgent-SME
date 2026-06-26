@@ -24,7 +24,7 @@ flowchart TB
         Runner --> ORCH --> AGENTS
     end
 
-    UI -->|submit · poll · fetch| API
+    UI -->|submit · stream · poll fallback · fetch| API
     API <--> DATA[(PostgreSQL\nworkflow + business data)]
     Runner <--> DATA
     AGENTS <--> DATA
@@ -164,7 +164,8 @@ flowchart LR
 | Frontend | `frontend/main.py` | Streamlit 앱 entrypoint |
 | Frontend | `frontend/streamlit_ui.py` | 공통 Streamlit UI 구성 |
 | Frontend | `frontend/config.py` | 로컬/컨테이너 backend URL 해석 |
-| Frontend | `frontend/views/search.py` | 기업 검색, workflow 실행 요청, job polling |
+| Frontend | `frontend/services/workflow_stream.py` | SSE endpoint URL 생성, event parsing, server-side stream 소비 |
+| Frontend | `frontend/views/search.py` | 기업 검색, workflow 실행 요청, SSE 진행 수신과 polling fallback |
 | Frontend | `frontend/views/report.py` | workflow 결과 보고서 렌더링 |
 | Frontend | `frontend/views/report_view_model.py` | report 화면용 view model 조립 |
 | Deployment | `backend/Dockerfile` | FastAPI runtime, PDF system library, CPU-only PyTorch 이미지 |

@@ -300,6 +300,6 @@ def test_build_statement_detail_records_normalizes_low_quality_interest_expense(
         is_external_audit=True,
     )
 
-    assert records[0]["interest_expense"] == 120.0
+    assert records[0]["interest_expense"] is None
     assert records[0]["interest_expense_source_account"] == "금융원가"
     assert records[0]["interest_expense_quality"] == "low"

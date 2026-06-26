@@ -31,7 +31,7 @@ frontend/
 
 1. `main.py`가 앱과 세션 상태를 초기화합니다.
 2. 기본 `base_url`은 `http://localhost:8000`입니다.
-3. 검색 화면에서 `검색` 버튼을 누르면 `views/search.py`가 `POST /api/v1/workflows/jobs`를 호출합니다.
+3. 검색 화면에서 `심사 시작` 버튼을 누르면 `views/search.py`가 `POST /api/v1/workflows/jobs`를 호출합니다.
 4. 반환된 `job_id`는 `st.session_state.pending_job_id`에 저장됩니다.
 5. 검색 화면은 `GET /api/v1/workflows/jobs/{job_id}/stream` SSE 이벤트를 우선 수신합니다.
 6. SSE 연결이 어려우면 `GET /api/v1/workflows/jobs/{job_id}`를 2초 간격으로 polling 합니다.

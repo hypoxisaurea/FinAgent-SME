@@ -9,7 +9,6 @@ load_backend_env()
 
 logger = logging.getLogger(__name__)
 OpenDartReader = dart_client.OpenDartReader
-_LOW_QUALITY_RATIO_LIMIT = 100.0
 
 
 def _get_dart():
@@ -349,35 +348,27 @@ def calc_financial_ratios(fs: dict) -> dict:
     interest_for_ratio = interest_exp
     estimated_interest_ratio = False
     if interest_quality == "low":
-        estimated_interest_ratio = True
-        interest_for_ratio = abs(interest_exp)
-        ratio_note = (
-            f"이자보상배율 관련 지표는 {interest_source_account or '금융원가'} 기준 "
-            "추정 이자비용으로 산출했습니다."
-        )
+        if interest_exp <= 0:
+            interest_for_ratio = None
+            ratio_note = (
+                f"{interest_source_account or '금융비용'} 값이 음수 또는 미확정으로 공시되어 "
+                "이자보상배율 관련 지표 산출에서 제외했습니다."
+            )
+        else:
+            ratio_note = (
+                f"이자보상배율 관련 지표는 {interest_source_account or '금융비용'} 계정을 참고했습니다."
+            )
 
     interest_coverage = (
-        op_income / interest_for_ratio if interest_for_ratio > 0 else None
+        op_income / interest_for_ratio
+        if (interest_for_ratio is not None and interest_for_ratio > 0)
+        else None
     )
     ebitda_to_interest = (
         ebitda / interest_for_ratio
-        if (ebitda > 0 and interest_for_ratio > 0)
+        if (ebitda > 0 and interest_for_ratio is not None and interest_for_ratio > 0)
         else None
     )
-
-    if estimated_interest_ratio:
-        if interest_coverage is not None and abs(interest_coverage) > _LOW_QUALITY_RATIO_LIMIT:
-            interest_coverage = None
-            ratio_note = (
-                f"{interest_source_account or '금융원가'} 기준 추정치의 왜곡 가능성이 커 "
-                "이자보상배율 산출을 제외했습니다."
-            )
-        if ebitda_to_interest is not None and abs(ebitda_to_interest) > _LOW_QUALITY_RATIO_LIMIT:
-            ebitda_to_interest = None
-            ratio_note = (
-                f"{interest_source_account or '금융원가'} 기준 추정치의 왜곡 가능성이 커 "
-                "EBITDA/이자비용 산출을 제외했습니다."
-            )
 
     return {
         # 안정성

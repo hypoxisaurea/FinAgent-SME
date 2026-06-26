@@ -120,6 +120,36 @@ job 상태 응답 예시:
 }
 ```
 
+`step_summary`는 workflow 실행 중 progress callback으로도 갱신될 수 있으며,
+완료된 step 수(`completed`)와 상태별 카운트(`success`, `partial`, `failed`,
+`fallback`)를 포함한다.
+
+### `GET /api/v1/workflows/jobs/{job_id}/stream`
+
+job 상태를 SSE(`text/event-stream`)로 구독한다. Streamlit 프론트엔드는
+브라우저 네이티브 `EventSource` 대신 server-side `requests(stream=True)` client로
+이 endpoint를 먼저 소비하고, 실패하면 `GET /api/v1/workflows/jobs/{job_id}`
+polling으로 fallback한다.
+
+이벤트 이름:
+
+| 이벤트 | 조건 |
+| --- | --- |
+| `queued` | job이 아직 worker에 의해 claim되지 않음 |
+| `running` | 실행 중이지만 step summary가 아직 없음 |
+| `progress` | 실행 중이고 `step_summary`가 있음 |
+| `complete` | job이 `succeeded`로 종료 |
+| `error` | job이 `failed`로 종료하거나 stream 중 job을 찾지 못함 |
+
+`data`에는 상태 조회 endpoint와 같은 job 상태 payload가 들어간다.
+
+예시:
+
+```text
+event: progress
+data: {"job_id":"job-...","status":"running","step_summary":{"success":2,"partial":0,"failed":0,"fallback":0,"completed":2}}
+```
+
 ### `GET /api/v1/workflows/jobs/{job_id}/result`
 
 성공적으로 완료된 job의 결과 응답 예시:
@@ -203,7 +233,7 @@ job 상태 응답 예시:
 | `finished_at` | 종료 시각 |
 | `error_code` | 실패 코드 |
 | `message` | `error_code`를 공개 메시지로 매핑한 값 |
-| `step_summary` | 완료 시 step 결과 요약 |
+| `step_summary` | 실행 중 또는 완료 시 step 결과 요약 |
 
 ### `steps[*]`
 
