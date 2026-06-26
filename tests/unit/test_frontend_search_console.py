@@ -121,6 +121,7 @@ def test_emit_browser_console_dedupes_same_event(monkeypatch) -> None:
 def test_render_browser_console_bridge_flushes_new_events_only(monkeypatch) -> None:
     html = MagicMock()
     fake_st = SimpleNamespace(
+        html=html,
         session_state={
             search._BROWSER_CONSOLE_QUEUE_KEY: [
                 {
@@ -134,7 +135,6 @@ def test_render_browser_console_bridge_flushes_new_events_only(monkeypatch) -> N
         }
     )
 
-    monkeypatch.setattr(search, "components", SimpleNamespace(html=html))
     monkeypatch.setattr(search, "st", fake_st)
 
     search._render_browser_console_bridge()
@@ -144,6 +144,7 @@ def test_render_browser_console_bridge_flushes_new_events_only(monkeypatch) -> N
     rendered_html = html.call_args.args[0]
     assert "workflow_job_submit_requested" in rendered_html
     assert "job-123" in rendered_html
+    assert html.call_args.kwargs["unsafe_allow_javascript"] is True
     assert (
         fake_st.session_state[search._BROWSER_CONSOLE_FLUSHED_COUNT_KEY] == 1
     )

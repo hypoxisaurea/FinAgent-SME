@@ -5,7 +5,6 @@ from html import escape
 
 import requests
 import streamlit as st
-import streamlit.components.v1 as components
 
 try:
     from frontend.services.workflow_stream import (
@@ -117,7 +116,7 @@ def _render_browser_console_bridge() -> None:
         return
 
     encoded_events = json.dumps(events, ensure_ascii=False, sort_keys=True, default=str)
-    components.html(
+    st.html(
         f"""
         <script>
         const events = {encoded_events};
@@ -142,8 +141,7 @@ def _render_browser_console_bridge() -> None:
         }}
         </script>
         """,
-        height=1,
-        width=1,
+        unsafe_allow_javascript=True,
     )
     st.session_state[_BROWSER_CONSOLE_FLUSHED_COUNT_KEY] = len(all_events)
 
@@ -500,9 +498,9 @@ def _inject_styles() -> None:
             background: #ffffff;
             border: 1px solid rgba(255, 255, 255, 0.76);
             border-radius: 22px;
-            padding: 58px 64px 56px;
+            padding: 48px 64px 48px;
             box-shadow: 0 26px 56px rgba(17, 83, 127, 0.22);
-            min-height: 690px;
+            min-height: 620px;
         }
         .st-key-landing-shell::before {
             content: "";
@@ -541,7 +539,7 @@ def _inject_styles() -> None:
             align-items: center;
             justify-content: space-between;
             gap: 24px;
-            margin-bottom: 54px;
+            margin-bottom: 18px;
         }
         .landing-brand {
             color: #736cff;
@@ -571,6 +569,7 @@ def _inject_styles() -> None:
             gap: 44px;
             align-items: center;
             color: #0c1729;
+            margin-top: -18px;
         }
         .search-eyebrow {
             position: relative;
@@ -591,7 +590,7 @@ def _inject_styles() -> None:
             position: relative;
             z-index: 1;
             max-width: 600px;
-            margin: 1.75rem 0 1rem;
+            margin: 0.8rem 0 0.45rem;
             color: #736cff;
             font-size: 3.65rem;
             font-weight: 800;
@@ -610,7 +609,7 @@ def _inject_styles() -> None:
             font-size: 1.02rem;
             font-weight: 700;
             line-height: 1.7;
-            margin-bottom: 0;
+            margin: 0;
         }
         .search-assurance {
             display: none;
@@ -637,7 +636,7 @@ def _inject_styles() -> None:
         }
         .hero-visual {
             position: relative;
-            min-height: 460px;
+            min-height: 405px;
         }
         .visual-card {
             position: absolute;
@@ -742,7 +741,7 @@ def _inject_styles() -> None:
             padding: 0;
             box-shadow: none;
             width: 100%;
-            margin-top: -132px;
+            margin-top: -31px;
             margin-bottom: 0;
         }
         .st-key-review-panel::before {
@@ -777,7 +776,7 @@ def _inject_styles() -> None:
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-top: 1.4rem;
+            margin-top: 0.75rem;
         }
         .review-panel-chip {
             color: #7068ff;
@@ -805,17 +804,18 @@ def _inject_styles() -> None:
             font-weight: 700;
         }
         .stTextInput input {
-            border-radius: 12px;
-            border: 1px solid rgba(205, 224, 239, 0.46);
-            background: #ffffff;
+            border-radius: 10px;
+            border: 1px solid rgba(215, 231, 243, 0.72);
+            background: #fbfdff;
             padding-left: 1.15rem;
             height: 3.55rem;
             color: #19314f;
-            box-shadow: 0 18px 42px rgba(31, 78, 121, 0.045);
+            box-shadow: none;
         }
         .stTextInput input:focus {
-            border-color: transparent;
-            box-shadow: 0 0 0 3px rgba(106, 104, 255, 0.15);
+            border-color: rgba(115, 108, 255, 0.45);
+            background: #ffffff;
+            box-shadow: none;
         }
         .stButton > button {
             border-radius: 12px;
@@ -824,7 +824,7 @@ def _inject_styles() -> None:
             border: 0;
             background: linear-gradient(135deg, #55b8ff 0%, #736cff 100%);
             color: #ffffff;
-            box-shadow: 0 16px 28px rgba(94, 112, 255, 0.22);
+            box-shadow: none;
             padding: 0 1rem;
         }
         .st-key-review-panel div[data-testid="column"]:last-child .stButton > button {
@@ -833,128 +833,194 @@ def _inject_styles() -> None:
         .stButton > button:hover {
             background: linear-gradient(135deg, #44aefa 0%, #645cff 100%);
             color: #ffffff;
-            box-shadow: 0 18px 32px rgba(94, 112, 255, 0.28);
+            box-shadow: none;
         }
         .loading-shell {
             position: relative;
             overflow: hidden;
-            background:
-                linear-gradient(#ffffff, #ffffff) padding-box,
-                linear-gradient(135deg, rgba(34, 132, 222, 0.62), rgba(125, 211, 252, 0.46)) border-box;
-            border-radius: 8px;
-            border: 1px solid transparent;
-            box-shadow: 0 24px 50px rgba(13, 59, 114, 0.14);
-            padding: 28px 28px 24px;
-            margin-top: 0.4rem;
+            background: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.76);
+            border-radius: 22px;
+            box-shadow: 0 26px 56px rgba(17, 83, 127, 0.22);
+            padding: 58px 64px 56px;
+            min-height: 600px;
         }
         .loading-shell::before {
             content: "";
             position: absolute;
-            inset: 0 0 auto 0;
-            height: 4px;
-            background: linear-gradient(90deg, #1368c4 0%, #35a7f3 60%, #7dd3fc 100%);
+            top: -20%;
+            right: -24%;
+            width: 72%;
+            height: 132%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(138, 235, 246, 0.96) 0%, rgba(108, 210, 244, 0.92) 52%, rgba(83, 177, 235, 0.9) 100%);
+            pointer-events: none;
+        }
+        .loading-shell::after {
+            content: "";
+            position: absolute;
+            right: 9%;
+            top: 18%;
+            width: 24%;
+            height: 34%;
+            border-radius: 28px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0.12));
+            border: 1px solid rgba(255, 255, 255, 0.34);
+            transform: rotate(-7deg);
+            pointer-events: none;
         }
         .loading-head {
+            position: relative;
+            z-index: 1;
             display: flex;
             justify-content: space-between;
-            gap: 16px;
+            gap: 44px;
             align-items: flex-start;
         }
         .loading-kicker {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            color: #23527c;
-            font-size: 0.82rem;
+            color: #736cff;
+            font-size: 1rem;
             font-weight: 800;
             letter-spacing: 0;
-            text-transform: uppercase;
+            text-transform: none;
         }
         .loading-kicker::before {
             content: "";
             width: 10px;
             height: 10px;
             border-radius: 999px;
-            background: #1c7a6d;
-            box-shadow: 0 0 0 6px rgba(28, 122, 109, 0.12);
+            background: #736cff;
+            box-shadow: 0 0 0 7px rgba(115, 108, 255, 0.12);
             animation: pulseDot 1.6s ease-in-out infinite;
         }
         .loading-title {
-            color: #132847;
-            font-size: 1.85rem;
+            max-width: 590px;
+            color: #736cff;
+            font-size: 3.15rem;
             font-weight: 800;
             line-height: 1.12;
-            letter-spacing: -0.03em;
-            margin: 0.7rem 0 0.55rem;
+            letter-spacing: 0;
+            margin: 1.4rem 0 1rem;
         }
         .loading-copy {
-            color: #5d6f85;
-            font-size: 0.98rem;
+            max-width: 560px;
+            color: #263445;
+            font-size: 1.02rem;
+            font-weight: 700;
             line-height: 1.7;
             margin: 0;
-            max-width: 690px;
         }
         .job-chip {
+            position: relative;
+            z-index: 1;
             flex-shrink: 0;
-            background: #f4f8fb;
-            border: 1px solid #dce7ef;
-            border-radius: 8px;
-            padding: 12px 14px;
-            min-width: 190px;
+            background: rgba(255, 255, 255, 0.86);
+            border: 1px solid rgba(255, 255, 255, 0.68);
+            border-radius: 22px;
+            box-shadow: 0 22px 44px rgba(25, 86, 140, 0.18);
+            backdrop-filter: blur(12px);
+            padding: 22px;
+            min-width: 230px;
+        }
+        .loading-visual {
+            position: relative;
+            min-width: 300px;
+            min-height: 230px;
+        }
+        .loading-orbit-card {
+            position: absolute;
+            right: 22px;
+            bottom: 4px;
+            width: 170px;
+            padding: 18px;
+            border-radius: 22px;
+            background: linear-gradient(135deg, #736cff, #55b8ff);
+            box-shadow: 0 22px 44px rgba(25, 86, 140, 0.18);
+            transform: rotate(8deg);
+        }
+        .loading-orbit-dot {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.9);
+            margin-bottom: 16px;
+            animation: pulseDot 1.6s ease-in-out infinite;
+        }
+        .loading-orbit-line {
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.72);
+            margin-bottom: 10px;
+        }
+        .loading-orbit-line.short {
+            width: 62%;
         }
         .job-chip-label {
-            color: #69809a;
+            color: #736cff;
             font-size: 0.74rem;
             font-weight: 800;
             text-transform: uppercase;
             letter-spacing: 0;
         }
         .job-chip-value {
-            color: #183253;
-            font-size: 0.95rem;
-            font-weight: 700;
+            color: #0b2f5f;
+            font-size: 1.4rem;
+            font-weight: 800;
             line-height: 1.5;
             margin-top: 0.4rem;
             word-break: break-word;
         }
         .progress-meta {
+            position: relative;
+            z-index: 1;
             display: flex;
             justify-content: space-between;
             gap: 16px;
             align-items: center;
-            margin-top: 1.45rem;
-            margin-bottom: 0.6rem;
+            max-width: 620px;
+            margin-top: 2.1rem;
+            margin-bottom: 0.7rem;
         }
         .progress-label {
-            color: #2e4767;
+            color: #263445;
             font-size: 0.92rem;
             font-weight: 800;
         }
         .progress-value {
-            color: #16335b;
+            color: #736cff;
             font-size: 1rem;
             font-weight: 800;
         }
         .progress-rail {
+            position: relative;
+            z-index: 1;
+            max-width: 620px;
             width: 100%;
             height: 14px;
             border-radius: 999px;
-            background: #e8eef6;
+            background: #e8f5ff;
             overflow: hidden;
         }
         .progress-fill {
             height: 100%;
             border-radius: 999px;
-            background: linear-gradient(90deg, #174f86 0%, #1c7a6d 100%);
+            background: linear-gradient(90deg, #55b8ff 0%, #736cff 100%);
         }
         .loading-panel {
-            background: #f8fbfd;
-            border: 1px solid #dde8f4;
-            border-radius: 8px;
-            padding: 18px;
+            position: relative;
+            z-index: 1;
+            max-width: 620px;
+            background: rgba(244, 249, 255, 0.88);
+            border: 1px solid #d9e9fb;
+            border-radius: 14px;
+            padding: 16px;
+            margin-top: 1.4rem;
         }
         .loading-panel-title {
-            color: #24476d;
+            color: #736cff;
             font-size: 0.9rem;
             font-weight: 800;
             margin-bottom: 0.85rem;
@@ -965,8 +1031,8 @@ def _inject_styles() -> None:
             gap: 12px;
         }
         .step-card {
-            border-radius: 8px;
-            border: 1px solid #dbe5f0;
+            border-radius: 12px;
+            border: 1px solid #e0eefb;
             background: #ffffff;
             padding: 14px 15px;
         }
@@ -1001,20 +1067,26 @@ def _inject_styles() -> None:
             border-color: #f3e2bc;
         }
         .refresh-note {
+            position: relative;
+            z-index: 1;
+            max-width: 620px;
             margin-top: 1rem;
-            color: #64758b;
+            color: #607083;
             font-size: 0.9rem;
             line-height: 1.6;
         }
         .stream-log {
+            position: relative;
+            z-index: 1;
+            max-width: 620px;
             margin-top: 14px;
-            border: 1px solid #dbe7f4;
-            border-radius: 8px;
-            background: #fbfdff;
+            border: 1px solid #d9e9fb;
+            border-radius: 14px;
+            background: rgba(251, 253, 255, 0.9);
             padding: 16px 18px;
         }
         .stream-log-title {
-            color: #24476d;
+            color: #736cff;
             font-size: 0.86rem;
             font-weight: 800;
             margin-bottom: 0.75rem;
@@ -1065,7 +1137,7 @@ def _inject_styles() -> None:
                 grid-template-columns: 1fr;
             }
             .st-key-landing-shell {
-                padding: 34px 24px;
+                padding: 34px 24px 48px;
                 min-height: auto;
             }
             .st-key-landing-shell::before {
@@ -1108,6 +1180,27 @@ def _inject_styles() -> None:
             }
             .loading-head {
                 flex-direction: column;
+            }
+            .loading-shell {
+                padding: 34px 24px;
+                min-height: auto;
+            }
+            .loading-shell::before {
+                top: auto;
+                right: -18%;
+                bottom: -18%;
+                width: 78%;
+                height: 52%;
+            }
+            .loading-title {
+                font-size: 2.25rem;
+            }
+            .loading-visual {
+                min-width: 100%;
+                min-height: 180px;
+            }
+            .loading-orbit-card {
+                display: none;
             }
             .job-chip {
                 width: 100%;
@@ -1211,17 +1304,16 @@ def _render_search_intro() -> None:
                 <span>Credit Review</span>
                 <span>Risk Analysis</span>
                 <span>Report</span>
-                <span class="landing-action">Start</span>
             </div>
         </nav>
         <section class="search-hero">
             <div>
                 <h2 class="search-title">
-    <span>빠르고 정확한</span>
-    <span>기업 신용평가를 시작하세요.</span>
-</h2>
+                    <span>빠르고 정확한</span>
+                    <span>차세대 신용평가, FinAgent</span>
+                </h2>
                 <p class="search-copy">
-                    FinAgent는 재무, 산업, 비금융 리스크를 한 번에 분석해
+                    재무, 산업, 비금융 리스크를 한 번에 분석해 <br />
                     심사 담당자가 바로 활용할 수 있는 근거 중심 리포트를 제공합니다.
                 </p>
             </div>
@@ -1345,9 +1437,16 @@ def _render_loading_state(
                     <div class="loading-title">{escape(str(meta["headline"]))}</div>
                     <p class="loading-copy">{escape(str(meta["description"]))}</p>
                 </div>
-                <div class="job-chip">
-                    <div class="job-chip-label">{escape(job_label)}</div>
-                    <div class="job-chip-value">{escape(company_name)}</div>
+                <div class="loading-visual" aria-hidden="true">
+                    <div class="job-chip">
+                        <div class="job-chip-label">{escape(job_label)}</div>
+                        <div class="job-chip-value">{escape(company_name)}</div>
+                    </div>
+                    <div class="loading-orbit-card">
+                        <div class="loading-orbit-dot"></div>
+                        <div class="loading-orbit-line"></div>
+                        <div class="loading-orbit-line short"></div>
+                    </div>
                 </div>
             </div>
             <div class="progress-meta">
@@ -1407,9 +1506,10 @@ def _render_job_progress() -> None:
         return
 
     st.session_state.pending_job_status = status_payload
-    status = status_payload.get("status", "queued")
-    company_name = status_payload.get("company_name", "-")
-    step_summary = status_payload.get("step_summary") or {}
+    status = str(status_payload.get("status") or "queued")
+    company_name = str(status_payload.get("company_name") or "-")
+    raw_step_summary = status_payload.get("step_summary")
+    step_summary = raw_step_summary if isinstance(raw_step_summary, dict) else {}
     _console_log_job_status(status_payload)
 
     if status == "queued":
@@ -1535,7 +1635,7 @@ def render() -> None:
                     label_visibility="collapsed",
                 )
             with button_col:
-                start_clicked = st.button("심사 시작", use_container_width=True)
+                start_clicked = st.button("심사 시작", width="stretch")
 
             if start_clicked:
                 normalized_company_name = _normalize_company_name(company_name)
@@ -1551,11 +1651,3 @@ def render() -> None:
                     st.session_state[_JOB_STREAM_EVENTS_KEY] = []
                     st.session_state[_JOB_STREAM_FALLBACK_KEY] = False
                     st.rerun()
-            st.markdown(
-                """
-                <div class="review-panel-meta">
-                    <span class="review-panel-chip">Explore assessment →</span>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
