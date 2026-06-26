@@ -85,6 +85,8 @@ erDiagram
         float operating_income
         float net_income
         float interest_expense
+        string interest_expense_source_account
+        string interest_expense_quality
         float operating_cashflow
         float capital_expenditure
         string audit_opinion
