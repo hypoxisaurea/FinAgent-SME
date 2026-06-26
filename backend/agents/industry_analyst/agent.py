@@ -103,6 +103,13 @@ class IndustryAnalystAgent(Agent):
                 if company_ratios and sub_sector
                 else None
             )
+            # TODO(post-demo): 임시 처방 — "방산"만 한정. 근본 원인은
+            #   _MANUFACTURING_INDUTY_CODE_TO_SUB_SECTOR["2591"] = "방산" 매핑 자체가
+            #   틀렸기 때문 (KSIC 2591은 판금·탱크 제조업, 방산 아님). 삼미금속처럼
+            #   induty_code[:4]="2591"인 다각화 기업이 방산으로 오분류됨.
+            #   근본 해결책: 2591 → corporate_제조로 코드 매핑 수정.
+            if kr_grades is None and sub_sector == "방산":
+                kr_grades = calc_kr_financial_grades(company_ratios, "corporate_제조")
 
             business_cycle, cycle_run = execute_tool_step(
                 logger=logger,
