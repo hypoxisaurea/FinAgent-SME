@@ -148,32 +148,6 @@ def _inject_styles() -> None:
             min-width: 300px;
             min-height: 230px;
         }
-        .job-chip {
-            position: relative;
-            z-index: 1;
-            flex-shrink: 0;
-            background: rgba(255, 255, 255, 0.86);
-            border: 1px solid rgba(255, 255, 255, 0.68);
-            border-radius: 22px;
-            box-shadow: 0 22px 44px rgba(25, 86, 140, 0.18);
-            backdrop-filter: blur(12px);
-            padding: 22px;
-            min-width: 230px;
-        }
-        .job-chip-label {
-            color: #736cff;
-            font-size: 0.74rem;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-        .job-chip-value {
-            color: #0b2f5f;
-            font-size: 1.4rem;
-            font-weight: 800;
-            line-height: 1.5;
-            margin-top: 0.4rem;
-            word-break: break-word;
-        }
         .loading-orbit-card {
             position: absolute;
             right: 22px;
@@ -202,6 +176,15 @@ def _inject_styles() -> None:
         .loading-orbit-line.short {
             width: 62%;
         }
+        .loading-bottom {
+            position: relative;
+            z-index: 1;
+            max-width: 500px;
+            margin-top: 8.65rem;
+        }
+        .progress-area {
+            min-width: 0;
+        }
         .progress-meta {
             position: relative;
             z-index: 1;
@@ -209,8 +192,7 @@ def _inject_styles() -> None:
             justify-content: space-between;
             gap: 16px;
             align-items: center;
-            max-width: 620px;
-            margin-top: 8.65rem;
+            width: 100%;
             margin-bottom: 0.7rem;
         }
         .progress-label {
@@ -227,7 +209,6 @@ def _inject_styles() -> None:
         .progress-rail {
             position: relative;
             z-index: 1;
-            max-width: 620px;
             width: 100%;
             height: 14px;
             border-radius: 999px;
@@ -264,7 +245,6 @@ def _inject_styles() -> None:
         .refresh-note {
             position: relative;
             z-index: 1;
-            max-width: 620px;
             margin-top: 1rem;
             color: #607083;
             font-size: 0.9rem;
@@ -427,11 +407,10 @@ def _inject_styles() -> None:
             .loading-orbit-card {
                 display: none;
             }
-            .job-chip {
-                width: 100%;
+            .loading-bottom {
+                margin-top: 2.6rem;
             }
             .progress-meta {
-                margin-top: 2.6rem;
                 align-items: flex-start;
                 flex-direction: column;
                 gap: 8px;
@@ -489,8 +468,6 @@ def _resolve_progress_fill_class(status: str) -> str:
 def _render_loading_state(
     *,
     status: str,
-    company_name: str,
-    job_label: str,
 ) -> None:
     meta = _resolve_status_meta(status)
     progress_message = _resolve_progress_message(status)
@@ -506,10 +483,6 @@ def _render_loading_state(
                     <p class="loading-copy">{escape(str(meta["description"]))}</p>
                 </div>
                 <div class="loading-visual" aria-hidden="true">
-                    <div class="job-chip">
-                        <div class="job-chip-label">{escape(job_label)}</div>
-                        <div class="job-chip-value">{escape(company_name)}</div>
-                    </div>
                     <div class="loading-orbit-card">
                         <div class="loading-orbit-dot"></div>
                         <div class="loading-orbit-line"></div>
@@ -517,15 +490,19 @@ def _render_loading_state(
                     </div>
                 </div>
             </div>
-            <div class="progress-meta">
-                <div class="progress-label">심사 상태: {escape(status.replace("_", " ").title())}</div>
-                <div class="progress-value">{escape(progress_message)}</div>
-            </div>
-            <div class="progress-rail">
-                <div class="{progress_fill_class}"></div>
-            </div>
-            <div class="refresh-note">
-                분석 상태를 실시간으로 확인하고 있으며, 완료되는 즉시 결과 리포트로 이동합니다.
+            <div class="loading-bottom">
+                <div class="progress-area">
+                    <div class="progress-meta">
+                        <div class="progress-label">심사 상태: {escape(status.replace("_", " ").title())}</div>
+                        <div class="progress-value">{escape(progress_message)}</div>
+                    </div>
+                    <div class="progress-rail">
+                        <div class="{progress_fill_class}"></div>
+                    </div>
+                    <div class="refresh-note">
+                        분석 상태를 실시간으로 확인하고 있으며, 완료되는 즉시 결과 리포트로 이동합니다.
+                    </div>
+                </div>
             </div>
         </section>
         """,
@@ -600,8 +577,6 @@ def _submit_pending_job() -> None:
     _reset_pending_job_state()
     _render_loading_state(
         status="submitting",
-        company_name=company_name,
-        job_label="심사 대상",
     )
 
     job = search.submit_workflow_job(company_name)
@@ -689,8 +664,6 @@ def _render_job_progress() -> None:
 
     _render_loading_state(
         status=status,
-        company_name=company_name,
-        job_label="심사 대상",
     )
     search._render_browser_console_bridge()
 

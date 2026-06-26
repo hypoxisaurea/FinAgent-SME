@@ -49,23 +49,9 @@ def render() -> None:
     _render_default_risk_section(sections["default_risk"])
     _render_decision_rationale_section(sections["decision_rationale"])
     _render_monitoring_section(sections["monitoring"])
-    _render_agent_verification(report_step, decision_step, report_payload)
 
     st.markdown("---")
-    _render_pdf_print_button(view_model)
-
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.download_button(
-            "JSON 다운로드",
-            data=json.dumps(result, ensure_ascii=False, indent=2),
-            file_name="credit_assessment_result.json",
-            mime="application/json",
-        )
-    with col2:
-        if st.button("다시 검색 페이지로 이동"):
-            st.session_state.page = "Search"
-            st.rerun()
+    _render_report_actions(view_model)
 
 
 def _is_validation_blocked(result: Any) -> bool:
@@ -115,6 +101,34 @@ def _inject_styles() -> None:
         .st-key-overview-card-box {
             background: linear-gradient(180deg, #f6fbff 0%, #eef5fb 100%);
             border: 1px solid #d7e6f4;
+        }
+        .st-key-report-actions {
+            margin-top: 1.2rem;
+        }
+        .st-key-report-actions [data-testid="stHorizontalBlock"] {
+            align-items: center;
+        }
+        .st-key-report-actions [data-testid="column"]:first-child {
+            display: flex;
+            justify-content: flex-start;
+        }
+        .st-key-report-actions [data-testid="column"]:last-child {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .st-key-report-actions .stButton > button {
+            min-width: 180px;
+            height: 2.9rem;
+            border-radius: 10px;
+            border: 1px solid #d7e6f4;
+            background: #ffffff;
+            color: #1f3552;
+            font-weight: 800;
+        }
+        .st-key-report-actions .stButton > button:hover {
+            border-color: #b8d3ed;
+            color: #1157a8;
+            background: #f6fbff;
         }
         .st-key-growth-trend-card {
             background: #ffffff;
@@ -1066,37 +1080,15 @@ def _render_monitoring_section(section: dict[str, Any]) -> None:
     )
 
 
-def _render_agent_verification(
-    report_step: dict[str, Any] | None,
-    decision_step: dict[str, Any] | None,
-    report: dict[str, Any],
-) -> None:
-    report_output = report_step.get("report") if isinstance(report_step, dict) else None
-    if report_output and report:
-        box_class = "inspect-box"
-        report_message = "ReportAgent output과 최종 context.report가 모두 존재합니다."
-    elif report_output:
-        box_class = "inspect-box warn"
-        report_message = "ReportAgent output은 있으나 최종 context.report는 비어 있습니다."
-    else:
-        box_class = "inspect-box danger"
-        report_message = "ReportAgent output을 찾지 못했습니다."
-
-    if decision_step:
-        decision_message = "DecisionAgent output이 존재하므로 ReportAgent 입력 검증이 가능합니다."
-    else:
-        decision_message = "DecisionAgent output을 찾지 못했습니다."
-
-    st.markdown(
-        f"""
-        <div class="{box_class}">
-            <div class="card-title" style="margin-bottom: 0.45rem;">에이전트 전달 검증</div>
-            <div class="body-copy">{report_message}</div>
-            <div class="body-copy" style="margin-top: 0.35rem;">{decision_message}</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+def _render_report_actions(view_model: dict[str, Any]) -> None:
+    with st.container(border=False, key="report-actions"):
+        search_col, pdf_col = st.columns(2)
+        with search_col:
+            if st.button("검색 페이지로 이동"):
+                st.session_state.page = "Search"
+                st.rerun()
+        with pdf_col:
+            _render_pdf_print_button(view_model)
 
 
 def _render_pdf_print_button(view_model: dict[str, Any]) -> None:
@@ -1104,21 +1096,32 @@ def _render_pdf_print_button(view_model: dict[str, Any]) -> None:
     encoded_html = json.dumps(printable_html)
     components.html(
         f"""
-        <div style="margin: 0.25rem 0 1rem 0;">
+        <style>
+          html, body {{
+            margin:0;
+            padding:0;
+            background:transparent;
+            overflow:hidden;
+          }}
+        </style>
+        <div style="display:flex; justify-content:flex-end; margin:0; background:transparent;">
           <button
             onclick="openPrintView()"
             style="
-              background:#eef5fb;
-              color:#1f3552;
-              border:1px solid #d7e6f4;
+              background:linear-gradient(135deg, #55b8ff 0%, #736cff 100%);
+              color:#ffffff;
+              border:0;
               border-radius:10px;
-              padding:10px 16px;
+              min-width:180px;
+              height:46px;
+              padding:0 16px;
               font-size:14px;
-              font-weight:600;
+              font-weight:800;
               cursor:pointer;
+              box-shadow:none;
             "
           >
-            PDF로 저장/인쇄
+            PDF로 저장
           </button>
         </div>
         <script>
@@ -1133,7 +1136,7 @@ def _render_pdf_print_button(view_model: dict[str, Any]) -> None:
           }}
         </script>
         """,
-        height=60,
+        height=46,
     )
 
 

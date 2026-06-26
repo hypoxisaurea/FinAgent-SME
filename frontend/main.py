@@ -24,19 +24,6 @@ if "pending_job_status" not in st.session_state:
 if "submitting_company_name" not in st.session_state:
     st.session_state.submitting_company_name = None
 
-st.markdown(
-    """
-    <header class="app-shell-header">
-        <div>
-            <div class="app-brand">FinAgent-SME</div>
-            <div class="app-subtitle">B2B 여신 심사 리스크 분석 플랫폼</div>
-        </div>
-        <div class="app-status">Credit Review Console</div>
-    </header>
-    """,
-    unsafe_allow_html=True,
-)
-
 if st.session_state.page == "Search":
     search.render()
 elif st.session_state.page == "Loading":
