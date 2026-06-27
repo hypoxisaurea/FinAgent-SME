@@ -48,11 +48,19 @@ class _FakeEngine:
 
 
 class _FakeInspector:
-    def __init__(self, tables: dict[str, bool]) -> None:
+    def __init__(
+        self,
+        tables: dict[str, bool],
+        columns: dict[str, list[str]] | None = None,
+    ) -> None:
         self._tables = tables
+        self._columns = columns or {}
 
     def has_table(self, table_name: str) -> bool:
         return self._tables.get(table_name, False)
+
+    def get_columns(self, table_name: str) -> list[dict[str, str]]:
+        return [{"name": column} for column in self._columns.get(table_name, [])]
 
 
 def test_get_financial_rows_by_corp_code_queries_postgres_table(
@@ -115,7 +123,16 @@ def test_get_statement_detail_rows_by_corp_code_queries_detail_table(
         db_access,
         "inspect",
         lambda engine: _FakeInspector(
-            {financial_statement_detail.STATEMENT_DETAILS_TABLE_NAME: True}
+            {financial_statement_detail.STATEMENT_DETAILS_TABLE_NAME: True},
+            {
+                financial_statement_detail.STATEMENT_DETAILS_TABLE_NAME: [
+                    "corp_code",
+                    "corp_name",
+                    "stock_code",
+                    "year",
+                    "current_assets",
+                ]
+            },
         ),
     )
 
@@ -125,6 +142,41 @@ def test_get_statement_detail_rows_by_corp_code_queries_detail_table(
     assert fake_engine.executed_queries[0][1] == {"corp_code": "00123456"}
     assert "FROM financial_statement_details" in fake_engine.executed_queries[0][0]
     assert fake_engine.disposed is True
+
+
+def test_get_statement_detail_rows_uses_null_for_missing_optional_columns(
+    monkeypatch,
+) -> None:
+    fake_engine = _FakeEngine([])
+
+    monkeypatch.setattr(
+        db_access,
+        "create_db_engine",
+        lambda: fake_engine,
+    )
+    monkeypatch.setattr(
+        db_access,
+        "inspect",
+        lambda engine: _FakeInspector(
+            {financial_statement_detail.STATEMENT_DETAILS_TABLE_NAME: True},
+            {
+                financial_statement_detail.STATEMENT_DETAILS_TABLE_NAME: [
+                    "corp_code",
+                    "corp_name",
+                    "stock_code",
+                    "year",
+                    "interest_expense",
+                ]
+            },
+        ),
+    )
+
+    financial_statement_detail.get_statement_detail_rows_by_corp_code("123456")
+
+    query = fake_engine.executed_queries[0][0]
+    assert "NULL AS interest_expense_source_account" in query
+    assert "NULL AS interest_expense_quality" in query
+    assert "interest_expense," in query
 
 
 def test_get_all_corp_codes_returns_empty_when_master_table_is_missing(

@@ -74,26 +74,28 @@ def _render_browser_console_bridge() -> None:
     st.html(
         f"""
         <script>
-        const events = {encoded_events};
-        const targets = [window, window.parent, window.top];
-        const prefix = "[FinAgent-SME]";
+        (() => {{
+          const events = {encoded_events};
+          const targets = [window, window.parent, window.top];
+          const prefix = "[FinAgent-SME]";
 
-        for (const payload of events) {{
-          const level = payload.level || "log";
-          const message = `${{prefix}} ${{payload.event}}`;
-          for (const target of targets) {{
-            try {{
-              const logger = target?.console ?? window.console;
-              if (typeof logger[level] === "function") {{
-                logger[level](message, payload);
-              }} else {{
-                logger.log(message, payload);
+          for (const payload of events) {{
+            const level = payload.level || "log";
+            const message = `${{prefix}} ${{payload.event}}`;
+            for (const target of targets) {{
+              try {{
+                const logger = target?.console ?? window.console;
+                if (typeof logger[level] === "function") {{
+                  logger[level](message, payload);
+                }} else {{
+                  logger.log(message, payload);
+                }}
+              }} catch (error) {{
+                window.console.warn(`${{prefix}} console_bridge_failed`, error);
               }}
-            }} catch (error) {{
-              window.console.warn(`${{prefix}} console_bridge_failed`, error);
             }}
           }}
-        }}
+        }})();
         </script>
         """,
         unsafe_allow_javascript=True,
